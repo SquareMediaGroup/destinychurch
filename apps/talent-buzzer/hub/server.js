@@ -12,6 +12,7 @@ const path = require('node:path');
 const { WebSocketServer } = require('ws');
 const { ShowState } = require('../lib/state');
 const titanApi = require('../lib/titan');
+const { normaliseCue, applyCueEdit, offStep, planCue } = require('../lib/cues');
 const discovery = require('../lib/discovery');
 
 const APP_DIR = path.join(__dirname, '..');
@@ -26,8 +27,9 @@ function loadConfig() {
   if (!file) throw new Error('No config.json found');
   if (file.endsWith('config.example.json')) log('⚠️ ', 'No config.json yet, using config.example.json (copy it to config.json to customise)');
   const config = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const savedHubPort = config.hubPort;
   if (process.env.PORT) config.hubPort = Number(process.env.PORT);
-  return { config, file };
+  return { config, file, savedHubPort };
 }
 
 function log(icon, ...msg) {
@@ -35,8 +37,25 @@ function log(icon, ...msg) {
   console.log(`[${t}] ${icon}`, ...msg);
 }
 
-const { config, file: configFile } = loadConfig();
+const { config, file: configFile, savedHubPort } = loadConfig();
+
+// Saves cue changes made on the control page. Never writes over
+// config.example.json: the first save creates config.json next to it.
+function saveConfig() {
+  const target = configFile.endsWith('config.example.json') ? path.join(APP_DIR, 'config.json') : configFile;
+  const tmp = `${target}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify({ ...config, hubPort: savedHubPort }, null, 2) + '\n');
+  fs.renameSync(tmp, target);
+  return target;
+}
 const seats = config.judges.map((j) => String(j.seat));
+// Old configs hold bare playback numbers; turn them into full cues once here.
+try {
+  config.cues = applyCueEdit({ ...config.cues }, { ...config.cues, x: { ...(config.cues.x ?? {}) } }, seats);
+} catch (err) {
+  log('🔥', `config.json cues are not valid: ${err.message}`);
+  process.exit(1);
+}
 const state = new ShowState({ seats, debounceMs: config.debounceMs });
 const lightingMode = config.lighting?.mode ?? 'agent'; // agent | direct | off
 
@@ -224,12 +243,17 @@ function handleMessage(client, msg) {
       state.reset();
       log('🔄', 'Reset');
       broadcast({ type: 'event', kind: 'reset' });
+      stopPendingSteps();
       if (config.cues.releaseOnReset) {
-        for (const n of new Set([...Object.values(config.cues.x ?? {}), config.cues.golden, config.cues.allX].filter((n) => n != null))) {
-          fireLighting(n, 'Release', 'release');
+        const done = new Set();
+        for (const cue of [...Object.values(config.cues.x ?? {}), config.cues.golden, config.cues.allX]) {
+          if (!cue || done.has(`${cue.userNumber}/${cue.action}`)) continue;
+          done.add(`${cue.userNumber}/${cue.action}`);
+          const off = offStep(cue.action);
+          fireLighting(cue.userNumber, 'Release', off.action, off.level);
         }
       }
-      if (config.cues.reset != null) fireLighting(config.cues.reset, 'Reset');
+      if (config.cues.reset) runCue(config.cues.reset, 'Reset');
       pushState();
       break;
     }
@@ -240,10 +264,43 @@ function handleMessage(client, msg) {
       pushState();
       break;
     }
-    case 'test-lighting': {
+    case 'test-cue':
+    case 'cue-off': {
       if (client.role !== 'control') return;
-      const n = Number(msg.userNumber);
-      if (Number.isFinite(n)) fireLighting(n, `Test ${msg.label ?? ''}`.trim());
+      let cue;
+      try {
+        cue = normaliseCue(msg.cue);
+      } catch (err) {
+        send(client.ws, { type: 'cues-error', error: err.message });
+        return;
+      }
+      if (!cue) return;
+      const label = String(msg.label ?? 'Manual').slice(0, 60);
+      if (msg.type === 'test-cue') runCue(cue, `Test ${label}`);
+      else {
+        const off = offStep(cue.action);
+        fireLighting(cue.userNumber, `Off ${label}`, off.action, off.level);
+      }
+      break;
+    }
+    case 'set-cues': {
+      if (client.role !== 'control') return;
+      let next;
+      try {
+        next = applyCueEdit(config.cues, msg.cues ?? {}, seats);
+      } catch (err) {
+        send(client.ws, { type: 'cues-error', error: err.message });
+        return;
+      }
+      config.cues = next;
+      let savedTo = null;
+      try {
+        savedTo = saveConfig();
+      } catch (err) {
+        log('⚠️ ', `Cues changed but could not be saved: ${err.message}`);
+      }
+      log('🎛️ ', `Lighting cues changed${savedTo ? ` (saved to ${path.basename(savedTo)})` : ' (NOT saved, lost on restart)'}: ${JSON.stringify(next)}`);
+      broadcast({ type: 'cues', cues: next, saved: Boolean(savedTo) }, ['control']);
       break;
     }
     case 'test-sound': {
@@ -263,11 +320,11 @@ function judgePress(seat, source) {
   log('❌', `X from judge ${seat} (${source})`);
   broadcast({ type: 'event', kind: 'x', seat, at: Date.now() });
   const cue = config.cues.x?.[seat];
-  if (cue != null) fireLighting(cue, `X judge ${seat}`);
+  if (cue) runCue(cue, `X judge ${seat}`);
   if (state.allX()) {
     log('🚨', 'All judges have buzzed');
     broadcast({ type: 'event', kind: 'all-x', at: Date.now() });
-    if (config.cues.allX != null) fireLighting(config.cues.allX, 'All X');
+    if (config.cues.allX) runCue(config.cues.allX, 'All X');
   }
   pushState();
 }
@@ -280,7 +337,7 @@ function goldenPress(source) {
   }
   log('🌟', `GOLDEN BUZZER (${source})`);
   broadcast({ type: 'event', kind: 'golden', at: Date.now() });
-  if (config.cues.golden != null) fireLighting(config.cues.golden, 'Golden');
+  if (config.cues.golden) runCue(config.cues.golden, 'Golden');
   pushState();
 }
 
@@ -294,10 +351,35 @@ function recordFire(label, userNumber, ok, error) {
   pushState();
 }
 
-function fireLighting(userNumber, label, action = 'fire') {
+// Runs a cue's on/off steps (see planCue). Later steps are timers so Reset
+// can stop a repeat that is still going.
+const pendingSteps = new Set();
+
+function runCue(cue, label) {
+  for (const step of planCue(cue)) {
+    const go = () => fireLighting(cue.userNumber, label, step.action, step.level);
+    if (step.at === 0) {
+      go();
+      continue;
+    }
+    const timer = setTimeout(() => {
+      pendingSteps.delete(timer);
+      go();
+    }, step.at);
+    pendingSteps.add(timer);
+  }
+}
+
+function stopPendingSteps() {
+  for (const timer of pendingSteps) clearTimeout(timer);
+  pendingSteps.clear();
+}
+
+function fireLighting(userNumber, label, action = 'fire', level = 100) {
   if (lightingMode === 'off') return;
+  if (!['fire', 'release'].includes(action)) label = `${label} (${action === 'level' ? `fader ${level}%` : action})`;
   if (lightingMode === 'direct') {
-    titanApi.fireCue(config.titan, userNumber, action).then(
+    titanApi.fireCue(config.titan, userNumber, action, level).then(
       () => recordFire(label, userNumber, true),
       (err) => recordFire(label, userNumber, false, err.message),
     );
@@ -308,7 +390,7 @@ function fireLighting(userNumber, label, action = 'fire') {
     recordFire(label, userNumber, false, 'Avolites agent not connected');
     return;
   }
-  for (const a of agents) send(a.ws, { type: 'fire', userNumber, label, action });
+  for (const a of agents) send(a.ws, { type: 'fire', userNumber, label, action, level });
 }
 
 if (lightingMode === 'direct') {

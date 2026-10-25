@@ -22,10 +22,11 @@ Click these links on the computers. You don't need to search for anything.
 | What | Link | Where it goes |
 | --- | --- | --- |
 | **Talent Buzzer app** (a small ZIP, about 0.5 MB) | [Download talent-buzzer.zip](https://github.com/SquareMediaGroup/destinychurch/releases/download/talent-buzzer/talent-buzzer.zip) | Both computers |
-| **Node.js** for Windows (free, the engine the app runs on) | [Download the Node.js installer](https://nodejs.org/dist/v24.22.0/node-v24.22.0-x64.msi) | Both computers |
+| **Node.js** for Windows (free, the engine the app runs on) | [Download the Node.js installer for Windows](https://nodejs.org/dist/v24.22.0/node-v24.22.0-x64.msi) | Windows computers |
+| **Node.js** for Mac (the same thing, for a Mac) | [Download the Node.js installer for Mac](https://nodejs.org/dist/v24.22.0/node-v24.22.0.pkg) | The LED screen computer, if it's a Mac |
 | **Google Chrome** for the tablets (usually already installed) | [Chrome on Google Play](https://play.google.com/store/apps/details?id=com.android.chrome) | All 5 tablets |
 
-> If the Node.js link doesn't suit the computer (for example it's a Mac or an ARM laptop), use the
+> If neither Node.js link suits the computer (for example a Windows ARM laptop), use the
 > [Node.js download page](https://nodejs.org/en/download) and pick the **LTS** installer for that computer.
 >
 > If the app link ever says "Not Found", use the [download page for all versions](https://github.com/SquareMediaGroup/destinychurch/releases/tag/talent-buzzer),
@@ -55,7 +56,7 @@ You put the **same app** on both computers. When it starts, it asks which comput
 
 Tick these off before you start:
 
-- [ ] The **LED screen computer** (Windows), plugged into the big screen and the speakers
+- [ ] The **LED screen computer** (Windows or Mac), plugged into the big screen and the speakers
 - [ ] The **Avolites computer** (Windows, running Titan)
 - [ ] **5 Android tablets**, charged, with their chargers
 - [ ] All of them on the **same Wi-Fi / network**
@@ -72,11 +73,14 @@ Do this on the computer that is plugged into the big LED screen.
 
 **1. Install Node.js** (the engine the app runs on)
 
-1. Click this link: **[Download the Node.js installer](https://nodejs.org/dist/v24.22.0/node-v24.22.0-x64.msi)**. A file downloads.
+1. Click this link: **[Download the Node.js installer for Windows](https://nodejs.org/dist/v24.22.0/node-v24.22.0-x64.msi)**. A file downloads.
 2. Open the downloaded file (it's in your **Downloads** folder). Click **Next**, **Next**, **Next**,
    then **Install**, then **Finish**. You don't need to change anything.
    - If it asks *"Do you want to allow this app to make changes?"*, click **Yes**.
    - If it offers to install "Tools for Native Modules", leave that box **unticked**. It isn't needed.
+
+> **On a Mac**, use **[the Node.js installer for Mac](https://nodejs.org/dist/v24.22.0/node-v24.22.0.pkg)** instead.
+> Open it from **Downloads**, click **Continue** until you reach **Install**, type the Mac's password, then **Close**.
 
 > Already have Node.js? That's fine, as long as it's version 20 or newer. If it's too old,
 > `start.bat` tells you and opens the download page for you.
@@ -86,6 +90,9 @@ Do this on the computer that is plugged into the big LED screen.
 1. Click this link: **[Download talent-buzzer.zip](https://github.com/SquareMediaGroup/destinychurch/releases/download/talent-buzzer/talent-buzzer.zip)**.
 2. Find **`talent-buzzer.zip`** in your **Downloads** folder. Right-click it and choose **Extract All**, then **Extract**.
 3. A new window opens with a folder called **`talent-buzzer`** inside. Drag that folder onto the **Desktop**.
+
+> **On a Mac**, just double-click `talent-buzzer.zip` in **Downloads**. A `talent-buzzer` folder appears next to it.
+> Drag that folder onto the **Desktop**.
 
 **3. Start the app**
 
@@ -98,10 +105,17 @@ Do this on the computer that is plugged into the big LED screen.
    tick **Private networks**, then click **Allow access**.
    This is important: without it the tablets can't connect.
 
+> **On a Mac**, double-click **`start.command`** instead of `start.bat`. A Terminal window opens: leave it open.
+> - If the Mac says it *"could not verify start.command"* or it's *"from an unidentified developer"*, click **Done**
+>   (or **OK**). Then open **System Settings**, go to **Privacy & Security**, scroll down, and click **Open Anyway**
+>   next to `start.command`. Click **Open Anyway** again, then type the Mac's password if it asks. You only need to do this once.
+> - If it asks *"Do you want the application node to accept incoming network connections?"*, click **Allow**.
+>   Without it the tablets can't connect.
+
 **4. Tell it which computer this is**
 
 A page opens in the web browser by itself. (If it doesn't, click **[http://localhost:8090](http://localhost:8090)**.
-That link only works on a computer where `start.bat` is running.)
+That link only works on a computer where `start.bat` or `start.command` is running.)
 
 ![Which machine is this?](docs/images/setup-choose.jpg)
 
@@ -114,7 +128,7 @@ That link only works on a computer where `start.bat` is running.)
 
 Keep this page open. You'll need these links for the screen, the tablets and the control page.
 
-> **Next time**, just double-click `start.bat`. It remembers that this is the LED screen computer.
+> **Next time**, just double-click `start.bat` (or `start.command` on a Mac). It remembers that this is the LED screen computer.
 
 ---
 
@@ -214,27 +228,30 @@ The lighting person needs to make the "looks" for each buzzer. Show them this pa
 | All four have buzzed (e.g. red strobe), optional | 120 |
 | Golden buzzer | 110 |
 
-If they use **different numbers**, change them on the **LED screen computer**:
+If they use **different numbers**, change them on the **Control page** (the **Control** link on the setup page):
 
-1. In the `talent-buzzer` folder, copy **`config.example.json`** and paste it.
-   Rename the copy to **`config.json`**.
-2. Right-click `config.json` → **Open with** → **Notepad**.
-3. Find this part and change **only the numbers**:
+1. In the **Lighting cues** box, type each playback number next to its buzzer. Leave a box empty to fire nothing.
+2. Pick what it does:
+   - **Go** fires the playback (like pressing its Go).
+   - **Flash** or **Swop** presses that button. For Flash, flash must be turned on for that playback in Titan.
+   - **Fader** moves the playback's fader to the level you type (0 to 100%).
+3. Set **times in seconds**, for example `5 times in 5 s`. Once (`1`) means Go, Swop and Fader stay on until Reset.
+   More than once means it pulses on and off that many times, spread evenly over those seconds.
+4. Click **Test** next to any of them to check the right look comes up.
+5. Click **Save cues**. The buzzers use the new settings straight away, and the app remembers them next time.
 
-   ```json
-   "cues": {
-     "x": { "1": 101, "2": 102, "3": 103, "4": 104 },
-     "golden": 110,
-     "allX": null,
-   ```
+To fire **any** playback at any time (for example a look that isn't on a buzzer), fill in the
+**Fire any playback** box the same way and click **Fire**. Click **Off** to undo it.
 
-   - To use an "all four" look, change `null` to its number, e.g. `"allX": 120,`
-   - Near the top you can change the judges' names too: `{ "seat": "1", "name": "Pastor Dave" }`
-4. **Save** (Ctrl + S) and close Notepad.
-5. Close the black `start.bat` window and double-click `start.bat` again.
+> **Rehearse with the real desk first.** Go and Kill have been used before; Flash, Swop and Fader use the
+> commands from Avolites' Web API notes and need checking on your console. If one does nothing, the
+> **Lighting log** on the Control page says why.
 
-> **Careful:** keep every `"`, `:` and `,` exactly where it is. Only change the numbers and names.
-> If the app won't start after editing, delete `config.json` and try again.
+> **Judges' names** are still changed in a file. On the LED screen computer, copy **`config.example.json`** in the
+> `talent-buzzer` folder and rename the copy to **`config.json`** (if it isn't there already). Open it in Notepad
+> (or TextEdit on a Mac), change only the names, for example `{ "seat": "1", "name": "Pastor Dave" }`, save, then close the
+> app's window and start it again. Keep every `"`, `:` and `,` where it is. If the app won't start after editing,
+> delete `config.json` and try again.
 
 ---
 
@@ -252,7 +269,7 @@ Go through this list:
    If it says *"Click the display page once"*, click the big screen.
 3. [ ] **Lighting link** and **Avolites Titan:** both green.
 4. [ ] Click **Test X sound**, **Test all out** and **Test gold**. You hear them through the speakers.
-5. [ ] Click each **Test lighting cue** button. The right look comes up each time.
+5. [ ] In **Lighting cues**, click each **Test** button. The right look comes up each time.
 6. [ ] Press each tablet once. Check the X appears, the sound plays and the lights change.
 7. [ ] Click **Reset buzzers**.
 8. [ ] Click **Lock buzzers** until the first act starts.
@@ -293,12 +310,12 @@ What the audience sees:
 | --- | --- |
 | Tablet says **"Not connected - reconnecting..."** | Is the tablet on the same Wi-Fi as the computers? Is the black `start.bat` window still open on the LED screen computer? Is the link typed exactly right? |
 | Black window says **"Node.js is not installed"** or **"old version of Node.js"** | Install Node.js with the [Node.js installer link](https://nodejs.org/dist/v24.22.0/node-v24.22.0-x64.msi), then double-click `start.bat` again. |
-| **No tablets can connect at all** | On the LED screen computer, Windows Firewall is probably blocking it. Search the Start menu for **"Allow an app through Windows Firewall"**, find **Node.js**, and tick **Private**. |
+| **No tablets can connect at all** | On the LED screen computer, Windows Firewall is probably blocking it. Search the Start menu for **"Allow an app through Windows Firewall"**, find **Node.js**, and tick **Private**. On a Mac, open **System Settings**, go to **Network**, then **Firewall**, then **Options**, and set **node** to **Allow incoming connections**. |
 | **No sound** | Click once on the big screen. Check the computer's volume and that sound goes to the right speakers. Use **Test X sound** on the control page. |
 | **Avolites page stuck on "Looking on the network..."** | Both computers must be on the same network. Allow Node.js through the firewall (see above) on the **Avolites** computer too. Or click **Change**, type the LED screen computer's address (shown as **Network address** on its setup page), then **Start**. |
 | **Avolites Titan: Not reachable** | Titan isn't open, or step 1 of Part 3 didn't work. Ask the lighting person. |
 | **Lights don't change but the screen does** | Look at the **Lighting log** on the control page. It says what went wrong. |
-| **The wrong light look comes up** | The numbers in `config.json` don't match Titan. See Part 5. |
+| **The wrong light look comes up** | The numbers in **Lighting cues** on the Control page don't match Titan. See Part 5. |
 | **The big screen went back to a small window** | Click it and press **F11** again. |
 | **Something is really stuck** | Close the black `start.bat` window and double-click `start.bat` again. The tablets and the screen reconnect by themselves within a few seconds. |
 | **"Wrong access key"** | Someone set a key in `config.json`. See "For techies". |
@@ -310,7 +327,7 @@ What the audience sees:
 | Word | What it means |
 | --- | --- |
 | **Node.js** | Free software the app needs to run, a bit like an engine. |
-| **`start.bat`** | The file you double-click to start the app. |
+| **`start.bat`** | The file you double-click to start the app on Windows. On a Mac it's **`start.command`**. |
 | **Setup page** | The page that opens in the browser when the app starts. It only works on that computer. |
 | **Control page** | The operator's page with Reset, Lock and all the test buttons. |
 | **Display page** | The page that goes on the big screen. |
@@ -327,7 +344,7 @@ What the audience sees:
 
 ### How it works
 
-- `start.bat` runs `app.js`. That serves the **setup page** on `http://localhost:8090` (only this machine, Host-header checked).
+- `start.bat` (Windows) or `start.command` (Mac) runs `app.js`. That serves the **setup page** on `http://localhost:8090` (only this machine, Host-header checked).
   The chosen role is saved in `machine.json`, and the app runs `hub/server.js` (LED screen) or
   `agent/avolites-agent.js` (Avolites) as a child process, restarting it if it crashes.
 - The **hub** serves the tablet, display and control pages on port **8080** and talks to them over WebSockets (`/ws`).
@@ -346,7 +363,7 @@ link is rebuilt by [.github/workflows/talent-buzzer-release.yml](../../.github/w
 whenever this folder changes on `main` (or when it's run by hand from the Actions tab). It runs the tests, adds
 `node_modules` (so the show computers never run `npm install`), and uploads the ZIP to the
 [`talent-buzzer` release](https://github.com/SquareMediaGroup/destinychurch/releases/tag/talent-buzzer).
-`start.bat` checks Node.js is installed and is version 20 or newer, and only runs `npm install` if `node_modules` is missing
+`start.bat` (and `start.command`, its Mac twin) checks Node.js is installed and is version 20 or newer, and only runs `npm install` if `node_modules` is missing
 (for example when the folder was copied from a git checkout).
 
 ### Show rules
@@ -365,13 +382,14 @@ whenever this folder changes on `main` (or when it's run by hand from the Action
 | `debounceMs` | Ignore a second press on the same buzzer within this many ms |
 | `judges` | Seats and names shown on the tablets, control page and display |
 | `golden.name` | Name for the golden tablet |
-| `cues.x` | Titan playback user number per seat |
+| `cues.*` | Set from the Control page's **Lighting cues** box (`set-cues` over the WebSocket, validated by `lib/cues.js`), which writes them back to `config.json` (creating it from the example on first save). |
+| `cues.x` | Cue per seat: `{ userNumber, action: fire\|flash\|swop\|level, level: 0-100, times: 1-20, seconds: 1-30 }`. A bare number (older configs) means a plain Go once. |
 | `cues.allX` | Playback fired when all four judges have buzzed, or `null` |
 | `cues.golden` | Golden buzzer playback |
 | `cues.reset` | Playback fired on Reset, or `null` |
 | `cues.releaseOnReset` | Kill X / all-X / golden playbacks on Reset (set `false` if the looks time out by themselves) |
 | `lighting.mode` | `agent` (default), `direct` (hub calls Titan itself), or `off` |
-| `titan.*` | Titan Web API host/port/timeout and URL templates (`{userNumber}` is filled in) |
+| `titan.*` | Titan Web API host/port/timeout and URL templates (`{userNumber}` and, for `levelUrl`, `{level}` as 0-1 are filled in). `fireUrl`/`releaseUrl` are Go/Kill; `flashUrl`, `flashOffUrl`, `swopUrl`, `swopOffUrl` and `levelUrl` default to Titan's `Playbacks/FlashPlayback`, `ClearFlashPlayback`, `SwopPlayback`, `ClearSwopPlayback` and `SetPlaybackLevel` if missing. |
 
 ### Hardware console instead of a Titan PC
 

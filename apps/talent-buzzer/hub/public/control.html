@@ -48,6 +48,13 @@
     #cueMsg { min-height: 1.4em; margin: 8px 0 0; }
     #cueMsg.fail { color: var(--bad); } #cueMsg.ok { color: var(--ok); }
     label.check { display: flex; align-items: center; gap: 8px; padding: 8px 0 4px; }
+    #soundMsg { min-height: 1.4em; margin: 8px 0 0; }
+    #soundMsg.fail { color: var(--bad); } #soundMsg.ok { color: var(--ok); }
+    .sound { flex-wrap: wrap; }
+    .sound .name { flex: 1 1 140px; }
+    .sound .fields { display: flex; flex-wrap: wrap; gap: 6px; }
+    .sound input[type=file] { display: none; }
+    button:disabled { opacity: 0.45; cursor: default; }
   </style>
 </head>
 <body>
@@ -91,6 +98,14 @@
       <p class="muted" id="cueMsg"></p>
     </section>
 
+    <section>
+      <h2>Sounds</h2>
+      <p class="muted" style="margin-top: 0">Pick a sound file (MP3, WAV or M4A) from this computer to replace a sound. The screen
+        uses it straight away. <b>Built-in</b> goes back to the original sound.</p>
+      <div id="soundRows"></div>
+      <p class="muted" id="soundMsg"></p>
+    </section>
+
     <section class="wide">
       <h2>Fire any playback</h2>
       <p class="muted" style="margin-top: 0">Any playback, any time. <b>Off</b> undoes it (kill, clear flash or swop, or fader to 0).</p>
@@ -117,6 +132,7 @@
     let judges = [];
     let golden = { name: 'Golden Buzzer' };
     let cues = {};
+    let sounds = {};
     let last = null;
 
     const hub = connectHub(
@@ -126,11 +142,15 @@
           judges = msg.judges;
           golden = msg.golden;
           cues = msg.cues;
+          sounds = msg.sounds || {};
           buildStatic();
         } else if (msg.type === 'cues') {
           cues = msg.cues;
           buildCues();
           cueMessage(msg.saved ? 'Saved. The buzzers use these cues now.' : 'Changed for now, but could not be saved: they reset when the app restarts.', msg.saved ? 'ok' : 'fail');
+        } else if (msg.type === 'sounds') {
+          sounds = msg.sounds;
+          buildSounds();
         } else if (msg.type === 'cues-error') {
           cueMessage(msg.error, 'fail');
           $('anyMsg').textContent = msg.error;
@@ -250,8 +270,61 @@
     anyRow.querySelector('.test').textContent = 'Fire';
     $('anyRow').append(anyRow);
 
+    // ---------- sounds ----------
+    const SOUND_LABELS = [['x', 'Red X'], ['all-x', 'All four out'], ['golden', 'Golden buzzer']];
+
+    function soundMessage(text, cls) {
+      $('soundMsg').textContent = text;
+      $('soundMsg').className = `muted ${cls || ''}`;
+    }
+
+    async function soundRequest(kind, method, file) {
+      const sp = new URLSearchParams({ kind });
+      if (key) sp.set('key', key);
+      if (file) sp.set('name', file.name);
+      try {
+        const res = await fetch(`/api/sound?${sp}`, { method, body: file });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || `The hub said ${res.status}`);
+        return true;
+      } catch (err) {
+        soundMessage(err.message === 'Failed to fetch' ? 'Not connected to the hub. Try again in a moment.' : err.message, 'fail');
+        return false;
+      }
+    }
+
+    function buildSounds() {
+      const rows = $('soundRows');
+      rows.innerHTML = '';
+      for (const [kind, label] of SOUND_LABELS) {
+        const row = document.createElement('div');
+        row.className = 'row sound';
+        row.innerHTML = `<span class="name"></span><span class="pill"></span><input type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac">
+          <span class="fields"><button class="pick">Choose file</button><button class="play">Play</button><button class="builtin">Built-in</button></span>`;
+        const q = (sel) => row.querySelector(sel);
+        q('.name').textContent = label;
+        q('.pill').textContent = sounds[kind] ? 'Your file' : 'Built-in';
+        q('.builtin').disabled = !sounds[kind];
+        const input = q('input');
+        input.setAttribute('aria-label', `${label}: sound file`);
+        q('.pick').onclick = () => input.click();
+        input.onchange = async () => {
+          const file = input.files[0];
+          if (!file) return;
+          soundMessage(`Uploading ${file.name}...`);
+          if (await soundRequest(kind, 'PUT', file)) soundMessage(`${label} now uses ${file.name}. Press Play to hear it on the screen.`, 'ok');
+        };
+        q('.play').onclick = () => hub.send({ type: 'test-sound', kind });
+        q('.builtin').onclick = async () => {
+          if (await soundRequest(kind, 'DELETE')) soundMessage(`${label} is back to the built-in sound.`, 'ok');
+        };
+        rows.append(row);
+      }
+    }
+
     function buildStatic() {
       buildCues();
+      buildSounds();
 
       const links = $('links');
       links.innerHTML = '';

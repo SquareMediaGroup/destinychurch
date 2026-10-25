@@ -278,6 +278,20 @@ All done? **You're ready for the show!**
 
 ---
 
+## Change the sound effects
+
+You can swap any of the three sounds for your own: the **Red X** buzzer, the **All four out** alarm and
+the **Golden buzzer** fanfare.
+
+1. Get the sound file onto the computer you have the Control page open on. MP3, WAV or M4A all work
+   (up to 20 MB). Trim any silence at the start, or the sound will lag behind the X.
+2. On the Control page, find the **Sounds** box.
+3. Next to the sound you want to change, click **Choose file** and pick your file.
+4. Click **Play**. You hear the new sound through the LED screen computer's speakers.
+
+The screen uses the new sound straight away, with no refresh needed. It is kept when the app restarts and when you
+download a new version. **Built-in** puts the original sound back.
+
 ## During the show
 
 | Button (on the control page) | What it does |
@@ -412,8 +426,12 @@ browser source in Resolume, ProPresenter or OBS.
 
 ### Your own sounds
 
-Put `buzzer.mp3`, `all-out.mp3` and `golden.mp3` in `hub/public/sounds/` and refresh the display page.
-Without them, the page makes its own buzzer, alarm and fanfare.
+The Control page **Sounds** box uploads to `PUT /api/sound?kind=x|all-x|golden` (raw file body, same `key`
+as the WebSocket; `DELETE` goes back to built-in). The hub checks the file's first bytes are MP3, WAV, OGG,
+FLAC or M4A, saves it as `hub/public/sounds/buzzer.mp3`, `all-out.mp3` or `golden.mp3` (the browser decodes
+by content, not name) and tells open display pages to reload their sounds. You can also drop files with those
+names into that folder by hand and refresh the display page. Without them, the page makes its own buzzer,
+alarm and fanfare.
 
 ### Rehearsing without the lighting desk
 

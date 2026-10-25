@@ -182,8 +182,8 @@
     }
 
     // ---------- audio ----------
-    // Uses sounds/buzzer.mp3 and sounds/golden.mp3 if present, otherwise a
-    // synthesised buzzer / fanfare so it works out of the box.
+    // Uses sounds/buzzer.mp3, all-out.mp3 and golden.mp3 if present (uploaded on
+    // the control page), otherwise a synthesised buzzer / alarm / fanfare.
     let ctx = null;
     const buffers = {};
 
@@ -296,9 +296,15 @@
       if (!audioEnabled) return true;
       ctx = ctx || new AudioContext({ latencyHint: 'interactive' });
       await ctx.resume();
-      await Promise.all([loadSound('x', 'buzzer.mp3', synthBuzzer), loadSound('golden', 'golden.mp3', synthGolden),
-        loadSound('all-x', 'all-out.mp3', synthAllOut)]);
+      await loadSounds();
       return ctx.state === 'running';
+    }
+
+    // Also called when a new sound is uploaded on the control page.
+    function loadSounds() {
+      if (!ctx) return Promise.resolve();
+      return Promise.all([loadSound('x', 'buzzer.mp3', synthBuzzer), loadSound('golden', 'golden.mp3', synthGolden),
+        loadSound('all-x', 'all-out.mp3', synthAllOut)]);
     }
 
     function play(name) {
@@ -392,6 +398,8 @@
           else if (msg.kind === 'reset') { stopGolden(); applyState({ xs: {}, golden: false }); }
         } else if (msg.type === 'test-sound') {
           play(msg.kind);
+        } else if (msg.type === 'reload-sounds') {
+          loadSounds();
         }
       },
       (ok) => body.classList.toggle('offline', !ok),

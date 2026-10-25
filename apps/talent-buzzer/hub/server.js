@@ -13,10 +13,12 @@ const { WebSocketServer } = require('ws');
 const { ShowState } = require('../lib/state');
 const titanApi = require('../lib/titan');
 const { normaliseCue, applyCueEdit, offStep, planCue } = require('../lib/cues');
+const { SOUND_FILES, MAX_SOUND_BYTES, checkSound } = require('../lib/sounds');
 const discovery = require('../lib/discovery');
 
 const APP_DIR = path.join(__dirname, '..');
 const PUBLIC_DIR = path.join(__dirname, 'public');
+const SOUNDS_DIR = path.join(PUBLIC_DIR, 'sounds');
 
 // ---------- config ----------
 
@@ -79,6 +81,10 @@ const server = http.createServer((req, res) => {
   let filePath;
   try {
     const url = new URL(req.url, 'http://x');
+    if (url.pathname === '/api/sound') {
+      soundRequest(req, res, url);
+      return;
+    }
     const pathname = ROUTES[url.pathname] ?? url.pathname;
     filePath = path.join(PUBLIC_DIR, path.normalize(decodeURIComponent(pathname)));
   } catch {
@@ -99,6 +105,67 @@ const server = http.createServer((req, res) => {
     res.end(data);
   });
 });
+
+// ---------- sounds (uploaded from the control page) ----------
+
+function customSounds() {
+  return Object.fromEntries(Object.entries(SOUND_FILES).map(([kind, file]) => [kind, fs.existsSync(path.join(SOUNDS_DIR, file))]));
+}
+
+// PUT /api/sound?kind=x with the file as the body replaces that sound;
+// DELETE goes back to the built-in one. Same access key as the WebSocket.
+function soundRequest(req, res, url) {
+  const reply = (status, body) => res.writeHead(status, { 'Content-Type': 'application/json' }).end(JSON.stringify(body));
+  if (config.key && url.searchParams.get('key') !== config.key) return reply(403, { error: 'Wrong or missing access key' });
+  const kind = url.searchParams.get('kind');
+  if (!(kind in SOUND_FILES)) return reply(400, { error: 'Unknown sound' });
+  const target = path.join(SOUNDS_DIR, SOUND_FILES[kind]);
+  if (req.method === 'DELETE') {
+    fs.rm(target, { force: true }, (err) => {
+      if (err) return reply(500, { error: err.message });
+      log('🔊', `Sound "${kind}" back to the built-in one`);
+      soundsChanged();
+      reply(200, { sounds: customSounds() });
+    });
+    return;
+  }
+  if (req.method !== 'PUT') return reply(405, { error: 'Use PUT or DELETE' });
+  const chunks = [];
+  let size = 0;
+  req.on('data', (chunk) => {
+    size += chunk.length;
+    if (size > MAX_SOUND_BYTES) {
+      reply(413, { error: `The file is too big (the limit is ${MAX_SOUND_BYTES / 1024 / 1024} MB)` });
+      req.destroy();
+    } else chunks.push(chunk);
+  });
+  req.on('end', () => {
+    if (size > MAX_SOUND_BYTES) return;
+    const buf = Buffer.concat(chunks);
+    let format;
+    try {
+      format = checkSound(kind, buf);
+    } catch (err) {
+      return reply(400, { error: err.message });
+    }
+    const tmp = `${target}.tmp`;
+    try {
+      fs.writeFileSync(tmp, buf);
+      fs.renameSync(tmp, target);
+    } catch (err) {
+      return reply(500, { error: err.message });
+    }
+    const name = String(url.searchParams.get('name') ?? '').slice(0, 80);
+    log('🔊', `New "${kind}" sound uploaded${name ? ` (${name})` : ''}: ${format}, ${Math.round(buf.length / 1024)} KB`);
+    soundsChanged();
+    reply(200, { sounds: customSounds() });
+  });
+}
+
+function soundsChanged() {
+  broadcast({ type: 'sounds', sounds: customSounds() }, ['control']);
+  broadcast({ type: 'reload-sounds' }, ['display']);
+}
 
 // ---------- websocket ----------
 
@@ -149,6 +216,7 @@ function welcome() {
     judges: config.judges.map((j) => ({ seat: String(j.seat), name: j.name })),
     golden: { name: config.golden?.name ?? 'Golden Buzzer' },
     cues: config.cues,
+    sounds: customSounds(),
   };
 }
 

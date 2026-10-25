@@ -47,7 +47,7 @@
     body.flash::after { content: ""; position: absolute; inset: 0; background: rgba(255,31,58,0.35); animation: flash 350ms ease-out forwards; pointer-events: none; }
     @keyframes flash { to { opacity: 0; } }
 
-    /* All four judges buzzed: hard red strobe, then a slow pulsing red until reset. */
+    /* All judges buzzed: hard red strobe, then a slow pulsing red until reset. */
     #alarm { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
     body.all-out #alarm { opacity: 1; background: radial-gradient(ellipse at center, rgba(255,0,30,0) 35%, rgba(255,0,30,0.55) 100%);
       animation: alarm-pulse 1.1s ease-in-out infinite alternate; }
@@ -132,6 +132,7 @@
 
     function buildSlots(judges) {
       xsEl.innerHTML = '';
+      for (const seat of Object.keys(slots)) delete slots[seat];
       for (const j of judges) {
         const el = document.createElement('div');
         el.className = 'slot';

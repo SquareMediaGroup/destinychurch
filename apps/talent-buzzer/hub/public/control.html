@@ -70,6 +70,9 @@
         <button class="big" id="lock">Lock buzzers</button>
       </div>
       <p class="muted" style="margin: 0">Reset clears every X and the golden buzzer for the next act. Lock ignores all presses (use between acts).</p>
+      <div class="row" style="margin-top: 10px"><span class="name">Number of judges</span>
+        <select id="judgeCount" aria-label="Number of judges"><option>2</option><option>3</option><option>4</option></select></div>
+      <p class="muted" id="judgeMsg" style="margin: 0"></p>
     </section>
 
     <section>
@@ -140,6 +143,7 @@
       (msg) => {
         if (msg.type === 'welcome') {
           judges = msg.judges;
+          $('judgeCount').value = String(msg.judgeCount ?? judges.length);
           golden = msg.golden;
           cues = msg.cues;
           sounds = msg.sounds || {};
@@ -151,6 +155,8 @@
         } else if (msg.type === 'sounds') {
           sounds = msg.sounds;
           buildSounds();
+        } else if (msg.type === 'judges-error') {
+          $('judgeMsg').textContent = msg.error;
         } else if (msg.type === 'cues-error') {
           cueMessage(msg.error, 'fail');
           $('anyMsg').textContent = msg.error;
@@ -166,6 +172,15 @@
     );
 
     $('reset').onclick = () => hub.send({ type: 'reset' });
+    $('judgeCount').onchange = () => {
+      const count = Number($('judgeCount').value);
+      if (count === judges.length) return;
+      if (!confirm(`Change to ${count} judges? This clears the buzzers on the screen.`)) {
+        $('judgeCount').value = String(judges.length);
+        return;
+      }
+      $('judgeMsg').textContent = hub.send({ type: 'set-judges', count }) ? '' : 'Not connected to the hub. Try again in a moment.';
+    };
     $('lock').onclick = () => hub.send({ type: 'lock', locked: !(last && last.show.locked) });
     document.querySelectorAll('[data-sound]').forEach((b) => (b.onclick = () => hub.send({ type: 'test-sound', kind: b.dataset.sound })));
 
@@ -240,7 +255,7 @@
       cueRowsById = {};
       const fields = [
         ...judges.map((j) => [`x-${j.seat}`, `${j.name} buzzes`, cues.x && cues.x[j.seat]]),
-        ['allX', 'All four have buzzed', cues.allX],
+        ['allX', 'All judges have buzzed', cues.allX],
         ['golden', golden.name, cues.golden],
         ['reset', 'Reset is pressed', cues.reset],
       ];
@@ -271,7 +286,7 @@
     $('anyRow').append(anyRow);
 
     // ---------- sounds ----------
-    const SOUND_LABELS = [['x', 'Red X'], ['all-x', 'All four out'], ['golden', 'Golden buzzer']];
+    const SOUND_LABELS = [['x', 'Red X'], ['all-x', 'All judges out'], ['golden', 'Golden buzzer']];
 
     function soundMessage(text, cls) {
       $('soundMsg').textContent = text;

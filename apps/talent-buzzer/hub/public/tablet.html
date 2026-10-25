@@ -99,7 +99,7 @@
         (msg) => {
           if (msg.type === 'welcome') {
             const judge = msg.judges.find((j) => j.seat === seat);
-            nameEl.textContent = isGold ? '' : judge ? judge.name : `Unknown seat "${seat}"`;
+            nameEl.textContent = isGold ? '' : judge ? judge.name : `Not in use (${msg.judgeCount ?? msg.judges.length} judges tonight)`;
           } else if (msg.type === 'state') {
             show = msg.show;
             render();
@@ -144,7 +144,8 @@
       h.style.fontSize = '5vmin';
       pick.append(h);
       connectHub({ type: 'hello', role: 'picker' }, (msg) => {
-        if (msg.type !== 'welcome' || pick.querySelector('a')) return;
+        if (msg.type !== 'welcome') return;
+        pick.querySelectorAll('a').forEach((a) => a.remove());
         msg.judges.forEach((j) => make(j.seat, j.name));
         make('gold', msg.golden.name);
       }, () => {});

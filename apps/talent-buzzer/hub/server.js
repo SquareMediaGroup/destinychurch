@@ -14,6 +14,7 @@ const { ShowState } = require('../lib/state');
 const titanApi = require('../lib/titan');
 const { normaliseCue, applyCueEdit, offStep, planCue } = require('../lib/cues');
 const { SOUND_FILES, MAX_SOUND_BYTES, checkSound } = require('../lib/sounds');
+const { parseJudgeCount, normaliseJudges, activeJudges } = require('../lib/judges');
 const discovery = require('../lib/discovery');
 
 const APP_DIR = path.join(__dirname, '..');
@@ -50,10 +51,17 @@ function saveConfig() {
   fs.renameSync(tmp, target);
   return target;
 }
-const seats = config.judges.map((j) => String(j.seat));
+try {
+  Object.assign(config, normaliseJudges(config.judges, config.judgeCount));
+} catch (err) {
+  log('🔥', `config.json judgeCount is not valid: ${err.message}`);
+  process.exit(1);
+}
+const allSeats = config.judges.map((j) => j.seat);
+let seats = activeJudges(config).map((j) => j.seat);
 // Old configs hold bare playback numbers; turn them into full cues once here.
 try {
-  config.cues = applyCueEdit({ ...config.cues }, { ...config.cues, x: { ...(config.cues.x ?? {}) } }, seats);
+  config.cues = applyCueEdit({ ...config.cues }, { ...config.cues, x: { ...(config.cues.x ?? {}) } }, allSeats);
 } catch (err) {
   log('🔥', `config.json cues are not valid: ${err.message}`);
   process.exit(1);
@@ -213,7 +221,8 @@ function pushState() {
 function welcome() {
   return {
     type: 'welcome',
-    judges: config.judges.map((j) => ({ seat: String(j.seat), name: j.name })),
+    judges: activeJudges(config).map((j) => ({ seat: j.seat, name: j.name })),
+    judgeCount: config.judgeCount,
     golden: { name: config.golden?.name ?? 'Golden Buzzer' },
     cues: config.cues,
     sounds: customSounds(),
@@ -314,7 +323,7 @@ function handleMessage(client, msg) {
       stopPendingSteps();
       if (config.cues.releaseOnReset) {
         const done = new Set();
-        for (const cue of [...Object.values(config.cues.x ?? {}), config.cues.golden, config.cues.allX]) {
+        for (const cue of [...seats.map((s) => config.cues.x?.[s]), config.cues.golden, config.cues.allX]) {
           if (!cue || done.has(`${cue.userNumber}/${cue.action}`)) continue;
           done.add(`${cue.userNumber}/${cue.action}`);
           const off = offStep(cue.action);
@@ -355,7 +364,7 @@ function handleMessage(client, msg) {
       if (client.role !== 'control') return;
       let next;
       try {
-        next = applyCueEdit(config.cues, msg.cues ?? {}, seats);
+        next = applyCueEdit(config.cues, msg.cues ?? {}, allSeats);
       } catch (err) {
         send(client.ws, { type: 'cues-error', error: err.message });
         return;
@@ -369,6 +378,31 @@ function handleMessage(client, msg) {
       }
       log('🎛️ ', `Lighting cues changed${savedTo ? ` (saved to ${path.basename(savedTo)})` : ' (NOT saved, lost on restart)'}: ${JSON.stringify(next)}`);
       broadcast({ type: 'cues', cues: next, saved: Boolean(savedTo) }, ['control']);
+      break;
+    }
+    case 'set-judges': {
+      if (client.role !== 'control') return;
+      let count;
+      try {
+        count = parseJudgeCount(msg.count);
+      } catch (err) {
+        send(client.ws, { type: 'judges-error', error: err.message });
+        return;
+      }
+      config.judgeCount = count;
+      seats = activeJudges(config).map((j) => j.seat);
+      state.setSeats(seats);
+      stopPendingSteps();
+      let savedTo = null;
+      try {
+        savedTo = saveConfig();
+      } catch (err) {
+        log('⚠️ ', `Judges changed but could not be saved: ${err.message}`);
+      }
+      log('👥', `Number of judges set to ${count}${savedTo ? '' : ' (NOT saved, lost on restart)'}; buzzers cleared`);
+      broadcast(welcome(), ['display', 'control', 'tablet', 'unknown']);
+      broadcast({ type: 'event', kind: 'reset' }, ['display']);
+      pushState();
       break;
     }
     case 'test-sound': {
@@ -524,7 +558,7 @@ server.listen(config.hubPort, () => {
       links: [
         { name: 'Control', url: `${base}/control${k ? `?${k}` : ''}` },
         { name: 'Display', url: `${base}/display${k ? `?${k}` : ''}` },
-        ...config.judges.map((j) => ({ name: j.name, url: `${base}/tablet?${q(`seat=${j.seat}`)}` })),
+        ...activeJudges(config).map((j) => ({ name: j.name, url: `${base}/tablet?${q(`seat=${j.seat}`)}` })),
         { name: config.golden?.name ?? 'Golden Buzzer', url: `${base}/tablet?${q('seat=gold')}` },
       ],
     });

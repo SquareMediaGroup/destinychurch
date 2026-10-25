@@ -9,7 +9,9 @@ Judges press a buzzer on a tablet, and three things happen at once:
 There is also one **golden buzzer**. When it's pressed, the whole screen turns gold, gold confetti
 falls, a fanfare plays, and the lights do something special.
 
-If **all four judges** buzz, the screen flashes red and an alarm sounds.
+If **every judge** buzzes, the screen flashes red and an alarm sounds.
+
+There can be **2, 3 or 4 judges**. Pick the number on the Control page (see [Fewer judges](#fewer-judges)).
 
 ![Two judges have buzzed](docs/images/display-xs.jpg)
 
@@ -142,7 +144,7 @@ On the LED screen computer:
    until you click.
 4. Press **F11** on the keyboard so it fills the whole screen.
 
-**You should see** four faint X outlines with the judges' names underneath.
+**You should see** a faint X outline for each judge (four unless you chose fewer), with their names underneath.
 The page fits itself to the screen: on a short, wide LED wall the X's get smaller so they and the
 names always fit, and on a tall one they stay centred.
 
@@ -225,7 +227,7 @@ The lighting person needs to make the "looks" for each buzzer. Show them this pa
 | Judge 2 buzzes | 102 |
 | Judge 3 buzzes | 103 |
 | Judge 4 buzzes | 104 |
-| All four have buzzed (e.g. red strobe), optional | 120 |
+| All judges have buzzed (e.g. red strobe), optional | 120 |
 | Golden buzzer | 110 |
 
 If they use **different numbers**, change them on the **Control page** (the **Control** link on the setup page):
@@ -280,7 +282,7 @@ All done? **You're ready for the show!**
 
 ## Change the sound effects
 
-You can swap any of the three sounds for your own: the **Red X** buzzer, the **All four out** alarm and
+You can swap any of the three sounds for your own: the **Red X** buzzer, the **All judges out** alarm and
 the **Golden buzzer** fanfare.
 
 1. Get the sound file onto the computer you have the Control page open on. MP3, WAV or M4A all work
@@ -291,6 +293,17 @@ the **Golden buzzer** fanfare.
 
 The screen uses the new sound straight away, with no refresh needed. It is kept when the app restarts and when you
 download a new version. **Built-in** puts the original sound back.
+
+## Fewer judges
+
+There can be 2, 3 or 4 judges. On the Control page, in the **Show** box, pick the number next to
+**Number of judges**.
+
+- The screen shows that many X's, spread across the width.
+- The red alarm goes off when **all of those** judges have buzzed.
+- Judges are used in order: with 3 judges, the Judge 4 tablet says **Not in use** and does nothing.
+- Changing the number clears the buzzers, so do it before the show or between acts.
+- The choice is saved and stays after a restart. Each judge's lighting cue is kept for when you add them back.
 
 ## During the show
 
@@ -305,7 +318,7 @@ What the audience sees:
 | What happens | On the screen |
 | --- | --- |
 | A judge buzzes | Their X pops out of the screen with a buzz. It stays until Reset. Pressing again does nothing. |
-| All four judges buzz | The screen flashes red with an alarm, then glows red until Reset. |
+| Every judge buzzes | The screen flashes red with an alarm, then glows red until Reset. |
 | Golden buzzer | Gold screen, falling confetti, fanfare. Works once until Reset. |
 
 ![All four judges buzzed](docs/images/display-all-out.jpg)
@@ -383,7 +396,7 @@ whenever this folder changes on `main` (or when it's run by hand from the Action
 ### Show rules
 
 - Each judge's X latches until Reset; re-presses are ignored, and presses within `debounceMs` are ignored too.
-- When all four judges have buzzed, an `all-x` event goes out and the optional `cues.allX` playback fires.
+- When every judge in use has buzzed, an `all-x` event goes out and the optional `cues.allX` playback fires.
 - Golden fires once until Reset.
 - While locked, every press is ignored.
 
@@ -394,11 +407,12 @@ whenever this folder changes on `main` (or when it's run by hand from the Action
 | `hubPort` | Port the hub listens on (default 8080) |
 | `key` | Optional access key. If set, every link needs `?key=...` (the setup page shows the right links), and the Avolites setup page needs the same key. Set this if the audience can join the tablets' Wi-Fi. |
 | `debounceMs` | Ignore a second press on the same buzzer within this many ms |
-| `judges` | Seats and names shown on the tablets, control page and display |
+| `judges` | Seats and names shown on the tablets, control page and display. Always filled up to four (missing ones become "Judge N"). |
+| `judgeCount` | How many judges are in use, 2 to 4, from the top of `judges`. Set from the Control page (`set-judges`, validated by `lib/judges.js`). Defaults to the length of `judges`. |
 | `golden.name` | Name for the golden tablet |
 | `cues.*` | Set from the Control page's **Lighting cues** box (`set-cues` over the WebSocket, validated by `lib/cues.js`), which writes them back to `config.json` (creating it from the example on first save). |
 | `cues.x` | Cue per seat: `{ userNumber, action: fire\|flash\|swop\|level, level: 0-100, times: 1-20, seconds: 1-30 }`. A bare number (older configs) means a plain Go once. |
-| `cues.allX` | Playback fired when all four judges have buzzed, or `null` |
+| `cues.allX` | Playback fired when every judge in use has buzzed, or `null` |
 | `cues.golden` | Golden buzzer playback |
 | `cues.reset` | Playback fired on Reset, or `null` |
 | `cues.releaseOnReset` | Kill X / all-X / golden playbacks on Reset (set `false` if the looks time out by themselves) |

@@ -26,8 +26,26 @@ function normaliseJudges(judges = [], judgeCount) {
   return { judges: list, judgeCount: parseJudgeCount(count) };
 }
 
+const MAX_NAME = 40;
+
+function cleanName(value, label) {
+  const name = String(value ?? '').replace(/\s+/g, ' ').trim();
+  if (!name) throw new Error(`${label}: type a name`);
+  if (name.length > MAX_NAME) throw new Error(`${label}: keep the name to ${MAX_NAME} letters or fewer`);
+  return name;
+}
+
+// Applies names typed on the control page: { judges: { seat: name }, golden }.
+// Returns { judges, golden } as new objects; throws naming the field if any is
+// empty or too long, leaving nothing changed. Unknown seats are ignored.
+function applyNameEdit(judges, golden, edit) {
+  const next = judges.map((j) => (edit.judges && j.seat in edit.judges ? { ...j, name: cleanName(edit.judges[j.seat], `Judge ${j.seat}`) } : j));
+  const nextGolden = 'golden' in edit ? { ...golden, name: cleanName(edit.golden, 'Golden buzzer') } : golden;
+  return { judges: next, golden: nextGolden };
+}
+
 function activeJudges(config) {
   return config.judges.slice(0, config.judgeCount);
 }
 
-module.exports = { MIN_JUDGES, MAX_JUDGES, parseJudgeCount, normaliseJudges, activeJudges };
+module.exports = { MIN_JUDGES, MAX_JUDGES, MAX_NAME, parseJudgeCount, normaliseJudges, applyNameEdit, activeJudges };

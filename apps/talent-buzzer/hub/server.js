@@ -14,7 +14,7 @@ const { ShowState } = require('../lib/state');
 const titanApi = require('../lib/titan');
 const { normaliseCue, applyCueEdit, offStep, planCue } = require('../lib/cues');
 const { SOUND_FILES, MAX_SOUND_BYTES, checkSound } = require('../lib/sounds');
-const { parseJudgeCount, normaliseJudges, activeJudges } = require('../lib/judges');
+const { parseJudgeCount, normaliseJudges, applyNameEdit, activeJudges } = require('../lib/judges');
 const discovery = require('../lib/discovery');
 
 const APP_DIR = path.join(__dirname, '..');
@@ -402,6 +402,29 @@ function handleMessage(client, msg) {
       log('👥', `Number of judges set to ${count}${savedTo ? '' : ' (NOT saved, lost on restart)'}; buzzers cleared`);
       broadcast(welcome(), ['display', 'control', 'tablet', 'unknown']);
       broadcast({ type: 'event', kind: 'reset' }, ['display']);
+      pushState();
+      break;
+    }
+    case 'set-names': {
+      if (client.role !== 'control') return;
+      let next;
+      try {
+        next = applyNameEdit(config.judges, config.golden ?? { name: 'Golden Buzzer' }, msg.names ?? {});
+      } catch (err) {
+        send(client.ws, { type: 'judges-error', error: err.message });
+        return;
+      }
+      config.judges = next.judges;
+      config.golden = next.golden;
+      let savedTo = null;
+      try {
+        savedTo = saveConfig();
+      } catch (err) {
+        log('⚠️ ', `Names changed but could not be saved: ${err.message}`);
+      }
+      log('🏷️ ', `Names changed${savedTo ? '' : ' (NOT saved, lost on restart)'}: ${activeJudges(config).map((j) => j.name).join(', ')}, ${config.golden.name}`);
+      broadcast(welcome(), ['display', 'control', 'tablet', 'unknown']);
+      send(client.ws, { type: 'names-saved', saved: Boolean(savedTo) });
       pushState();
       break;
     }

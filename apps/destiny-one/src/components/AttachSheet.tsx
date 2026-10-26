@@ -11,13 +11,14 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   onPhotos: () => void;
+  onVideo: () => void;
   onCamera: () => void;
   onDocument: () => void;
   onPoll: () => void;
   onEvent: () => void;
 }
 
-export function AttachSheet({ visible, onClose, onPhotos, onCamera, onDocument, onPoll, onEvent }: Props) {
+export function AttachSheet({ visible, onClose, onPhotos, onVideo, onCamera, onDocument, onPoll, onEvent }: Props) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   // The native "slide" animation would drag the scrim down with the sheet, so
@@ -48,6 +49,7 @@ export function AttachSheet({ visible, onClose, onPhotos, onCamera, onDocument, 
         <View style={[{ borderTopLeftRadius: 28, borderTopRightRadius: 28, backgroundColor: t.sheet, paddingTop: 22, paddingBottom: insets.bottom + 22, paddingHorizontal: 16 }, t.shadow]}>
           <View style={{ flexDirection: "row", flexWrap: "wrap", rowGap: 18 }}>
             <AttachOption t={t} icon="photo" label="Photos" onPress={onPhotos} />
+            <AttachOption t={t} icon="play" label="Video" onPress={onVideo} />
             <AttachOption t={t} icon="camera" label="Camera" onPress={onCamera} />
             <AttachOption t={t} icon="doc" label="Document" onPress={onDocument} />
             <AttachOption t={t} icon="poll" label="Poll" onPress={onPoll} />

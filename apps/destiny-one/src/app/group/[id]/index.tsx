@@ -316,6 +316,12 @@ function GroupChatScreen() {
           router.push({ pathname: "/viewer", params: { groupId: id, messageId: String(m.id) } });
           return;
         }
+        // Videos open in their own player, where Keep saves them before they expire.
+        if (m.attachment.mimeType.startsWith("video/")) {
+          if (m.attachment.expired) setToast("That video has expired.");
+          else router.push({ pathname: "/video", params: { groupId: id, messageId: String(m.id) } });
+          return;
+        }
         // Files (PDFs): the cached link may have expired; attachmentUrl fetches a fresh one if so.
         void convo.attachmentUrl(m).then((fresh) => {
           if (fresh) void WebBrowser.openBrowserAsync(fresh);

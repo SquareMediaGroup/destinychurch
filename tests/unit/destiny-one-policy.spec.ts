@@ -325,3 +325,24 @@ test.describe("canEditMessage", () => {
     expect(canEditMessage({ ...base, id: -3 }, now)).toBe(false);
   });
 });
+
+test.describe("videos", () => {
+  test("are a recognised upload type, and push as Video", async () => {
+    const { UPLOAD_MIME_TYPES, isVideoMime, pushPreviewText } = await import("../../packages/shared/src/destinyOne/policy");
+    expect(UPLOAD_MIME_TYPES).toContain("video/mp4");
+    expect(isVideoMime("video/quicktime")).toBe(true);
+    expect(isVideoMime("image/png")).toBe(false);
+    expect(pushPreviewText({ senderName: "Leah", body: null, attachmentMime: "video/mp4" })).toBe("Leah: Video");
+  });
+
+  test("the upload rules: 150 MB and 3 minutes for video, 20 MB for the rest", async () => {
+    const { uploadSchema } = await import("../../lib/destinyOne/schemas");
+    const MB = 1024 * 1024;
+    expect(uploadSchema.safeParse({ mimeType: "video/mp4", sizeBytes: 100 * MB, durationMs: 90_000 }).success).toBe(true);
+    expect(uploadSchema.safeParse({ mimeType: "video/mp4", sizeBytes: 151 * MB, durationMs: 90_000 }).success).toBe(false);
+    expect(uploadSchema.safeParse({ mimeType: "video/mp4", sizeBytes: 10 * MB, durationMs: 181_000 }).success).toBe(false);
+    expect(uploadSchema.safeParse({ mimeType: "video/mp4", sizeBytes: 10 * MB }).success).toBe(false);
+    expect(uploadSchema.safeParse({ mimeType: "image/jpeg", sizeBytes: 21 * MB }).success).toBe(false);
+    expect(uploadSchema.safeParse({ mimeType: "image/jpeg", sizeBytes: 5 * MB }).success).toBe(true);
+  });
+});

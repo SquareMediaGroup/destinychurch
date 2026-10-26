@@ -29,6 +29,10 @@
     {
       "path": "/api/cron/destiny-one-purge",
       "schedule": "15 4 * * *"
+    },
+    {
+      "path": "/api/cron/destiny-one-video-expiry",
+      "schedule": "45 4 * * *"
     }
   ]
 }

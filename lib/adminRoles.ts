@@ -114,6 +114,9 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
   // Event song requests (/song-requests).
   { pattern: /^\/admin\/song-requests(\/|$)/, roles: ["event_admin"] },
   { pattern: /^\/api\/admin\/song-requests(\/|$)/, roles: ["event_admin"] },
+  // Talent show audience voting (/talent-show).
+  { pattern: /^\/admin\/talent-show(\/|$)/, roles: ["event_admin"] },
+  { pattern: /^\/api\/admin\/talent-show(\/|$)/, roles: ["event_admin"] },
 
   // Store
   { pattern: /^\/admin\/store(\/|$)/, roles: ["store_admin"] },

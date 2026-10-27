@@ -194,6 +194,14 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         description: "Let guests request songs at an event, straight into the Spotify queue.",
         keywords: ["spotify", "music", "dj", "party", "playlist", "new year"],
       },
+      {
+        href: "/admin/talent-show",
+        label: "Talent Show Voting",
+        icon: "how_to_vote",
+        role: "event_admin",
+        description: "Add the acts, open audience voting by QR code and show the results on screen.",
+        keywords: ["vote", "votes", "acts", "audience", "qr", "results", "screen", "competition"],
+      },
     ],
   },
   {

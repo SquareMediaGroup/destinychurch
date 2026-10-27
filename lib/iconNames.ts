@@ -173,6 +173,7 @@ export const ICON_NAMES = [
   "hourglass_top",
   "house",
   "how_to_reg",
+  "how_to_vote",
   "html",
   "http",
   "https",

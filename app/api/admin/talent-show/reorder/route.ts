@@ -2,6 +2,7 @@
 
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { recordAudit } from "@/lib/audit.server";
 import { UUID_RE } from "@/lib/talentShow.server";
 
 export async function POST(request: Request) {
@@ -16,5 +17,13 @@ export async function POST(request: Request) {
   );
   const failed = results.find((r) => r.error);
   if (failed?.error) return NextResponse.json({ error: failed.error.message }, { status: 500 });
+  await recordAudit({
+    action: "update",
+    section: "announcements",
+    entity: "talent show act",
+    entityLabel: "Running order",
+    summary: "Changed the talent show running order",
+    after: { ids },
+  });
   return NextResponse.json({ ok: true });
 }

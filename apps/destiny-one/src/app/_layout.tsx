@@ -232,6 +232,7 @@ function App() {
         <Stack.Screen name="search" options={{ animation: "fade" }} />
         <Stack.Screen name="camera" options={{ presentation: "fullScreenModal", animation: "fade", gestureEnabled: false, contentStyle: { backgroundColor: "#000" } }} />
         <Stack.Screen name="viewer" options={{ presentation: "transparentModal", animation: "fade", contentStyle: { backgroundColor: "transparent" } }} />
+        <Stack.Screen name="video" options={{ presentation: "fullScreenModal", animation: "fade", contentStyle: { backgroundColor: "#000" } }} />
         <Stack.Screen
           name="add-account"
           options={sheetOptions(t.grouped)}

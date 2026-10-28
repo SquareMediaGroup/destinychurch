@@ -8,7 +8,7 @@ import { forwardRef, useRef, useState } from "react";
 import { Animated, PanResponder, Pressable, Text, TextInput, View, type TextInputInstance } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
-import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_MESSAGE_LENGTH, mentionQuery, mentionSuggestions, type Mentionable } from "@destiny/shared";
+import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_MESSAGE_LENGTH, MAX_VIDEO_BYTES, MAX_VIDEO_MS, STANDARD_VIDEO_BYTES, VIDEO_MIME_TYPES, mentionQuery, mentionSuggestions, type Mentionable } from "@destiny/shared";
 import { AttachSheet } from "@/components/AttachSheet";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
@@ -178,6 +178,40 @@ export const Composer = forwardRef<TextInputInstance, Props>(function Composer({
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 1 });
     if (res.canceled || !res.assets[0]) return;
     await imagePickerAsset(res.assets[0], "Photo.jpg");
+  }
+
+  /**
+   * A video from the library. On iOS the system shrinks it to 1080p (720p on the
+   * Standard upload quality) while it is picked, so a 4K clip arrives small
+   * enough to send. Android has no such option, so a video that is still over
+   * the limit is refused with a message instead.
+   */
+  async function pickVideo() {
+    const quality = dataSettings.get().uploadQuality;
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["videos"],
+      videoExportPreset: quality === "hd" ? ImagePicker.VideoExportPreset.H264_1920x1080 : ImagePicker.VideoExportPreset.H264_1280x720,
+    });
+    if (res.canceled || !res.assets[0]) return;
+    const a = res.assets[0];
+    const limit = quality === "hd" ? MAX_VIDEO_BYTES : STANDARD_VIDEO_BYTES;
+    const mb = (n: number) => `${Math.round(n / (1024 * 1024))} MB`;
+    if (!a.duration) {
+      onError("Couldn't read that video. Try another one.");
+      return;
+    }
+    if (a.duration > MAX_VIDEO_MS) {
+      onError("Videos can be up to 3 minutes. Trim it in Photos first.");
+      return;
+    }
+    if (a.fileSize != null && a.fileSize > limit) {
+      onError(
+        `That video is ${mb(a.fileSize)} after shrinking. Videos can be up to ${mb(limit)}${quality === "hd" ? "" : " on Standard quality (choose HD in Storage and data for up to 150 MB)"}. Trim it in Photos first.`,
+      );
+      return;
+    }
+    const mimeType = (VIDEO_MIME_TYPES as readonly string[]).includes(a.mimeType ?? "") ? a.mimeType! : "video/mp4";
+    onAttach({ uri: a.uri, name: a.fileName ?? "Video.mp4", mimeType, size: a.fileSize ?? null, durationMs: Math.round(a.duration) });
   }
 
   async function takePhoto() {
@@ -387,6 +421,12 @@ export const Composer = forwardRef<TextInputInstance, Props>(function Composer({
           // Same as Document below: iOS won't present the photo picker while the sheet's Modal is still dismissing.
           setTimeout(() => {
             void pickPhoto().catch(() => onError("Couldn't open your photos. Try again."));
+          }, 350);
+        }}
+        onVideo={() => {
+          setSheetOpen(false);
+          setTimeout(() => {
+            void pickVideo().catch(() => onError("Couldn't open your videos. Try again."));
           }, 350);
         }}
         onCamera={() => {

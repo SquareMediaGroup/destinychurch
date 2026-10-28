@@ -53,9 +53,24 @@ export function formatBytes(bytes: number): string {
 
 /** "PDF · 1.2 MB" */
 export function fileMeta(mimeType: string, sizeBytes: number | null): string {
-  const kind = mimeType === "application/pdf" ? "PDF" : mimeType.startsWith("image/") ? "Image" : mimeType.startsWith("audio/") ? "Voice message" : "File";
+  const kind = mimeType === "application/pdf" ? "PDF" : mimeType.startsWith("image/") ? "Image" : mimeType.startsWith("audio/") ? "Voice message" : mimeType.startsWith("video/") ? "Video" : "File";
   if (sizeBytes == null) return kind;
   return `${kind} · ${formatBytes(sizeBytes)}`;
+}
+
+/** A video's length: "0:42", "2:05". */
+export function videoLength(ms: number): string {
+  const total = Math.max(0, Math.round(ms / 1000));
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+}
+
+/** How long a video has left: "Expires today", "Expires tomorrow", "Expires in 12 days". Null when it has no date. */
+export function expiresIn(expiresAt: string | null | undefined, now = Date.now()): string | null {
+  if (!expiresAt) return null;
+  const days = Math.ceil((new Date(expiresAt).getTime() - now) / 86_400_000);
+  if (days <= 0) return "Expires today";
+  if (days === 1) return "Expires tomorrow";
+  return `Expires in ${days} days`;
 }
 
 /** Event cards: "12 September, 18:30" */
@@ -81,5 +96,6 @@ export function messageSummary(m: Pick<D1Message, "body" | "content" | "attachme
   if (mime.startsWith("image/")) return "Photo";
   if (mime === "application/pdf") return "PDF";
   if (mime.startsWith("audio/")) return "Voice message";
+  if (mime.startsWith("video/")) return "Video";
   return "Attachment";
 }

@@ -24,6 +24,14 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: "0.13",
+    features: [
+      { icon: "play", title: "Send videos", body: "Tap the + button, then Video. Videos are shrunk on your phone before they send, so they upload quickly and use less data. Up to 3 minutes." },
+      { icon: "clock", title: "Videos last 28 days", body: "To keep storage down, a video is deleted 28 days after it is sent. The message stays, and each video shows how long it has left." },
+      { icon: "download", title: "Keep what matters", body: "Open a video and tap Keep to save a copy to your phone before it expires." },
+    ],
+  },
+  {
     version: "0.12",
     features: [
       { icon: "archive", title: "Archive chats", body: "Swipe a chat or press and hold it, then Archive. It moves to Archived at the top of Chats and goes quiet, though @mentions still reach you. Only you see the change." },

@@ -192,8 +192,12 @@ export interface D1Attachment {
   id: string;
   mimeType: string;
   sizeBytes: number | null;
-  /** Voice notes: the length in milliseconds. */
+  /** Voice notes and videos: the length in milliseconds. */
   durationMs?: number | null;
+  /** Videos: when the file is deleted from storage (28 days after it was sent). */
+  expiresAt?: string | null;
+  /** Videos: the file has been deleted; the message stays as a placeholder. */
+  expired?: boolean;
   /** Short-lived signed URL. Re-fetch the page to get a fresh one. */
   url: string | null;
 }

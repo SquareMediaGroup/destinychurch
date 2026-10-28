@@ -4,6 +4,7 @@ import { requireMember } from "@/lib/destinyOne/auth.server";
 import { MEDIA_BUCKET, blockedIds, requireGroupMembership } from "@/lib/destinyOne/chat.server";
 import { OneError, UUID_RE, limit, oneJson, oneRoute, readBody, requireUuid, type IdParams } from "@/lib/destinyOne/http";
 import { uploadSchema } from "@/lib/destinyOne/schemas";
+import { isVideoMime } from "@destiny/shared";
 
 // GET  /api/app/v1/one/groups/[id]/attachments?ids=<uuid>,<uuid>…
 //
@@ -16,9 +17,15 @@ import { uploadSchema } from "@/lib/destinyOne/schemas";
 //
 // Hands out a one-time signed upload URL into the private d1-chat-media bucket
 // at <group>/<attachment id>. The app uploads the file there, then sends a
-// message with `attachmentId`. Images and PDFs only, 20 MB max — the bucket
-// enforces the same limits, so a client that lies here is refused on upload.
-// The app should strip photo location metadata (EXIF GPS) before uploading.
+// message with `attachmentId`. Images and PDFs are 20 MB max, voice notes 5
+// minutes, videos 150 MB and 3 minutes. The bucket allows up to 150 MB (for
+// videos), so the 20 MB limit on everything else is enforced here, on the size
+// the app declares. The app should strip photo location metadata (EXIF GPS)
+// before uploading.
+//
+// Videos are deleted from storage 28 days after they are sent (d1_attachments
+// sets expires_at; /api/cron/destiny-one-video-expiry does the deleting).
+// D1_VIDEO_DISABLED=true turns video uploads off without a release.
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +44,7 @@ export const GET = oneRoute<IdParams>(async (request, { params }) => {
   let query = supabase
     .from("d1_messages")
     .select("attachment:d1_attachments!d1_messages_attachment_id_fkey!inner(id, storage_path)")
+    .is("attachment.expired_at", null)
     .eq("group_id", id)
     .gte("created_at", membership.joinedAt)
     .is("deleted_at", null)
@@ -64,6 +72,9 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
     throw new OneError("rule_violation", "This group is paused and read-only for now.");
   }
   const { mimeType, sizeBytes, durationMs } = await readBody(request, uploadSchema);
+  if (isVideoMime(mimeType) && process.env.D1_VIDEO_DISABLED === "true") {
+    throw new OneError("rule_violation", "Videos aren't available right now.");
+  }
 
   const attachmentId = randomUUID();
   const path = `${id}/${attachmentId}`;

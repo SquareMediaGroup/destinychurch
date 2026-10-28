@@ -28,8 +28,25 @@ export const ATTACHMENT_MIME_TYPES = [
 export const VOICE_MIME_TYPE = "audio/mp4";
 /** Longest voice note, in milliseconds (d1_attachments enforces the same). */
 export const MAX_VOICE_MS = 5 * 60 * 1000;
+/**
+ * Videos: H.264 in an .mp4. The phone shrinks them to 1080p before upload (720p on the
+ * Standard upload quality), so the cap is on the file that is sent, not the original.
+ * iOS can label the same file video/quicktime, so that is let through too.
+ */
+export const VIDEO_MIME_TYPES = ["video/mp4", "video/quicktime", "video/x-m4v"] as const;
+export const MAX_VIDEO_BYTES = 150 * 1024 * 1024;
+/** The cap on the Standard (720p) upload quality; HD (1080p) gets the full MAX_VIDEO_BYTES. */
+export const STANDARD_VIDEO_BYTES = 100 * 1024 * 1024;
+/** Longest video, in milliseconds. */
+export const MAX_VIDEO_MS = 3 * 60 * 1000;
+/** Videos are deleted from storage this many days after they are sent (the message stays). */
+export const VIDEO_RETAIN_DAYS = 28;
 /** Everything that can be uploaded as an attachment. */
-export const UPLOAD_MIME_TYPES = [...ATTACHMENT_MIME_TYPES, VOICE_MIME_TYPE] as const;
+export const UPLOAD_MIME_TYPES = [...ATTACHMENT_MIME_TYPES, VOICE_MIME_TYPE, ...VIDEO_MIME_TYPES] as const;
+
+export function isVideoMime(mime: string): boolean {
+  return mime.startsWith("video/");
+}
 
 /**
  * The notices someone must accept before chat unlocks. Bump a version when the
@@ -350,7 +367,7 @@ export function pushPreviewText({ senderName, body, attachmentMime }: PushPrevie
   if (firstLine) {
     text = firstLine.length > PUSH_PREVIEW_CHARS ? `${firstLine.slice(0, PUSH_PREVIEW_CHARS - 1).trimEnd()}\u2026` : firstLine;
   } else if (attachmentMime) {
-    text = attachmentMime.startsWith("image/") ? "Photo" : attachmentMime.startsWith("audio/") ? "Voice message" : "File";
+    text = attachmentMime.startsWith("image/") ? "Photo" : attachmentMime.startsWith("audio/") ? "Voice message" : attachmentMime.startsWith("video/") ? "Video" : "File";
   } else {
     text = "New message";
   }

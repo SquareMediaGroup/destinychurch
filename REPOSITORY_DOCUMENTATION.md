@@ -2314,6 +2314,24 @@ it is under the + sheet. Under a second is
 dropped. In a bubble, nothing loads until Play, and only one voice note plays at a time. Voice notes can't
 be searched (there's no text).
 
+**Part 19 — `20261026_01_destiny_one_video.sql`: videos (v0.13).** `video/mp4`, `video/quicktime` and
+`video/x-m4v` join the `d1_attachments` mime check and the `d1-chat-media` bucket, which now allows 150 MB. Size
+and length limits are per type: videos up to 150 MB and 3 minutes, everything else as before (20 MB, voice
+5 minutes). The bucket can't hold a different limit per type, so the 20 MB cap on photos and PDFs is enforced by
+`POST groups/[id]/attachments` on the size the app declares (`uploadSchema`). A video is deleted from storage
+**28 days after it is sent**: a before-insert trigger sets `d1_attachments.expires_at`, `d1_expire_videos()`
+marks the ones past it `expired_at` and returns their paths, and `/api/cron/destiny-one-video-expiry` removes
+the objects. The message and attachment row stay, so the chat shows "Video expired". A video is skipped (kept)
+while a message carrying it is under a report that isn't closed, or `held` is set on the attachment. A
+forwarded video copies the original's `expires_at`, so forwarding can't extend it; an expired one can't be
+forwarded. `D1_VIDEO_DISABLED=true` makes the upload endpoint refuse videos without a release. In the app the
++ sheet's Video option uses the picker's `videoExportPreset` (iOS) to export 720p on Standard upload quality or
+1080p on HD, capped at 100 MB / 150 MB and 3 minutes (`Composer.tsx` `pickVideo`); Android can't transcode in
+the picker, so an oversized video is refused. Bubbles show the length and days left
+(`MessageBubble.tsx` `VideoAttachment`); `src/app/video.tsx` plays it (`expo-video`) with **Keep** (saves to
+Photos) and Share. ⚠️ Supabase's project-wide upload limit (Storage settings, 50 MB by default on Pro) must be
+raised to 150 MB or larger uploads are refused.
+
 **Part 18 — `20261009_02_destiny_one_destinyai.sql`: DestinyAI (v0.10).** The website's Smart Search,
 as a chat member. One `d1_members` row has `is_assistant` (fixed id `DESTINY_AI_ID` in `@destiny/shared`,
 no auth user, no ChurchSuite record; hidden from the directory and `d1_admin_members`). Two ways in:
@@ -4716,6 +4734,14 @@ and filters/reveals it entirely client-side, no further network calls.
 // objects. A message under an open report is kept. ⚠️ 365 is a placeholder pending the
 // safeguarding policy decision (scoping doc D6). A failed purge, or files it couldn't delete,
 // emails D1_OPS_ALERT_RECIPIENT (sendOpsAlert).
+```
+
+#### `GET /api/cron/destiny-one-video-expiry`
+```typescript
+// Daily at 04:45. Bearer CRON_SECRET. d1_expire_videos() marks videos past their 28 days expired and
+// returns their storage paths (skipping held videos and ones under an open report); the route then
+// deletes the objects. The message and attachment row stay. A failed run, or files it couldn't
+// delete, emails D1_OPS_ALERT_RECIPIENT (sendOpsAlert).
 ```
 
 #### Destiny One API (`/api/app/v1/one/*`)

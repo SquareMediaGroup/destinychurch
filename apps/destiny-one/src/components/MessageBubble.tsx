@@ -20,7 +20,7 @@ import { SermonPlayer, sermonWatchUrl, useSermonCardWidth } from "@/components/S
 import { SwipeToReply } from "@/components/Swipe";
 import { VoiceNote } from "@/components/VoiceNote";
 import { Avatar, MemberTag, withAlpha } from "@/components/ui";
-import { clock, dayLabel, eventWhen, fileMeta, formatBytes, messageSummary, plural, sameDay } from "@/lib/format";
+import { clock, dayLabel, eventWhen, expiresIn, fileMeta, formatBytes, messageSummary, plural, sameDay, videoLength } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
 import { noteLoaded, useAutoDownload } from "@/state/dataSettings";
 import type { Rect } from "@/lib/menuLayout";
@@ -425,6 +425,10 @@ function Attachment({ m, onOpen }: { m: LocalMessage; onOpen: (url: string) => v
     );
   }
 
+  if (mime.startsWith("video/")) {
+    return <VideoAttachment attachment={a ?? undefined} localMeta={local} sending={Boolean(m.status)} mine={m.mine} onOpen={() => onOpen(url ?? "")} />;
+  }
+
   if (mime.startsWith("image/") && url && a) {
     return <PhotoAttachment attachment={a} url={url} mine={m.mine} onOpen={onOpen} />;
   }
@@ -445,6 +449,58 @@ function Attachment({ m, onOpen }: { m: LocalMessage; onOpen: (url: string) => v
           {fileName}
         </Text>
         <Text style={{ fontSize: 12, color: k.soft }}>{m.status === "sending" ? "Uploading..." : fileMeta(mime, a?.sizeBytes ?? local?.sizeBytes ?? null)}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
+/**
+ * A video in a bubble: a dark card with a play button, the length and size, and
+ * how long it has left. Videos are deleted 28 days after they are sent; once
+ * the file is gone the message stays, showing "Video expired". Tapping opens
+ * the player (src/app/video.tsx), where Keep saves it to the phone.
+ */
+function VideoAttachment({
+  attachment,
+  localMeta,
+  sending,
+  mine,
+  onOpen,
+}: {
+  attachment?: NonNullable<LocalMessage["attachment"]>;
+  localMeta?: LocalMessage["localAttachment"];
+  sending: boolean;
+  mine: boolean;
+  onOpen: () => void;
+}) {
+  const t = useTheme();
+  const k = tones(t, mine);
+  const durationMs = attachment?.durationMs ?? localMeta?.durationMs ?? null;
+  const size = attachment?.sizeBytes ?? localMeta?.sizeBytes ?? null;
+  if (attachment?.expired) {
+    return (
+      <View accessible accessibilityLabel="Video expired" style={{ width: 220, height: 96, borderRadius: 14, backgroundColor: k.panel, alignItems: "center", justifyContent: "center", gap: 3, paddingHorizontal: 14 }}>
+        <Text style={{ fontSize: 15, fontWeight: "600", color: k.text }}>Video expired</Text>
+        <Text style={{ fontSize: 12, color: k.soft, textAlign: "center" }}>Videos are deleted 28 days after they are sent.</Text>
+      </View>
+    );
+  }
+  const left = expiresIn(attachment?.expiresAt);
+  const label = ["Video", durationMs != null ? videoLength(durationMs) : null, size != null ? formatBytes(size) : null].filter(Boolean).join(", ");
+  return (
+    <Pressable
+      disabled={sending || !attachment?.url}
+      onPress={onOpen}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}. Play`}
+      style={{ width: 220, height: 132, borderRadius: 14, backgroundColor: "#111114", alignItems: "center", justifyContent: "center", overflow: "hidden" }}
+    >
+      <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: "rgba(255,255,255,0.22)", alignItems: "center", justifyContent: "center" }}>
+        <Icon name="play" size={20} color="#FFFFFF" strokeWidth={1.9} />
+      </View>
+      <View style={{ position: "absolute", left: 10, right: 10, bottom: 8, flexDirection: "row", justifyContent: "space-between" }}>
+        <Text style={{ fontSize: 12, fontWeight: "600", color: "#FFFFFF" }}>{sending ? "Uploading..." : durationMs != null ? videoLength(durationMs) : "Video"}</Text>
+        <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.8)" }}>{left ?? (size != null ? formatBytes(size) : "")}</Text>
       </View>
     </Pressable>
   );

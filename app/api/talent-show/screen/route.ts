@@ -20,7 +20,14 @@ export async function GET(request: Request) {
     total,
     actCount: acts.length,
     results: settings.results_revealed
-      ? rankActs(acts).map((a) => ({ id: a.id, name: a.name, performers: a.performers, votes: a.votes }))
+      ? rankActs(acts).map((a) => ({
+          id: a.id,
+          name: a.name,
+          performers: a.performers,
+          votes: a.votes,
+          judgeXs: a.judge_xs,
+          score: a.score,
+        }))
       : [],
   });
 }

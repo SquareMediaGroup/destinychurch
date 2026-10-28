@@ -26,6 +26,13 @@
       box-shadow: 0 2.5vmin 0 #5a420a, 0 3vmin 6vmin rgba(0,0,0,0.8), inset 0 -2vmin 4vmin rgba(0,0,0,0.3);
       color: #3a2a00;
     }
+    /* Celebrate style: the judge's own colour, set from the hub (--c main, --cd dark). */
+    body.celebrate:not(.gold) #buzzer {
+      background: radial-gradient(circle at 35% 30%, #ffffff 0%, var(--c) 45%, var(--cd) 100%); color: #fff; text-shadow: 0 0.6vmin 1.5vmin rgba(0,0,0,0.45);
+      box-shadow: 0 2.5vmin 0 var(--cs), 0 3vmin 6vmin rgba(0,0,0,0.8), inset 0 -2vmin 4vmin rgba(0,0,0,0.3);
+    }
+    body.celebrate:not(.gold).buzzed #buzzer { animation-name: glow-own; }
+    @keyframes glow-own { from { box-shadow: 0 2.5vmin 0 var(--cs), 0 0 6vmin var(--c); } to { box-shadow: 0 2.5vmin 0 var(--cs), 0 0 18vmin var(--c); } }
     #buzzer:active, #buzzer.down { transform: translateY(2vmin); box-shadow: 0 0.5vmin 0 #4a0610, 0 1vmin 3vmin rgba(0,0,0,0.8); }
     body.buzzed #buzzer { filter: brightness(1.25) saturate(1.2); animation: glow 1.2s ease-in-out infinite alternate; }
     body.gold.buzzed #buzzer { animation-name: glow-gold; }
@@ -56,6 +63,9 @@
     const statusEl = document.getElementById('status');
     const nameEl = document.getElementById('name');
     let show = { xs: {}, golden: false, locked: false };
+    let celebrate = false;
+    // Gold, like the X's on the big screen: main, dark, shadow.
+    const PALETTE = [['#ffc21f', '#d18b00', '#5c3c00']];
     let online = false;
 
     if (isGold) {
@@ -69,7 +79,7 @@
       body.classList.toggle('locked', show.locked);
       body.classList.toggle('offline', !online);
       if (!online) return;
-      statusEl.textContent = show.locked ? 'Locked' : buzzed ? 'Buzzed - waiting for reset' : 'Ready';
+      statusEl.textContent = show.locked ? 'Locked' : buzzed ? (celebrate && !isGold ? 'Lit up - waiting for reset' : 'Buzzed - waiting for reset') : 'Ready';
     }
 
     // Wake lock needs HTTPS, so on a plain LAN address this usually isn't
@@ -98,8 +108,18 @@
         { type: 'hello', role: 'tablet', seat },
         (msg) => {
           if (msg.type === 'welcome') {
-            const judge = msg.judges.find((j) => j.seat === seat);
+            const index = msg.judges.findIndex((j) => j.seat === seat);
+            const judge = msg.judges[index];
+            celebrate = msg.style !== 'buzzer';
+            body.classList.toggle('celebrate', celebrate);
+            if (judge) {
+              const [c, cd, cs] = PALETTE[index % PALETTE.length];
+              body.style.setProperty('--c', c);
+              body.style.setProperty('--cd', cd);
+              body.style.setProperty('--cs', cs);
+            }
             nameEl.textContent = isGold ? '' : judge ? judge.name : `Not in use (${msg.judgeCount ?? msg.judges.length} judges tonight)`;
+            render();
           } else if (msg.type === 'state') {
             show = msg.show;
             render();

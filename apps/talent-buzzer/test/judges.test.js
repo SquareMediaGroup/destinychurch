@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseJudgeCount, normaliseJudges, applyNameEdit, activeJudges } = require('../lib/judges');
+const { parseJudgeCount, parseStyle, normaliseJudges, applyNameEdit, activeJudges } = require('../lib/judges');
 const { ShowState } = require('../lib/state');
 
 const four = [1, 2, 3, 4].map((n) => ({ seat: String(n), name: `J${n}` }));
@@ -53,4 +53,18 @@ test('applyNameEdit renames judges and the golden buzzer, tidying spaces', () =>
 test('applyNameEdit rejects empty and over-long names', () => {
   assert.throws(() => applyNameEdit(four, { name: 'G' }, { judges: { 2: '   ' } }), /Judge 2: type a name/);
   assert.throws(() => applyNameEdit(four, { name: 'G' }, { golden: 'x'.repeat(41) }), /Golden buzzer: keep the name/);
+});
+
+test('applyNameEdit sets and clears what each judge looks for', () => {
+  const { judges } = applyNameEdit(four, { name: 'G' }, { categories: { 1: ' Courage ', 2: '' } });
+  assert.equal(judges[0].category, 'Courage');
+  assert.equal(judges[1].category, '');
+  assert.equal(judges[2].category, undefined);
+  assert.throws(() => applyNameEdit(four, { name: 'G' }, { categories: { 3: 'x'.repeat(31) } }), /Judge 3 looks for: keep it/);
+});
+
+test('parseStyle accepts celebrate and buzzer only', () => {
+  assert.equal(parseStyle('celebrate'), 'celebrate');
+  assert.equal(parseStyle('buzzer'), 'buzzer');
+  assert.throws(() => parseStyle('party'), /must be celebrate or buzzer/);
 });

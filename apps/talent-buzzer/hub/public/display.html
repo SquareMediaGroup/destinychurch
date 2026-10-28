@@ -26,7 +26,7 @@
     /* The X: sharp polygon, extruded depth behind a gradient face, tilted
        towards the audience so it reads as popping out of the screen. */
     .slot .mark { opacity: 0; transform-style: preserve-3d; transform-origin: 50% 50%;
-      filter: drop-shadow(0 calc(1.6 * var(--u)) calc(1.4 * var(--u)) rgba(0,0,0,0.85)) drop-shadow(0 0 calc(2.5 * var(--u)) rgba(255,31,58,0.55)); }
+      filter: drop-shadow(0 calc(1.6 * var(--u)) calc(1.4 * var(--u)) rgba(0,0,0,0.85)) drop-shadow(0 0 calc(2.5 * var(--u)) var(--glow, rgba(255,31,58,0.55))); }
     .slot.on .mark { opacity: 1; transform: rotateX(10deg) rotateY(-12deg) translateZ(calc(2 * var(--u)));
       animation: pop3d 520ms cubic-bezier(.18,1.4,.4,1) both, float 3.2s ease-in-out 520ms infinite alternate; }
     .slot.on.static .mark { animation: float 3.2s ease-in-out infinite alternate; }
@@ -41,10 +41,12 @@
     .slot .label { position: absolute; left: calc(-2 * var(--u)); right: calc(-2 * var(--u)); top: 100%; margin-top: calc(1.6 * var(--u)); text-align: center;
       font-size: calc(2.2 * var(--u)); font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.45);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 250ms, text-shadow 250ms; }
-    .slot.on .label { color: #fff; text-shadow: 0 0 calc(1.2 * var(--u)) rgba(255,31,58,0.9); }
+    .slot.on .label { color: #fff; text-shadow: 0 0 calc(1.2 * var(--u)) var(--glow, rgba(255,31,58,0.9)); }
+    .slot .label span { display: block; overflow: hidden; text-overflow: ellipsis; }
+    body.celebrate #xs { padding-bottom: calc(8 * var(--u)); }
     body.no-labels .slot .label { display: none; }
 
-    body.flash::after { content: ""; position: absolute; inset: 0; background: rgba(255,31,58,0.35); animation: flash 350ms ease-out forwards; pointer-events: none; }
+    body.flash::after { content: ""; position: absolute; inset: 0; background: var(--flash, rgba(255,31,58,0.35)); animation: flash 350ms ease-out forwards; pointer-events: none; }
     @keyframes flash { to { opacity: 0; } }
 
     /* All judges buzzed: hard red strobe, then a slow pulsing red until reset. */
@@ -57,6 +59,19 @@
     body.all-out-strobe .slot.on .mark { animation: throb 433ms ease-in-out 6; }
     @keyframes throb { 0% { transform: rotateX(10deg) rotateY(-12deg) translateZ(calc(2 * var(--u))) scale(1); } 50% { transform: rotateX(10deg) rotateY(-12deg) translateZ(calc(6 * var(--u))) scale(1.12); } 100% { transform: rotateX(10deg) rotateY(-12deg) translateZ(calc(2 * var(--u))) scale(1); } }
     body.all-out .slot .label { color: #fff; }
+
+    /* Celebrate style: every X lit is a party, not an alarm. */
+    body.celebrate.all-out #alarm { background: radial-gradient(ellipse at center, rgba(255,200,61,0) 30%, rgba(255,79,163,0.35) 70%, rgba(143,107,255,0.55) 100%);
+      animation: alarm-pulse 1.6s ease-in-out infinite alternate; }
+    body.celebrate.all-out-strobe #alarm { background: radial-gradient(circle, #fff6d0 0%, #ffc21f 40%, #ff3d97 75%, #8a63ff 100%); animation: party 3.2s ease-out both; }
+    @keyframes party { 0% { opacity: 0; } 8% { opacity: 0.85; } 100% { opacity: 0; } }
+    #alllit { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; z-index: 2; }
+    #alllit h1 { margin: 0; font-size: calc(10 * var(--u)); font-weight: 900; letter-spacing: 0.02em; color: #fff; text-align: center;
+      text-shadow: 0 calc(0.4 * var(--u)) 0 #8a1a5a, 0 0 calc(3 * var(--u)) rgba(255,255,255,0.9), 0 0 calc(8 * var(--u)) rgba(255,79,163,0.9); }
+    body.celebrate.all-out-strobe #alllit { animation: banner 3.4s ease-in-out both; }
+    body.celebrate.all-out-strobe #alllit h1 { animation: pop 700ms cubic-bezier(.2,1.5,.4,1) both; }
+    @keyframes banner { 0% { opacity: 0; } 10%, 75% { opacity: 1; } 100% { opacity: 0; } }
+    body.celebrate.all-out-strobe #xs { opacity: 0.25; transition: opacity 300ms; }
 
     #golden { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none;
       background: radial-gradient(circle at 50% 50%, #fff6d0 0%, #f5c542 35%, #b8860b 75%, #4a3300 100%); transition: opacity 250ms; }
@@ -91,6 +106,7 @@
   </svg>
   <div id="alarm"></div>
   <div id="xs"></div>
+  <div id="alllit"><h1>X-TRAORDINARY!</h1></div>
   <div id="golden"><h1>GOLDEN<br>BUZZER</h1></div>
   <canvas id="confetti"></canvas>
   <div id="arm">
@@ -130,17 +146,45 @@
         <use href="#xshape" fill="none" stroke="rgba(255,210,215,0.55)" stroke-width="0.8" stroke-linejoin="miter"/>
       </svg></div>`;
 
+    // Celebrate style: every X lights gold (light, main, dark, back of the block).
+    // The judges say out loud what they loved, so the screen shows names only.
+    const PALETTE = [['#ffe28a', '#ffc21f', '#d18b00', '#4a3000']];
+    const mix = (a, b, t) => '#' + [1, 3, 5].map((i) => Math.round(parseInt(a.substr(i, 2), 16) * (1 - t) + parseInt(b.substr(i, 2), 16) * t).toString(16).padStart(2, '0')).join('');
+    function colourX(i) {
+      const [light, main, dark, back] = PALETTE[i % PALETTE.length];
+      const block = Array.from({ length: DEPTH }, (_, n) => {
+        const k = DEPTH - n;
+        return `<use href="#xshape" transform="translate(${(k * 0.55).toFixed(2)} ${(k * 0.8).toFixed(2)})" fill="${mix(back, dark, n / DEPTH)}"/>`;
+      }).join('');
+      return `
+      <div class="layer ghost"><svg viewBox="0 0 100 100"><use href="#xshape"/></svg></div>
+      <div class="layer mark"><svg viewBox="0 0 100 100">
+        <defs><linearGradient id="xface-${i}" x1="0" y1="0" x2="0.35" y2="1">
+          <stop offset="0" stop-color="${light}"/><stop offset="0.45" stop-color="${main}"/><stop offset="1" stop-color="${dark}"/>
+        </linearGradient></defs>${block}
+        <use href="#xshape" fill="url(#xface-${i})"/>
+        <use href="#xshape" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="0.8" stroke-linejoin="miter"/>
+      </svg></div>`;
+    }
+    let style = 'celebrate';
+
     function buildSlots(judges) {
       xsEl.innerHTML = '';
       for (const seat of Object.keys(slots)) delete slots[seat];
-      for (const j of judges) {
+      judges.forEach((j, i) => {
         const el = document.createElement('div');
         el.className = 'slot';
-        el.innerHTML = `${X_SVG}<div class="label"></div>`;
-        el.querySelector('.label').textContent = j.name;
+        el.innerHTML = `${style === 'celebrate' ? colourX(i) : X_SVG}<div class="label"><span class="who"></span></div>`;
+        if (style === 'celebrate') {
+          const main = PALETTE[i % PALETTE.length][1];
+          el.style.setProperty('--c', main);
+          el.style.setProperty('--glow', `${main}aa`);
+          el.dataset.colour = main;
+        }
+        el.querySelector('.who').textContent = j.name;
         xsEl.append(el);
         slots[j.seat] = el;
-      }
+      });
     }
 
     // Applies state without animating (reconnect / page load), so a refresh
@@ -167,7 +211,14 @@
       el.classList.add('on');
       body.classList.remove('flash', 'shake');
       void body.offsetWidth;
-      body.classList.add('flash', 'shake');
+      if (style === 'celebrate') {
+        body.style.setProperty('--flash', `${el.dataset.colour}40`);
+        body.classList.add('flash');
+        burst(el);
+      } else {
+        body.style.removeProperty('--flash');
+        body.classList.add('flash', 'shake');
+      }
       play('x');
     }
 
@@ -177,7 +228,8 @@
       void body.offsetWidth;
       body.classList.add('all-out', 'all-out-strobe');
       clearTimeout(strobeTimer);
-      strobeTimer = setTimeout(() => body.classList.remove('all-out-strobe'), 2600);
+      strobeTimer = setTimeout(() => body.classList.remove('all-out-strobe'), style === 'celebrate' ? 3400 : 2600);
+      if (style === 'celebrate') rain(['#ffc21f', '#ffe28a', '#d18b00', '#ffffff'], 260);
       // Let the fourth X's own buzz land first.
       setTimeout(() => play('all-x'), 450);
     }
@@ -246,14 +298,58 @@
       return off.startRendering();
     }
 
+    // A bright two-note chime with a sparkle: "you spotted something great".
+    function synthChime() {
+      const sr = 44100, dur = 1.8;
+      const off = new OfflineAudioContext(1, sr * dur, sr);
+      const master = off.createGain();
+      master.gain.value = 0.4;
+      master.connect(off.destination);
+      [[1318.5, 0], [1975.5, 0.11]].forEach(([f, t]) => {
+        for (const [mult, amp] of [[1, 0.6], [2, 0.18], [3, 0.08]]) {
+          const o = off.createOscillator();
+          const g = off.createGain();
+          o.type = 'sine';
+          o.frequency.value = f * mult;
+          g.gain.setValueAtTime(0, t);
+          g.gain.linearRampToValueAtTime(amp, t + 0.005);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 1.5 / mult);
+          o.connect(g).connect(master);
+          o.start(t);
+        }
+      });
+      for (let i = 0; i < 14; i++) {
+        const t = 0.15 + Math.random() * 0.6;
+        const o = off.createOscillator();
+        const g = off.createGain();
+        o.type = 'sine';
+        o.frequency.value = 3000 + Math.random() * 3000;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.08, t + 0.004);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+        o.connect(g).connect(master);
+        o.start(t);
+        o.stop(t + 0.25);
+      }
+      return off.startRendering();
+    }
+
+    // Every X lit: a bigger, longer fanfare than golden's, in a brighter key.
+    function synthAllLit() {
+      return synthFanfare([587.33, 739.99, 880, 1174.66, 1479.98, 1760], [293.66, 369.99, 440, 587.33], 4.2);
+    }
+
     function synthGolden() {
-      const sr = 44100, dur = 3.5;
+      return synthFanfare([523.25, 659.25, 783.99, 1046.5, 1318.5], [261.63, 329.63, 392.0, 523.25], 3.5);
+    }
+
+    function synthFanfare(notes, chord, dur) {
+      const sr = 44100;
       const off = new OfflineAudioContext(2, sr * dur, sr);
       const master = off.createGain();
       master.gain.value = 0.35;
       master.connect(off.destination);
       // rising arpeggio then a held major chord with shimmer
-      const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5];
       notes.forEach((f, i) => {
         const t = i * 0.09;
         const o = off.createOscillator();
@@ -266,7 +362,7 @@
         o.connect(g).connect(master);
         o.start(t);
       });
-      for (const f of [261.63, 329.63, 392.0, 523.25]) {
+      for (const f of chord) {
         const o = off.createOscillator();
         const g = off.createGain();
         o.type = 'sawtooth';
@@ -304,6 +400,10 @@
     // Also called when a new sound is uploaded on the control page.
     function loadSounds() {
       if (!ctx) return Promise.resolve();
+      if (style === 'celebrate') {
+        return Promise.all([loadSound('x', 'ding.mp3', synthChime), loadSound('golden', 'golden.mp3', synthGolden),
+          loadSound('all-x', 'all-lit.mp3', synthAllLit)]);
+      }
       return Promise.all([loadSound('x', 'buzzer.mp3', synthBuzzer), loadSound('golden', 'golden.mp3', synthGolden),
         loadSound('all-x', 'all-out.mp3', synthAllOut)]);
     }
@@ -329,34 +429,65 @@
     if (!audioEnabled) body.classList.add('armed');
     else armAudio().then((ok) => { if (ok) body.classList.add('armed'); reportArmed(); }).catch(() => {});
 
-    // ---------- golden confetti ----------
+    // ---------- confetti ----------
+    // Rain (golden buzzer, all X's lit) loops until Reset; a burst (one X lit)
+    // shoots up from that X and falls away.
     const canvas = document.getElementById('confetti');
     const c2d = canvas.getContext('2d');
     let pieces = [];
     let raf = null;
 
+    function sizeCanvas() {
+      canvas.width = innerWidth * devicePixelRatio;
+      canvas.height = innerHeight * devicePixelRatio;
+    }
+
+    function rain(colors, count) {
+      sizeCanvas();
+      const W = canvas.width, H = canvas.height;
+      pieces = pieces.filter((p) => p.once).concat(Array.from({ length: count }, () => ({
+        x: Math.random() * W, y: -Math.random() * H * 1.2,
+        w: (6 + Math.random() * 10) * devicePixelRatio, h: (10 + Math.random() * 16) * devicePixelRatio,
+        vy: (2 + Math.random() * 4) * devicePixelRatio, vx: (Math.random() - 0.5) * 2 * devicePixelRatio, g: 0,
+        rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.2, color: colors[(Math.random() * colors.length) | 0],
+      })));
+      if (!raf) tick();
+    }
+
+    function burst(el) {
+      if (!raf) sizeCanvas();
+      const r = el.getBoundingClientRect();
+      const d = devicePixelRatio;
+      const cx = (r.left + r.width / 2) * d, cy = (r.top + r.height / 2) * d;
+      const colors = [el.dataset.colour, '#ffffff', el.dataset.colour, '#fff6d0'];
+      for (let i = 0; i < 140; i++) {
+        const a = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.1;
+        const v = (6 + Math.random() * 12) * d;
+        pieces.push({ x: cx, y: cy, w: (5 + Math.random() * 8) * d, h: (8 + Math.random() * 12) * d,
+          vx: Math.cos(a) * v, vy: Math.sin(a) * v, g: 0.35 * d, once: true,
+          rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3, color: colors[i % colors.length] });
+      }
+      if (!raf) tick();
+    }
+
     function startGolden() {
       body.classList.add('is-golden');
       play('golden');
-      canvas.width = innerWidth * devicePixelRatio;
-      canvas.height = innerHeight * devicePixelRatio;
-      const W = canvas.width, H = canvas.height;
-      const colors = ['#fff6d0', '#f5c542', '#ffd966', '#d4a017', '#ffffff', '#ffe9a0'];
-      pieces = Array.from({ length: 450 }, () => ({
-        x: Math.random() * W, y: -Math.random() * H * 1.2,
-        w: (6 + Math.random() * 10) * devicePixelRatio, h: (10 + Math.random() * 16) * devicePixelRatio,
-        vy: (2 + Math.random() * 4) * devicePixelRatio, vx: (Math.random() - 0.5) * 2 * devicePixelRatio,
-        rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.2, color: colors[(Math.random() * colors.length) | 0],
-      }));
-      if (!raf) tick();
+      rain(['#fff6d0', '#f5c542', '#ffd966', '#d4a017', '#ffffff', '#ffe9a0'], 450);
     }
 
     function tick() {
       const W = canvas.width, H = canvas.height;
       c2d.clearRect(0, 0, W, H);
+      pieces = pieces.filter((p) => !(p.once && p.y > H + 40));
+      if (!pieces.length) {
+        raf = null;
+        return;
+      }
       for (const p of pieces) {
+        p.vy += p.g; p.vx *= p.once ? 0.985 : 1;
         p.y += p.vy; p.x += p.vx + Math.sin(p.y / 60) * 0.8; p.rot += p.vr;
-        if (p.y > H + 20) { p.y = -20; p.x = Math.random() * W; }
+        if (!p.once && p.y > H + 20) { p.y = -20; p.x = Math.random() * W; }
         c2d.save();
         c2d.translate(p.x, p.y);
         c2d.rotate(p.rot);
@@ -369,11 +500,10 @@
 
     // Keep the confetti matching the screen if the window is resized mid-golden.
     addEventListener('resize', () => {
-      if (!raf) return;
-      canvas.width = innerWidth * devicePixelRatio;
-      canvas.height = innerHeight * devicePixelRatio;
+      if (raf) sizeCanvas();
     });
 
+    // Clears the golden screen and every bit of confetti (Reset).
     function stopGolden() {
       body.classList.remove('is-golden');
       if (raf) cancelAnimationFrame(raf);
@@ -387,6 +517,11 @@
       { type: 'hello', role: 'display' },
       (msg) => {
         if (msg.type === 'welcome') {
+          const newStyle = msg.style === 'buzzer' ? 'buzzer' : 'celebrate';
+          const changed = newStyle !== style;
+          style = newStyle;
+          body.classList.toggle('celebrate', style === 'celebrate');
+          if (changed) loadSounds();
           buildSlots(msg.judges);
           applyState(show);
           reportArmed();

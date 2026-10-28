@@ -8,8 +8,8 @@ Judges press an X on a tablet, and three things happen at once:
 
 There are two styles, picked on the Control page (see [Celebrate or buzzer](#celebrate-or-buzzer)):
 
-- **Celebrate (the default):** each judge looks out for something, like courage or creativity, and lights
-  their own coloured X with a chime and a burst of confetti when they spot it. The aim is for every act to
+- **Celebrate (the default):** a judge presses when they love something about the act (they say what out
+  loud), and their X lights up gold with a chime and a burst of confetti. The aim is for every act to
   light every X. When they do, the screen shouts **X-TRAORDINARY!** with a fanfare and confetti.
 - **Buzzer:** the original red X that means "no", with a buzzer sound and a red alarm when every judge buzzes.
 
@@ -285,10 +285,8 @@ All done? **You're ready for the show!**
 
 On the Control page, in the **Show** box, pick the **Style**:
 
-- **Celebrate (X-traordinary):** coloured X's (gold, teal, pink, purple, in judge order), a chime and confetti
-  for each X, and an **X-TRAORDINARY!** party when every X is lit. Under each judge's name, type what they
-  look out for (for example **Courage**, **Creativity**, **Entertainment**) and click **Save names**. It shows
-  on the big screen above their name and on their tablet.
+- **Celebrate (X-traordinary):** gold X's, a chime and confetti for each X, and an **X-TRAORDINARY!** party
+  when every X is lit. The judges say what they loved, so the screen shows only their names.
 - **Buzzer (red X means no):** the original red X's, buzzer and red alarm.
 
 The change shows straight away and is saved. Each style keeps its own sounds, so a buzzer sound you uploaded
@@ -426,7 +424,7 @@ whenever this folder changes on `main` (or when it's run by hand from the Action
 | `key` | Optional access key. If set, every link needs `?key=...` (the setup page shows the right links), and the Avolites setup page needs the same key. Set this if the audience can join the tablets' Wi-Fi. |
 | `debounceMs` | Ignore a second press on the same buzzer within this many ms |
 | `judges` | Seats and names shown on the tablets, control page and display. Always filled up to four (missing ones become "Judge N"). |
-| `style` | `celebrate` (default) or `buzzer`. Set from the Control page (`set-style`). `judges[].category` is what each judge looks for, shown in Celebrate. |
+| `style` | `celebrate` (default) or `buzzer`. Set from the Control page (`set-style`). |
 | `judgeCount` | How many judges are in use, 2 to 4, from the top of `judges`. Set from the Control page (`set-judges`, validated by `lib/judges.js`). Defaults to the length of `judges`. |
 | `golden.name` | Name for the golden tablet. `judges[].name` and this are set from the Control page (`set-names`, validated by `lib/judges.js`: 1 to 40 characters). |
 | `cues.*` | Set from the Control page's **Lighting cues** box (`set-cues` over the WebSocket, validated by `lib/cues.js`), which writes them back to `config.json` (creating it from the example on first save). |

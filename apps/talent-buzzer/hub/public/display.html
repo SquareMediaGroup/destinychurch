@@ -43,10 +43,6 @@
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 250ms, text-shadow 250ms; }
     .slot.on .label { color: #fff; text-shadow: 0 0 calc(1.2 * var(--u)) var(--glow, rgba(255,31,58,0.9)); }
     .slot .label span { display: block; overflow: hidden; text-overflow: ellipsis; }
-    .slot .label .cat { font-size: calc(2.3 * var(--u)); letter-spacing: 0.04em; color: var(--c, #fff); opacity: 0.55; transition: opacity 250ms; }
-    .slot .label .cat:empty { display: none; }
-    .slot .label .cat:not(:empty) + .who { font-size: calc(1.7 * var(--u)); margin-top: calc(0.5 * var(--u)); }
-    .slot.on .label .cat { opacity: 1; }
     body.celebrate #xs { padding-bottom: calc(8 * var(--u)); }
     body.no-labels .slot .label { display: none; }
 
@@ -150,13 +146,9 @@
         <use href="#xshape" fill="none" stroke="rgba(255,210,215,0.55)" stroke-width="0.8" stroke-linejoin="miter"/>
       </svg></div>`;
 
-    // Celebrate style: each judge gets their own colour (light, main, dark, back of the block).
-    const PALETTE = [
-      ['#ffe28a', '#ffc21f', '#d18b00', '#4a3000'],
-      ['#9ffff4', '#21d8c8', '#0f9c90', '#05332f'],
-      ['#ffa3cf', '#ff3d97', '#c8116b', '#42051f'],
-      ['#c9b8ff', '#8a63ff', '#5a35d6', '#1d0e47'],
-    ];
+    // Celebrate style: every X lights gold (light, main, dark, back of the block).
+    // The judges say out loud what they loved, so the screen shows names only.
+    const PALETTE = [['#ffe28a', '#ffc21f', '#d18b00', '#4a3000']];
     const mix = (a, b, t) => '#' + [1, 3, 5].map((i) => Math.round(parseInt(a.substr(i, 2), 16) * (1 - t) + parseInt(b.substr(i, 2), 16) * t).toString(16).padStart(2, '0')).join('');
     function colourX(i) {
       const [light, main, dark, back] = PALETTE[i % PALETTE.length];
@@ -182,13 +174,12 @@
       judges.forEach((j, i) => {
         const el = document.createElement('div');
         el.className = 'slot';
-        el.innerHTML = `${style === 'celebrate' ? colourX(i) : X_SVG}<div class="label"><span class="cat"></span><span class="who"></span></div>`;
+        el.innerHTML = `${style === 'celebrate' ? colourX(i) : X_SVG}<div class="label"><span class="who"></span></div>`;
         if (style === 'celebrate') {
           const main = PALETTE[i % PALETTE.length][1];
           el.style.setProperty('--c', main);
           el.style.setProperty('--glow', `${main}aa`);
           el.dataset.colour = main;
-          el.querySelector('.cat').textContent = j.category || '';
         }
         el.querySelector('.who').textContent = j.name;
         xsEl.append(el);
@@ -238,7 +229,7 @@
       body.classList.add('all-out', 'all-out-strobe');
       clearTimeout(strobeTimer);
       strobeTimer = setTimeout(() => body.classList.remove('all-out-strobe'), style === 'celebrate' ? 3400 : 2600);
-      if (style === 'celebrate') rain(PALETTE.map((p) => p[1]).concat('#ffffff'), 260);
+      if (style === 'celebrate') rain(['#ffc21f', '#ffe28a', '#d18b00', '#ffffff'], 260);
       // Let the fourth X's own buzz land first.
       setTimeout(() => play('all-x'), 450);
     }

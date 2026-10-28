@@ -33,8 +33,6 @@
     }
     body.celebrate:not(.gold).buzzed #buzzer { animation-name: glow-own; }
     @keyframes glow-own { from { box-shadow: 0 2.5vmin 0 var(--cs), 0 0 6vmin var(--c); } to { box-shadow: 0 2.5vmin 0 var(--cs), 0 0 18vmin var(--c); } }
-    #cat { font-size: 8vmin; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; color: var(--c, #fff); margin-bottom: -2vmin; }
-    #cat:empty { display: none; }
     #buzzer:active, #buzzer.down { transform: translateY(2vmin); box-shadow: 0 0.5vmin 0 #4a0610, 0 1vmin 3vmin rgba(0,0,0,0.8); }
     body.buzzed #buzzer { filter: brightness(1.25) saturate(1.2); animation: glow 1.2s ease-in-out infinite alternate; }
     body.gold.buzzed #buzzer { animation-name: glow-gold; }
@@ -46,11 +44,10 @@
     #pick { display: none; flex-direction: column; gap: 3vmin; align-items: center; }
     #pick a { color: #fff; font-size: 5vmin; padding: 2vmin 6vmin; border: 2px solid #555; border-radius: 2vmin; text-decoration: none; min-width: 50vmin; text-align: center; }
     body.picking #pick { display: flex; }
-    body.picking #buzzer, body.picking #name, body.picking #status, body.picking #cat { display: none; }
+    body.picking #buzzer, body.picking #name, body.picking #status { display: none; }
   </style>
 </head>
 <body class="offline">
-  <div id="cat"></div>
   <div id="name"></div>
   <button id="buzzer" aria-label="Buzzer">X</button>
   <div id="status">Connecting...</div>
@@ -67,8 +64,8 @@
     const nameEl = document.getElementById('name');
     let show = { xs: {}, golden: false, locked: false };
     let celebrate = false;
-    // Same colours as the X's on the big screen, in judge order: main, dark, shadow.
-    const PALETTE = [['#ffc21f', '#d18b00', '#5c3c00'], ['#21d8c8', '#0f9c90', '#063f3a'], ['#ff3d97', '#c8116b', '#4f0629'], ['#8a63ff', '#5a35d6', '#241257']];
+    // Gold, like the X's on the big screen: main, dark, shadow.
+    const PALETTE = [['#ffc21f', '#d18b00', '#5c3c00']];
     let online = false;
 
     if (isGold) {
@@ -121,7 +118,6 @@
               body.style.setProperty('--cd', cd);
               body.style.setProperty('--cs', cs);
             }
-            document.getElementById('cat').textContent = celebrate && judge ? judge.category || '' : '';
             nameEl.textContent = isGold ? '' : judge ? judge.name : `Not in use (${msg.judgeCount ?? msg.judges.length} judges tonight)`;
             render();
           } else if (msg.type === 'state') {

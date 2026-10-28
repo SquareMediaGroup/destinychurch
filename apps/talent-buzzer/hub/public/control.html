@@ -40,7 +40,6 @@
     #nameRows input { width: 14em; max-width: 100%; }
     #nameRows .row { flex-wrap: wrap; }
     #nameRows .row .name { flex: 1 1 100px; }
-    #nameRows input.cat { width: 10em; }
     #judgeMsg.fail { color: var(--bad); } #judgeMsg.ok { color: var(--ok); }
     section.wide { grid-column: 1 / -1; }
     .cue { flex-wrap: wrap; }
@@ -208,7 +207,7 @@
     function buildNames() {
       const rows = $('nameRows');
       rows.innerHTML = '';
-      const add = (id, label, value, category) => {
+      const add = (id, label, value) => {
         const row = document.createElement('div');
         row.className = 'row';
         row.innerHTML = '<span class="name"></span><input type="text" class="who" maxlength="40">';
@@ -217,30 +216,18 @@
         input.value = value;
         input.dataset.id = id;
         input.setAttribute('aria-label', `${label} name`);
-        if (category !== undefined) {
-          const cat = document.createElement('input');
-          cat.type = 'text';
-          cat.className = 'cat';
-          cat.maxLength = 30;
-          cat.placeholder = 'Looks for, e.g. Courage';
-          cat.value = category;
-          cat.dataset.id = id;
-          cat.setAttribute('aria-label', `${label} looks for`);
-          row.append(cat);
-        }
         for (const inp of row.querySelectorAll('input')) {
           inp.oninput = () => { inp.classList.remove('bad'); judgeMessage(''); };
           inp.onkeydown = (e) => { if (e.key === 'Enter') saveNames(); };
         }
         rows.append(row);
       };
-      judges.forEach((j) => add(j.seat, `Judge ${j.seat}`, j.name, j.category || ''));
+      judges.forEach((j) => add(j.seat, `Judge ${j.seat}`, j.name));
       add('gold', 'Golden buzzer', golden.name);
     }
 
     function saveNames() {
-      const names = { judges: {}, categories: {} };
-      for (const cat of $('nameRows').querySelectorAll('input.cat')) names.categories[cat.dataset.id] = cat.value.trim();
+      const names = { judges: {} };
       for (const input of $('nameRows').querySelectorAll('input.who')) {
         const value = input.value.trim();
         if (!value) {

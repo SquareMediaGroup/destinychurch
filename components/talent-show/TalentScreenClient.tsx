@@ -8,6 +8,8 @@ interface Result {
   name: string;
   performers: string;
   votes: number;
+  judgeXs: number;
+  score: number;
 }
 
 interface ScreenState {
@@ -50,7 +52,8 @@ export default function TalentScreenClient() {
 
   if (!state) return <p className="p-10 text-2xl text-white/60">Loading…</p>;
 
-  const top = state.results[0]?.votes ?? 0;
+  const top = state.results[0]?.score ?? 0;
+  const anyJudgeXs = state.results.some((r) => r.judgeXs > 0);
   const display = voteUrl.replace(/^https?:\/\//, "");
 
   return (
@@ -76,9 +79,8 @@ export default function TalentScreenClient() {
       {state.revealed ? (
         <ol className="mt-[4vh] flex flex-1 flex-col justify-center gap-[2.2vh]">
           {state.results.map((r, i) => {
-            const pct = state.total ? Math.round((r.votes / state.total) * 100) : 0;
-            const width = top ? Math.max(2, (r.votes / top) * 100) : 2;
-            const winner = i === 0 && r.votes > 0;
+            const width = top ? Math.max(2, (r.score / top) * 100) : 2;
+            const winner = i === 0 && r.score > 0;
             return (
               <li key={r.id} className="flex items-center gap-[2vw]">
                 <span className={`w-[4vw] text-right text-[2.6vw] font-black ${winner ? "text-destiny-orange" : "text-white/50"}`}>
@@ -91,7 +93,12 @@ export default function TalentScreenClient() {
                       {r.performers && <span className="ml-3 text-[1.4vw] font-bold text-white/50">{r.performers}</span>}
                     </p>
                     <p className="shrink-0 text-[1.8vw] font-black text-white">
-                      {r.votes} <span className="text-[1.2vw] font-bold text-white/50">({pct}%)</span>
+                      {r.score}{" "}
+                      <span className="text-[1.2vw] font-bold text-white/50">
+                        {anyJudgeXs
+                          ? `(${r.votes} ${r.votes === 1 ? "vote" : "votes"} + ${r.judgeXs} ${r.judgeXs === 1 ? "X" : "X's"})`
+                          : `(${state.total ? Math.round((r.votes / state.total) * 100) : 0}%)`}
+                      </span>
                     </p>
                   </div>
                   <div className="mt-[0.8vh] h-[2.2vh] overflow-hidden rounded-full bg-white/10">
@@ -104,7 +111,10 @@ export default function TalentScreenClient() {
               </li>
             );
           })}
-          <p className="mt-[2vh] text-center text-[1.4vw] text-white/50">{state.total} votes</p>
+          <p className="mt-[2vh] text-center text-[1.4vw] text-white/50">
+            {state.total} audience {state.total === 1 ? "vote" : "votes"}
+            {anyJudgeXs && " · each judge's X counts as 2 votes"}
+          </p>
         </ol>
       ) : (
         <div className="flex flex-1 items-center justify-center gap-[6vw]">

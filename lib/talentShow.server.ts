@@ -19,10 +19,15 @@ export interface TalentAct {
   description: string;
   sort_order: number;
   hidden: boolean;
+  /** X's the act got from the judges' buzzers, typed in by an admin. */
+  judge_xs: number;
 }
 
 export interface ActTotal extends TalentAct {
+  /** Audience votes. */
   votes: number;
+  /** What the act is ranked on: audience votes plus JUDGE_X_POINTS per judge's X. */
+  score: number;
 }
 
 export const VOTER_COOKIE = "dc_talent_voter";
@@ -31,6 +36,10 @@ export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
 
 export const LIMITS = { name: 80, performers: 200, description: 300, showName: 80 } as const;
 
+/** Each judge's X counts as this many audience votes. Up to 4 judges. */
+export const JUDGE_X_POINTS = 2;
+export const MAX_JUDGE_XS = 4;
+
 const DEFAULT_SETTINGS: TalentSettings = {
   show_name: "Talent Show",
   voting_open: false,
@@ -38,7 +47,7 @@ const DEFAULT_SETTINGS: TalentSettings = {
   round: 1,
 };
 
-const ACT_COLUMNS = "id, name, performers, description, sort_order, hidden";
+const ACT_COLUMNS = "id, name, performers, description, sort_order, hidden, judge_xs";
 
 export const hashValue = (v: string) =>
   createHash("sha256")
@@ -58,9 +67,11 @@ export function pickVoterId(cookieValue: unknown, storedValue: unknown): string 
   return null;
 }
 
-/** Ranks acts by votes, then running order. Doesn't change the input. */
+export const actScore = (votes: number, judgeXs: number) => votes + JUDGE_X_POINTS * judgeXs;
+
+/** Ranks acts by score, then running order. Doesn't change the input. */
 export function rankActs(acts: ActTotal[]): ActTotal[] {
-  return [...acts].sort((a, b) => b.votes - a.votes || a.sort_order - b.sort_order);
+  return [...acts].sort((a, b) => b.score - a.score || a.sort_order - b.sort_order);
 }
 
 export async function getSettings(): Promise<TalentSettings> {
@@ -73,17 +84,26 @@ export async function getSettings(): Promise<TalentSettings> {
 }
 
 export async function listActs({ includeHidden = false } = {}): Promise<TalentAct[]> {
-  let q = createServiceClient()
-    .from("talent_show_acts")
-    .select(ACT_COLUMNS)
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: true });
-  if (!includeHidden) q = q.eq("hidden", false);
-  const { data } = await q;
-  return (data ?? []) as TalentAct[];
+  const query = (columns: string) => {
+    let q = createServiceClient()
+      .from("talent_show_acts")
+      .select(columns)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+    if (!includeHidden) q = q.eq("hidden", false);
+    return q;
+  };
+  const { data, error } = await query(ACT_COLUMNS);
+  // Until 20261028_01_talent_show_judge_xs.sql is applied there's no judge_xs
+  // column; keep the vote working without it rather than showing no acts.
+  if (error?.message.includes("judge_xs")) {
+    const { data: old } = await query(ACT_COLUMNS.replace(", judge_xs", ""));
+    return ((old ?? []) as unknown as TalentAct[]).map((a) => ({ ...a, judge_xs: 0 }));
+  }
+  return (data ?? []) as unknown as TalentAct[];
 }
 
-/** Acts with their vote counts for the current round. */
+/** Acts with their vote counts and scores for the current round. `total` is audience votes only. */
 export async function getTotals(
   settings: TalentSettings,
   opts: { includeHidden?: boolean } = {},
@@ -93,7 +113,10 @@ export async function getTotals(
     createServiceClient().from("talent_show_vote_totals").select("act_id, votes").eq("round", settings.round),
   ]);
   const byAct = new Map((rows ?? []).map((r) => [r.act_id as string, Number(r.votes) || 0]));
-  const withVotes = acts.map((a) => ({ ...a, votes: byAct.get(a.id) ?? 0 }));
+  const withVotes = acts.map((a) => {
+    const votes = byAct.get(a.id) ?? 0;
+    return { ...a, judge_xs: a.judge_xs ?? 0, votes, score: actScore(votes, a.judge_xs ?? 0) };
+  });
   return { acts: withVotes, total: withVotes.reduce((n, a) => n + a.votes, 0) };
 }
 
@@ -157,7 +180,7 @@ export async function castVote(input: { actId: unknown; voterId: string; ip: str
 
 /** Trims and checks one act's fields. Returns the clean row or an error. */
 export function cleanAct(body: Record<string, unknown>, { partial = false } = {}):
-  | { ok: true; patch: Partial<Pick<TalentAct, "name" | "performers" | "description" | "hidden" | "sort_order">> }
+  | { ok: true; patch: Partial<Pick<TalentAct, "name" | "performers" | "description" | "hidden" | "sort_order" | "judge_xs">> }
   | { ok: false; error: string } {
   const patch: Record<string, unknown> = {};
   for (const key of ["name", "performers", "description"] as const) {
@@ -178,6 +201,12 @@ export function cleanAct(body: Record<string, unknown>, { partial = false } = {}
     const n = Number(body.sortOrder);
     if (!Number.isInteger(n) || n < 0 || n > 10_000) return { ok: false, error: "Invalid running order." };
     patch.sort_order = n;
+  }
+  if (body.judgeXs !== undefined) {
+    const n = Number(body.judgeXs);
+    if (!Number.isInteger(n) || n < 0 || n > MAX_JUDGE_XS)
+      return { ok: false, error: `Judges' X's must be a whole number from 0 to ${MAX_JUDGE_XS}.` };
+    patch.judge_xs = n;
   }
   return { ok: true, patch };
 }

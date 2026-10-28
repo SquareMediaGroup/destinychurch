@@ -27,7 +27,9 @@ interface Act {
   description: string;
   sort_order: number;
   hidden: boolean;
+  judge_xs: number;
   votes: number;
+  score: number;
 }
 
 interface AdminState {
@@ -38,6 +40,10 @@ interface AdminState {
 
 type Draft = { name: string; performers: string; description: string };
 const EMPTY: Draft = { name: "", performers: "", description: "" };
+
+// Keep in step with JUDGE_X_POINTS / MAX_JUDGE_XS in lib/talentShow.server.ts.
+const JUDGE_X_POINTS = 2;
+const MAX_JUDGE_XS = 4;
 
 // Printed codes always point at the live site, whichever address the admin is on.
 const VOTE_URL = "https://destinytees.uk/talent-show?s=qr";
@@ -160,7 +166,19 @@ export default function AdminTalentShowPage() {
 
   if (!data) return <PageLoading label="Loading talent show voting" />;
   const { settings, acts, total } = data;
-  const top = Math.max(0, ...acts.map((a) => a.votes));
+  const top = Math.max(0, ...acts.map((a) => a.score));
+
+  function setJudgeXs(act: Act, judgeXs: number) {
+    if (!data || judgeXs < 0 || judgeXs > MAX_JUDGE_XS) return;
+    // Show the new count straight away; the poll corrects it if the save fails.
+    setData({
+      ...data,
+      acts: data.acts.map((a) =>
+        a.id === act.id ? { ...a, judge_xs: judgeXs, score: a.votes + JUDGE_X_POINTS * judgeXs } : a,
+      ),
+    });
+    run(() => send(`/api/admin/talent-show/acts/${act.id}`, "PATCH", { judgeXs }));
+  }
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 md:px-8">
@@ -233,7 +251,7 @@ export default function AdminTalentShowPage() {
             Clear votes and start again
           </button>
           <p className="text-xs text-destiny-grey/45 dark:text-white/45">
-            For after a rehearsal. Every phone can vote again; voting closes and the results are hidden.
+            For after a rehearsal. Every phone can vote again, the judges&apos; X&apos;s go back to 0, voting closes and the results are hidden.
           </p>
         </div>
       </section>
@@ -270,15 +288,18 @@ export default function AdminTalentShowPage() {
         <p className="text-sm text-destiny-grey/50 dark:text-white/50">
           In running order. Hidden acts are off the voting page and the screen but keep their votes.
         </p>
+        <p className="mt-1 text-sm text-destiny-grey/50 dark:text-white/50">
+          After each act, set how many X&apos;s the judges lit. Each X counts as {JUDGE_X_POINTS} votes in the results.
+        </p>
 
         {acts.length === 0 ? (
           <p className="mt-4 text-sm text-destiny-grey/50 dark:text-white/50">No acts yet. Add the first one below.</p>
         ) : (
           <ol className="mt-4 divide-y divide-black/5 dark:divide-white/8">
             {acts.map((act, i) => (
-              <li key={act.id} className="flex items-center gap-3 py-3">
+              <li key={act.id} className="flex flex-wrap items-center gap-3 py-3">
                 <span className="w-6 text-right text-sm font-black text-destiny-grey/40 dark:text-white/40">{i + 1}</span>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-[10rem] flex-1">
                   <p className={`truncate font-bold ${act.hidden ? "text-destiny-grey/40 line-through dark:text-white/40" : "text-destiny-grey dark:text-white"}`}>
                     {act.name}
                     {act.hidden && <span className="ml-2 text-xs font-bold uppercase no-underline">Hidden</span>}
@@ -289,11 +310,40 @@ export default function AdminTalentShowPage() {
                     </p>
                   )}
                   <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
-                    <div className="h-full rounded-full bg-destiny-orange" style={{ width: `${top ? (act.votes / top) * 100 : 0}%` }} />
+                    <div className="h-full rounded-full bg-destiny-orange" style={{ width: `${top ? (act.score / top) * 100 : 0}%` }} />
                   </div>
                 </div>
-                <span className="w-16 shrink-0 text-right text-sm font-black text-destiny-grey dark:text-white">
-                  {act.votes} <span className="font-normal text-destiny-grey/45 dark:text-white/45">{act.votes === 1 ? "vote" : "votes"}</span>
+                <div className="flex shrink-0 flex-col items-center">
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-destiny-grey/45 dark:text-white/45">Judges&apos; X&apos;s</span>
+                  <div className="flex items-center">
+                    <button
+                      type="button"
+                      className={iconBtn}
+                      aria-label={`One fewer judges' X for ${act.name}`}
+                      disabled={busy || act.judge_xs <= 0}
+                      onClick={() => setJudgeXs(act, act.judge_xs - 1)}
+                    >
+                      <span className="material-symbols-rounded text-lg" aria-hidden="true">remove</span>
+                    </button>
+                    <span className="w-5 text-center font-black text-destiny-grey tabular-nums dark:text-white" aria-label={`${act.judge_xs} judges' X's`}>
+                      {act.judge_xs}
+                    </span>
+                    <button
+                      type="button"
+                      className={iconBtn}
+                      aria-label={`One more judges' X for ${act.name}`}
+                      disabled={busy || act.judge_xs >= MAX_JUDGE_XS}
+                      onClick={() => setJudgeXs(act, act.judge_xs + 1)}
+                    >
+                      <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
+                    </button>
+                  </div>
+                </div>
+                <span className="w-20 shrink-0 text-right text-sm font-black text-destiny-grey dark:text-white">
+                  {act.score} <span className="font-normal text-destiny-grey/45 dark:text-white/45">{act.score === 1 ? "point" : "points"}</span>
+                  <span className="block text-xs font-normal text-destiny-grey/45 dark:text-white/45">
+                    {act.votes} {act.votes === 1 ? "vote" : "votes"}
+                  </span>
                 </span>
                 <div className="flex shrink-0">
                   <button type="button" className={iconBtn} aria-label={`Move ${act.name} up`} disabled={i === 0 || busy} onClick={() => move(i, -1)}>

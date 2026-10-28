@@ -2394,14 +2394,14 @@ RLS-on with a deny-all policy; every read/write goes through API routes using th
 | `song_requests` | `spotify_track_id`, `title`, `artist`, `artwork_url`, `status` (`queued`/`played`/`removed`), `device_hash`, `ip_hash` (hashed, not raw). Unique index: a track can be queued once at a time |
 
 #### 31. **talent_show_settings / talent_show_acts / talent_show_votes** (Talent show audience voting)
-**Purpose:** `/talent-show`. Migration: `supabase/migrations/20261027_01_talent_show_voting.sql`. Separate from the
+**Purpose:** `/talent-show`. Migrations: `supabase/migrations/20261027_01_talent_show_voting.sql`, plus `20261028_01_talent_show_judge_xs.sql` (`judge_xs`). Separate from the
 judges' buzzers (`apps/talent-buzzer`). RLS-on with a deny-all policy; everything goes through API routes using the
 service client.
 
 | Table | Holds |
 |---|---|
 | `talent_show_settings` | One row: `show_name`, `voting_open`, `results_revealed`, `round` (bumped by "Clear votes") |
-| `talent_show_acts` | `name`, `performers`, `description`, `sort_order` (running order), `hidden` |
+| `talent_show_acts` | `name`, `performers`, `description`, `sort_order` (running order), `hidden`, `judge_xs` (0-4, X's lit by the judges' buzzers, typed in by an admin; each counts as 2 votes, `JUDGE_X_POINTS` in `lib/talentShow.server.ts`; reset to 0 by "Clear votes") |
 | `talent_show_votes` | `round`, `act_id`, `device_hash`, `ip_hash` (hashed). Unique `(round, device_hash)`: one vote per device per round, re-voting moves it |
 | `talent_show_vote_totals` (view, `security_invoker`) | `round`, `act_id`, `votes`, so totals never page through every vote |
 
@@ -2861,7 +2861,7 @@ Each section requires a specific access-level role (see
 | `/admin/links` | `app/admin/links/page.tsx` | Links pages list — 30-day views/clicks per page, create from a theme preset or as a copy, delete (not `main`) (Event Admin) |
 | `/admin/links/[id]` | `app/admin/links/[id]/page.tsx` | The links page editor (`components/admin/links/LinksEditor.tsx`): Blocks, Appearance, Profile, Settings, Responses and Stats tabs beside a live phone preview. `?tab=` deep-links a tab (Event Admin) |
 | `/admin/song-requests` | `app/admin/song-requests/page.tsx` | Connect the church Spotify account, open/close requests, name the event, set limits, remove requests (Event Admin) |
-| `/admin/talent-show` | `app/admin/talent-show/page.tsx` | Add, edit, reorder, hide and delete acts; open/close voting; reveal results on the screen; clear votes after a rehearsal; download the QR code; live totals (Event Admin) |
+| `/admin/talent-show` | `app/admin/talent-show/page.tsx` | Add, edit, reorder, hide and delete acts; open/close voting; reveal results on the screen; clear votes after a rehearsal; download the QR code; live totals; a Judges' X's stepper per act (each X adds 2 votes to the score) (Event Admin) |
 | `/admin/hr` | `app/admin/hr/page.tsx` | HR dashboard (staff, leave, jobs, documents, reviews, checklists) (HR Admin) |
 | `/admin/hr/staff` | `app/admin/hr/staff/page.tsx` | Staff directory — searchable list of every staff record, filterable by employment type and status (HR Admin) |
 | `/admin/hr/staff/[id]` | `app/admin/hr/staff/[id]/page.tsx` | Staff record — profile, leave, reviews, documents, live checklists (HR Admin) |
@@ -4253,7 +4253,8 @@ GET  /api/admin/analytics/site  // the "Whole site" tab's data
 // POST /api/talent-show               { actId, voter, website } → { ok, myVote, changed } | { error }
 //      voter id = cookie first, then the page's localStorage copy; one vote per device per round (upsert);
 //      honeypot `website`; rate limits per device+IP with a looser per-IP cap (the room shares Wi-Fi); 403 closed, 404 hidden/unknown act
-// GET  /api/talent-show/screen        → { showName, open, revealed, total, actCount, results[] }  results empty until revealed
+// GET  /api/talent-show/screen        → { showName, open, revealed, total, actCount, results[] }  results empty until revealed;
+//                                       each result has votes, judgeXs and score (votes + 2 × judgeXs), ranked by score
 ```
 
 #### `/api/admin/talent-show/*` — talent show voting (Event Admin)
@@ -4261,10 +4262,10 @@ GET  /api/admin/analytics/site  // the "Whole site" tab's data
 // GET    /api/admin/talent-show             → { settings, acts[] (with votes, incl. hidden), total }
 // PUT    /api/admin/talent-show             { showName?, votingOpen?, resultsRevealed? } (audited)
 // POST   /api/admin/talent-show/acts        { name, performers?, description? } (audited)
-// PATCH  /api/admin/talent-show/acts/[id]   { name?, performers?, description?, hidden? } (audited)
+// PATCH  /api/admin/talent-show/acts/[id]   { name?, performers?, description?, hidden?, judgeXs? (0-4) } (audited)
 // DELETE /api/admin/talent-show/acts/[id]   deletes the act and its votes (audited)
 // POST   /api/admin/talent-show/reorder     { ids[] } running order
-// POST   /api/admin/talent-show/new-round   round + 1, closes voting, hides results; old votes kept but not counted (audited)
+// POST   /api/admin/talent-show/new-round   round + 1, closes voting, hides results, judges' X's to 0; old votes kept but not counted (audited)
 ```
 
 #### `POST /api/links/submit` — public form-block submissions

@@ -25,10 +25,13 @@ export async function PATCH(request: Request, { params }: Ctx) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Not found." }, { status: 404 });
 
+  const only = Object.keys(clean.patch).length === 1;
   const summary =
-    typeof clean.patch.hidden === "boolean" && Object.keys(clean.patch).length === 1
+    typeof clean.patch.hidden === "boolean" && only
       ? `${clean.patch.hidden ? "Hid" : "Showed"} the talent show act “${data.name}”`
-      : `Edited the talent show act “${data.name}”`;
+      : typeof clean.patch.judge_xs === "number" && only
+        ? `Set the judges' X's for “${data.name}” to ${clean.patch.judge_xs}`
+        : `Edited the talent show act “${data.name}”`;
   await recordAudit({
     action: "update",
     section: "announcements",

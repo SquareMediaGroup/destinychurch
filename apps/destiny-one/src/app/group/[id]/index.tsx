@@ -3,7 +3,7 @@
 // can post here" (announcements), or the paused card (frozen group).
 
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Pressable, Text, View, type TextInputInstance } from "react-native";
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Pressable, Text, View, type TextInput as TextInputInstance } from "react-native";
 import { GroupPeek } from "@/components/GroupPeek";
 import { router, useFocusEffect, useIsPreview, useLocalSearchParams } from "expo-router";
 import * as Clipboard from "expo-clipboard";

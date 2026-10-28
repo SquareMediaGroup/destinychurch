@@ -1,7 +1,7 @@
 # Destiny One
 
 The Destiny Church members' messaging app — communities with department sub-groups, built for
-iOS and Android with Expo (SDK 58) and React Native. Liquid Glass on iOS 26+ via
+iOS and Android with Expo (SDK 57) and React Native. Liquid Glass on iOS 26+ via
 `expo-glass-effect`.
 
 **Status:** every screen built (design variants 1B chat list + 1F conversation), wired to the complete backend. Not yet run on a device.

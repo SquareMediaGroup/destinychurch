@@ -8,7 +8,7 @@
 // Messages. Swipe a message right to reply; press and hold for the menu.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Animated, Image, Pressable, Text, View, type ViewInstance } from "react-native";
+import { Animated, Image, Pressable, Text, View, type View as ViewInstance } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import Svg, { Path } from "react-native-svg";
 import { DESTINY_AI_ID, mentionSegments, type D1EventContent, type D1LinkPreview, type D1LeaderRole, type D1Message, type D1PollContent, type D1SermonContent, type Mentionable } from "@destiny/shared";

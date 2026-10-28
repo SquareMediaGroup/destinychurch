@@ -1,15 +1,20 @@
 # Talent Show Buzzers
 
-Judges press a buzzer on a tablet, and three things happen at once:
+Judges press an X on a tablet, and three things happen at once:
 
-1. A big red **X** pops up on the LED screen above that judge's name.
-2. A **buzzer sound** plays through the speakers.
+1. An **X** pops up on the LED screen above that judge's name.
+2. A **sound** plays through the speakers.
 3. The **stage lights** change.
+
+There are two styles, picked on the Control page (see [Celebrate or buzzer](#celebrate-or-buzzer)):
+
+- **Celebrate (the default):** each judge looks out for something, like courage or creativity, and lights
+  their own coloured X with a chime and a burst of confetti when they spot it. The aim is for every act to
+  light every X. When they do, the screen shouts **X-TRAORDINARY!** with a fanfare and confetti.
+- **Buzzer:** the original red X that means "no", with a buzzer sound and a red alarm when every judge buzzes.
 
 There is also one **golden buzzer**. When it's pressed, the whole screen turns gold, gold confetti
 falls, a fanfare plays, and the lights do something special.
-
-If **every judge** buzzes, the screen flashes red and an alarm sounds.
 
 There can be **2, 3 or 4 judges**. Pick the number on the Control page (see [Judges' names and how many](#judges-names-and-how-many)).
 
@@ -276,10 +281,24 @@ All done? **You're ready for the show!**
 
 ---
 
+## Celebrate or buzzer
+
+On the Control page, in the **Show** box, pick the **Style**:
+
+- **Celebrate (X-traordinary):** coloured X's (gold, teal, pink, purple, in judge order), a chime and confetti
+  for each X, and an **X-TRAORDINARY!** party when every X is lit. Under each judge's name, type what they
+  look out for (for example **Courage**, **Creativity**, **Entertainment**) and click **Save names**. It shows
+  on the big screen above their name and on their tablet.
+- **Buzzer (red X means no):** the original red X's, buzzer and red alarm.
+
+The change shows straight away and is saved. Each style keeps its own sounds, so a buzzer sound you uploaded
+for Buzzer never plays in Celebrate. **Tell the lighting person** if you switch: the looks for each X and for
+"all X's lit" should feel like a celebration, not a red alarm.
+
 ## Change the sound effects
 
-You can swap any of the three sounds for your own: the **Red X** buzzer, the **All judges out** alarm and
-the **Golden buzzer** fanfare.
+You can swap any of the three sounds for your own: the judge's X sound, the all-X's sound and the
+**Golden buzzer** fanfare. The Sounds box changes the sounds for the style you're using.
 
 1. Get the sound file onto the computer you have the Control page open on. MP3, WAV or M4A all work
    (up to 20 MB). Trim any silence at the start, or the sound will lag behind the X.
@@ -299,7 +318,7 @@ and the names stay after a restart.
 **How many:** there can be 2, 3 or 4 judges. In the same box, pick the number next to **Number of judges**.
 
 - The screen shows that many X's, spread across the width.
-- The red alarm goes off when **all of those** judges have buzzed.
+- The all-X's moment (party or red alarm) happens when **all of those** judges have pressed.
 - Judges are used in order: with 3 judges, the Judge 4 tablet says **Not in use** and does nothing.
 - Changing the number clears the buzzers, so do it before the show or between acts.
 - The choice is saved and stays after a restart. Each judge's lighting cue is kept for when you add them back.
@@ -316,8 +335,8 @@ What the audience sees:
 
 | What happens | On the screen |
 | --- | --- |
-| A judge buzzes | Their X pops out of the screen with a buzz. It stays until Reset. Pressing again does nothing. |
-| Every judge buzzes | The screen flashes red with an alarm, then glows red until Reset. |
+| A judge presses | Their X pops out of the screen (Celebrate: in their colour, with a chime and confetti; Buzzer: red, with a buzz). It stays until Reset. Pressing again does nothing. |
+| Every judge presses | Celebrate: **X-TRAORDINARY!**, a fanfare and confetti until Reset. Buzzer: the screen flashes red with an alarm, then glows red until Reset. |
 | Golden buzzer | Gold screen, falling confetti, fanfare. Works once until Reset. |
 
 ![All four judges buzzed](docs/images/display-all-out.jpg)
@@ -407,6 +426,7 @@ whenever this folder changes on `main` (or when it's run by hand from the Action
 | `key` | Optional access key. If set, every link needs `?key=...` (the setup page shows the right links), and the Avolites setup page needs the same key. Set this if the audience can join the tablets' Wi-Fi. |
 | `debounceMs` | Ignore a second press on the same buzzer within this many ms |
 | `judges` | Seats and names shown on the tablets, control page and display. Always filled up to four (missing ones become "Judge N"). |
+| `style` | `celebrate` (default) or `buzzer`. Set from the Control page (`set-style`). `judges[].category` is what each judge looks for, shown in Celebrate. |
 | `judgeCount` | How many judges are in use, 2 to 4, from the top of `judges`. Set from the Control page (`set-judges`, validated by `lib/judges.js`). Defaults to the length of `judges`. |
 | `golden.name` | Name for the golden tablet. `judges[].name` and this are set from the Control page (`set-names`, validated by `lib/judges.js`: 1 to 40 characters). |
 | `cues.*` | Set from the Control page's **Lighting cues** box (`set-cues` over the WebSocket, validated by `lib/cues.js`), which writes them back to `config.json` (creating it from the example on first save). |
@@ -441,10 +461,10 @@ browser source in Resolume, ProPresenter or OBS.
 
 The Control page **Sounds** box uploads to `PUT /api/sound?kind=x|all-x|golden` (raw file body, same `key`
 as the WebSocket; `DELETE` goes back to built-in). The hub checks the file's first bytes are MP3, WAV, OGG,
-FLAC or M4A, saves it as `hub/public/sounds/buzzer.mp3`, `all-out.mp3` or `golden.mp3` (the browser decodes
-by content, not name) and tells open display pages to reload their sounds. You can also drop files with those
-names into that folder by hand and refresh the display page. Without them, the page makes its own buzzer,
-alarm and fanfare.
+FLAC or M4A, saves it under the current style's name (Celebrate: `ding.mp3`, `all-lit.mp3`; Buzzer: `buzzer.mp3`,
+`all-out.mp3`; both: `golden.mp3`) in `hub/public/sounds/` (the browser decodes by content, not name) and tells open display pages to reload their sounds. You can also drop files with those
+names into that folder by hand and refresh the display page. Without them, the page makes its own chime,
+buzzer, alarm and fanfares.
 
 ### Rehearsing without the lighting desk
 

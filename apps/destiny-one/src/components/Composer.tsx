@@ -1,5 +1,5 @@
 // The message composer: attach (image or PDF, 20 MB) from files or the photo
-// library, take a photo with the in-app camera (every image is re-encoded first so no
+// library, take a photo with the camera in the + menu (every image is re-encoded first so no
 // location or other hidden details leave the phone: src/lib/cleanImage.ts), a
 // glass text field, the reply bar,
 // and the send button that swaps in for the attach shortcut once there's text.
@@ -12,7 +12,6 @@ import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_MESSAGE_LENGTH, mentio
 import { AttachSheet, type MenuAnchor } from "@/components/AttachSheet";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
-import { takePhoto as openCamera } from "@/lib/camera";
 import { Appear, PressableScale } from "@/components/Motion";
 import { SendAsMenu } from "@/components/SendAsMenu";
 import { VoiceRecorder, type VoiceRecorderHandle } from "@/components/VoiceNote";
@@ -185,13 +184,6 @@ export const Composer = forwardRef<TextInputInstance, Props>(function Composer({
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 1 });
     if (res.canceled || !res.assets[0]) return;
     await imagePickerAsset(res.assets[0], "Photo.jpg");
-  }
-
-  async function takePhoto() {
-    // The in-app camera (src/app/camera.tsx) asks for permission itself.
-    const uri = await openCamera();
-    if (!uri) return;
-    await acceptAsset({ uri, name: "Photo.jpg", mimeType: "image/jpeg", size: null });
   }
 
   /** Holding Send: offer the other signed-in accounts that can send this message. */
@@ -402,9 +394,9 @@ export const Composer = forwardRef<TextInputInstance, Props>(function Composer({
             void pickPhoto().catch(() => onError("Couldn't open your photos. Try again."));
           }, 350);
         }}
-        onCamera={() => {
+        onPhoto={(uri) => {
           setSheetOpen(false);
-          void takePhoto();
+          void acceptAsset({ uri, name: "Photo.jpg", mimeType: "image/jpeg", size: null });
         }}
         onDocument={() => {
           setSheetOpen(false);

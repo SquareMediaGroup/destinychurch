@@ -6656,6 +6656,13 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
   else. `useTheme()` (`src/theme/tokens.ts`) folds the choice in as `t.send`, `t.onSend`,
   `t.onSendCard` and `t.wall`, so bubbles, the send button, poll bars and the message-actions
   preview all follow it.
+  The screen (redesigned 2026-10-29) leads with a live preview drawn like a real chat (Liquid Glass
+  header and message box over the wallpaper; a new wallpaper cross-fades in and settles, a new send
+  colour pops the sent bubbles), then Theme (four little phones drawn in code,
+  `ThemeModePicker` in `src/components/AppearancePicker.tsx`, shared with first-run Setup), the
+  send colours, and the wallpapers as a Photos / Patterns segmented control over a phone-shaped
+  grid (3 across, 5 on a wide screen). Selection is a ring that springs onto the choice plus a tick
+  (`SelectRing`, `Tick`). Removing your photo and Reset ask first.
 - **The choices are a curated list, not a colour picker** (`src/theme/appearance.ts`, pure data, no
   React Native). A free picker can't promise legibility. Every send colour is chosen so its text is
   at least 4.5:1 and the bubble is at least 3:1 against the page and every wallpaper, in light and
@@ -6670,9 +6677,10 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
   near-zero weight, and each has light and dark colours. Applied to conversations only; list and
   settings screens stay plain so text is always on a known background.
 - **Photo wallpapers** are never uploaded and never touch Supabase. Two sources: ten stock photos
-  shipped in `assets/wallpapers/` (Unsplash licence, free to use, no credit required; 900x1800
-  crops with a 240x480 `-thumb` each so the picker doesn't decode ten full-size images; about
-  3.3 MB added to the app; wired up in `src/theme/photoWallpapers.ts`, ids are `photo:<key>`), and
+  shipped in `assets/wallpapers/` (Unsplash licence, free to use, no credit required; 1290x2796
+  crops, the Pro Max screen at full resolution, with a 450x975 `-thumb` each sized for the
+  3-across picker grid at 3x, so the picker doesn't decode ten full-size images; about 6.3 MB
+  added to the app; source photo ids are listed in `photoWallpapers.ts`; wired up in `src/theme/photoWallpapers.ts`, ids are `photo:<key>`), and
   the person's own photo (`src/lib/customWallpaper.ts`): picked with `expo-image-picker`,
   re-encoded with `expo-image-manipulator` (shorter side 1200 px, JPEG 0.75, which also strips GPS
   and other metadata), then copied into the app's documents folder with `expo-file-system` as
@@ -6687,7 +6695,8 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
   messages" dividers, "This message was deleted", the empty state) goes on a chip in the page colour
   at 90% opacity (`photoChip()` in `MessageBubble.tsx`, `PHOTO_CHIP_ALPHA`). The unit tests check
   that chip against pure black and pure white behind it in both modes (7:1 body, 4.5:1 muted).
-  Fade/Dim and Blur are five-step tap pickers (`src/components/PresetPicker.tsx`: Low, Low-Med,
+  Fade/Dim and Blur are five-step tap pickers (`src/components/PresetPicker.tsx` on the sliding
+  `Segmented` control, `src/components/Segmented.tsx`: Low, Low-Med,
   Med, High-Med, High; `DIM_PRESETS`/`BLUR_PRESETS` in `theme/appearance.ts`), not sliders: a
   dragged slider fought the swipe-back gesture. Stored values stay numeric; an older saved value
   shows as its nearest step (`nearestPreset`). Screen readers get a radio group. `Backdrop` (`Wallpaper.tsx`) draws
@@ -8083,6 +8092,8 @@ same database as the data rather than in a separate Synapse module.
   above), `push.ts` (ask contextually, never on launch).
 - `src/components/GlassSurface.tsx` — Liquid Glass (`expo-glass-effect` `GlassView`) on iOS 26+, a
   translucent solid fallback on Android / older iOS. The one surface primitive for app chrome.
+  On real glass it drops any drop shadow in `style` (the glass draws its own depth), and interactive
+  glass drops a pressed-state `opacity` (it has its own touch response); the fallback keeps both.
 - Checks: `npm run typecheck`, `npx expo lint`, `npx expo-doctor`, `npx expo export --platform ios --platform android`. CI runs typecheck and lint (the "Destiny One app" job).
 - GDPR notes (data map, processors, retention, erasure, review audit): `docs/destiny-one-gdpr.md`.
 - Staff guide (approvals, reports, review, takedown, suspension, blocks, settings, out of hours):

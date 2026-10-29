@@ -5,6 +5,12 @@
 //
 // Don't animate a GlassSurface (or a parent) to opacity 0 — the glass stops
 // rendering entirely. Use glassEffectStyle's own animation instead.
+//
+// Real glass brings its own depth and touch response, so on iOS 26 any drop
+// shadow in `style` is ignored (a second, painted shadow muddies the lensing),
+// and interactive glass ignores a pressed-state `opacity` (it already lights
+// up and flexes under the finger, as Apple's controls do). Both still apply to
+// the fallback surface, which has neither.
 
 import type { ReactNode } from "react";
 import { useAppearance } from "@/state/appearance";
@@ -29,13 +35,21 @@ export function GlassSurface({ children, style, variant = "regular", interactive
 
   if (liquidGlass) {
     return (
-      <GlassView glassEffectStyle={variant} isInteractive={interactive} tintColor={tintColor} style={style}>
+      <GlassView glassEffectStyle={variant} isInteractive={interactive} tintColor={tintColor} style={glassStyle(style, interactive)}>
         {children}
       </GlassView>
     );
   }
 
   return <View style={[styles.fallback, dark ? (black ? styles.black : styles.dark) : styles.light, style]}>{children}</View>;
+}
+
+// RN's own typing of flatten() rejects a plain ViewStyle prop; at runtime it takes one happily.
+const flatten = StyleSheet.flatten as (style: StyleProp<ViewStyle>) => ViewStyle | undefined;
+
+function glassStyle(style: StyleProp<ViewStyle>, interactive: boolean): ViewStyle {
+  const { shadowColor: _c, shadowOpacity: _o, shadowRadius: _r, shadowOffset: _f, elevation: _e, opacity, ...rest } = flatten(style) ?? {};
+  return interactive ? rest : { ...rest, opacity };
 }
 
 const styles = StyleSheet.create({

@@ -30,5 +30,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "mobile", "apps/destiny-one", "apps/d1-admin", "apps/talent-buzzer", "apps/status", ".claude"]
+  "exclude": ["node_modules", "mobile", "apps/destiny-one", "apps/d1-admin", "apps/destiny-subtitles", "apps/talent-buzzer", "apps/status", ".claude"]
 }

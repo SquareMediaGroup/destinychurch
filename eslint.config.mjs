@@ -29,6 +29,8 @@ const eslintConfig = defineConfig([
     "apps/destiny-one/**",
     // D1 Admin, the Tauri desktop app — its own package and checks (CI job d1-admin).
     "apps/d1-admin/**",
+    // Destiny Subtitles, the Rust + Tauri captioning app: its own package (CI job destiny-subtitles).
+    "apps/destiny-subtitles/**",
     // Talent show buzzers: standalone Node/CommonJS app with its own package.json.
     "apps/talent-buzzer/**",
     // status.destinytees.uk: its own Next app and Vercel project (CI job status-page).

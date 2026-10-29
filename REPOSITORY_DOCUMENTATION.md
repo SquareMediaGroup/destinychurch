@@ -2310,7 +2310,8 @@ the text field when the box is empty. It works like WhatsApp: hold to record and
 cancel, slide up to lock it hands-free (then the bin and Send appear); a quick tap just shows a hint. The gesture
 is a `PanResponder` in `Composer.tsx`; the field shows a recording readout (time, "Slide to cancel") and it stops
 by itself at 5 minutes, recording mono AAC at 64 kbps (`expo-audio`). The camera is no longer in the text field;
-it is under the + sheet. Under a second is
+it is under the + menu (`src/components/AttachSheet.tsx`: a Liquid Glass panel that grows out of the
++ button, with Camera, Photos, Document, Poll and Event rows; the + turns to a × while it's open). Under a second is
 dropped. In a bubble, nothing loads until Play, and only one voice note plays at a time. Voice notes can't
 be searched (there's no text).
 

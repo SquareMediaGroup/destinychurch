@@ -2,19 +2,15 @@
 // Store guideline 2.3.1): none of them unlocks a feature, changes data or
 // talks to the server, and every one is described in the App Review notes.
 //
-//   - Welcome screen: tap the logo seven times and it turns once, with
-//     "And on the seventh day, He rested." (Genesis 2:2).
 //   - Profile: press and hold your picture for Psalm 139:14.
 //   - Chats: a line under the title on Easter Day ("He is risen!"), Pentecost
 //     and Christmas Day, worked out on the phone from the date.
 //
-// Built on React Native's own Animated, so no new native module. Reduce Motion
-// drops the turn and keeps the words.
+// Built on React Native's own Animated, so no new native module.
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { AccessibilityInfo, Animated, Easing, Pressable, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { AccessibilityInfo, Animated, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { reduceMotion } from "@/components/Motion";
 import { haptic } from "@/lib/haptics";
 import { useTheme } from "@/theme/tokens";
 
@@ -43,57 +39,6 @@ function useWhisper() {
   }
 
   return { text, opacity, show };
-}
-
-// ── Seventh tap on the welcome logo ─────────────────────────────────────────
-
-const TAPS = 7;
-const TAP_WINDOW_MS = 1500;
-
-/** Wraps the welcome logo. Seven quick taps turn it once and show Genesis 2:2 underneath. */
-export function SeventhTapLogo({ children }: { children: ReactNode }) {
-  const t = useTheme();
-  const [spin] = useState(() => new Animated.Value(0));
-  const taps = useRef(0);
-  const reset = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const whisper = useWhisper();
-
-  useEffect(() => () => {
-    if (reset.current) clearTimeout(reset.current);
-  }, []);
-
-  function tap() {
-    taps.current += 1;
-    if (reset.current) clearTimeout(reset.current);
-    reset.current = setTimeout(() => {
-      taps.current = 0;
-    }, TAP_WINDOW_MS);
-    if (taps.current < TAPS) return;
-
-    taps.current = 0;
-    haptic.success();
-    whisper.show("And on the seventh day, He rested.");
-    if (reduceMotion()) return;
-    spin.setValue(0);
-    Animated.timing(spin, { toValue: 1, duration: 1100, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }).start();
-  }
-
-  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
-
-  return (
-    <View style={{ alignItems: "center" }}>
-      {/* No role or label of its own: the logo inside already says "Destiny Church". */}
-      <Pressable onPress={tap}>
-        <Animated.View style={{ transform: [{ rotate }] }}>{children}</Animated.View>
-      </Pressable>
-      {/* Absolute, so the welcome layout never shifts when the line appears. */}
-      {whisper.text ? (
-        <Animated.Text pointerEvents="none" style={{ position: "absolute", top: "100%", marginTop: 12, width: 300, textAlign: "center", fontSize: 15, fontStyle: "italic", color: t.muted, opacity: whisper.opacity }}>
-          {whisper.text}
-        </Animated.Text>
-      ) : null}
-    </View>
-  );
 }
 
 // ── Press and hold your picture ─────────────────────────────────────────────

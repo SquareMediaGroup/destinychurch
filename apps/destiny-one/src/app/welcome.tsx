@@ -8,7 +8,6 @@ import { Text, View } from "react-native";
 import { router } from "expo-router";
 import { SvgXml } from "react-native-svg";
 import { AuthScreen } from "@/components/AuthScreen";
-import { SeventhTapLogo } from "@/components/EasterEggs";
 import { LOGO_XML } from "@/components/logoXml";
 import { Lead, PrimaryButton, TextButton } from "@/components/ui";
 import { cancelAdd } from "@/lib/accounts";
@@ -34,11 +33,9 @@ export default function Welcome() {
       }
     >
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 22 }}>
-        <SeventhTapLogo>
-          <View style={[{ width: 108, height: 108, borderRadius: 26, backgroundColor: t.card, alignItems: "center", justifyContent: "center", borderWidth: 0.5, borderColor: t.glassLine }, t.shadow]}>
-            <SvgXml xml={LOGO_XML} width={84} height={84} accessibilityLabel="Destiny Church" />
-          </View>
-        </SeventhTapLogo>
+        <View style={[{ width: 108, height: 108, borderRadius: 26, backgroundColor: t.card, alignItems: "center", justifyContent: "center", borderWidth: 0.5, borderColor: t.glassLine }, t.shadow]}>
+          <SvgXml xml={LOGO_XML} width={84} height={84} accessibilityLabel="Destiny Church" />
+        </View>
         <View style={{ alignItems: "center", gap: 10 }}>
           <Text style={{ fontSize: 34, fontWeight: "700", letterSpacing: 0.3, color: t.text }}>Destiny One</Text>
           <Lead style={{ textAlign: "center", maxWidth: 290 }}>Group chat for the teams and communities of Destiny Church.</Lead>

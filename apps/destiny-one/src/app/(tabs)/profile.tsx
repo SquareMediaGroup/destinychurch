@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { D1_ROLE_LABELS, topRole } from "@destiny/shared";
 import Constants from "expo-constants";
 import { openDocument } from "@/components/SafetyNotice";
+import { useFearfullyMade } from "@/components/EasterEggs";
 import { Icon } from "@/components/Icon";
 import { Avatar, Card, CardButton, LargeTitle, SectionLabel, Separator, SettingsRow } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -32,6 +33,7 @@ export default function Profile() {
   const [avatarBusy, setAvatarBusy] = useState(false);
   const taps = useRef(0);
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fearfullyMade = useFearfullyMade();
 
   const top = me ? topRole(me.roles) : null;
   const role = top ? D1_ROLE_LABELS[top] : "Member";
@@ -167,11 +169,12 @@ export default function Profile() {
   }
 
   return (
+    <>
     <ScrollView style={{ flex: 1, backgroundColor: t.grouped }} contentContainerStyle={{ paddingTop: insets.top + 52, paddingHorizontal: 16, paddingBottom: 110, gap: 22 }}>
       <LargeTitle style={{ paddingHorizontal: 4 }}>Profile</LargeTitle>
 
       <Card style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 16, paddingLeft: 16 }}>
-        <Pressable onPress={changeAvatar} disabled={avatarBusy} accessibilityRole="button" accessibilityLabel={me?.avatarUrl ? "Change or remove your picture" : "Add a picture"} style={{ opacity: avatarBusy ? 0.5 : 1 }}>
+        <Pressable onPress={changeAvatar} onLongPress={fearfullyMade.onLongPress} disabled={avatarBusy} accessibilityRole="button" accessibilityLabel={me?.avatarUrl ? "Change or remove your picture" : "Add a picture"} style={{ opacity: avatarBusy ? 0.5 : 1 }}>
           <Avatar name={me?.displayName ?? ""} uri={me?.avatarUrl} size={60} />
           {avatarBusy && (
             <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" }}>
@@ -262,6 +265,8 @@ export default function Profile() {
         <Text style={{ textAlign: "center", fontSize: 13, color: t.subtle }}>Destiny One {Constants.expoConfig?.version ?? ""}</Text>
       </Pressable>
     </ScrollView>
+    {fearfullyMade.node}
+    </>
   );
 }
 

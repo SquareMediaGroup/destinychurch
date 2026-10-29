@@ -6730,6 +6730,10 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
   while the chat is open spring in (sent ones rise from the composer, received ones from the
   sender's side); poll bars spring to their new share; confirm dialogs spring in. All of it
   drops the movement under Reduce Motion.
+- **Easter eggs** (`src/components/EasterEggs.tsx`): purely cosmetic hidden touches (App Store
+  guideline 2.3.1, listed in the App Review notes). Holding your picture on Profile shows Psalm
+  139:14; the Chats title gets a line on Easter Day, Pentecost and Christmas Day (Easter worked
+  out on the phone with the Anonymous Gregorian algorithm). No server calls, no unlocked features.
 - **Text size**: chrome text (tab labels, chips, badges, reactions) caps its scaling with
   `maxFontSizeMultiplier` and controls use `minHeight`, so large Dynamic Type sizes grow the
   layout instead of clipping it. Body text scales freely.

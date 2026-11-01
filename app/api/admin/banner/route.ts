@@ -1,14 +1,32 @@
 import { NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { createServiceClient } from "@/utils/supabase/service";
+import { AUDIT_ACTOR_HEADERS } from "@/lib/audit";
 import {
   COURSE_EVENT_TYPES_SQL as ALPHA_TYPES_SQL,
   isCourseEventType,
 } from "@/lib/courseEvents";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
 
+/**
+ * Event Admins reach this route for the course pages' banner toggles
+ * (lib/adminRoles.ts), but the sitewide banner — /admin/banner, every
+ * non-course type — stays Super Admin only. The roles come from middleware,
+ * which overwrites any x-dc-actor-* header a client sends.
+ */
+async function canEditBannerType(type: string | null): Promise<boolean> {
+  const roles = ((await headers()).get(AUDIT_ACTOR_HEADERS.roles) ?? "").split(",");
+  if (roles.includes("super_admin")) return true;
+  return roles.includes("event_admin") && type !== null && isCourseEventType(type);
+}
+
+const FORBIDDEN = () =>
+  NextResponse.json({ error: "Only a Super Admin can change the sitewide banner." }, { status: 403 });
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const type = url.searchParams.get("type");
+  if (!(await canEditBannerType(type))) return FORBIDDEN();
   const supabase = createServiceClient();
 
   if (type) {
@@ -69,6 +87,7 @@ export async function PUT(request: Request) {
   const body = await request.json();
   const { active, message, type, link, link_text } = body;
   const resolvedType = type ?? "announcement";
+  if (!(await canEditBannerType(resolvedType))) return FORBIDDEN();
   const isAlphaType = isCourseEventType(resolvedType);
 
   const supabase = createServiceClient();

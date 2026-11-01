@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { loadStripe, type Stripe, type Appearance } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { useCart, cartSubtotal } from "@/lib/cart-store";
@@ -236,12 +236,14 @@ export default function CheckoutPage() {
                 </h2>
                 <Field
                   label="Full name"
+                  autoComplete="name"
                   required
                   value={customer.name}
                   onChange={(v) => setCustomer((c) => ({ ...c, name: v }))}
                 />
                 <Field
                   label="Email"
+                  autoComplete="email"
                   type="email"
                   required
                   value={customer.email}
@@ -249,15 +251,17 @@ export default function CheckoutPage() {
                 />
                 <Field
                   label="Phone (optional)"
+                  autoComplete="tel"
                   type="tel"
                   value={customer.phone}
                   onChange={(v) => setCustomer((c) => ({ ...c, phone: v }))}
                 />
                 <div>
-                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-subtle">
+                  <label htmlFor="checkout-notes" className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-subtle">
                     Order notes (optional)
                   </label>
                   <textarea
+                    id="checkout-notes"
                     value={customer.notes}
                     onChange={(e) =>
                       setCustomer((c) => ({ ...c, notes: e.target.value }))
@@ -347,21 +351,28 @@ function Field({
   onChange,
   type = "text",
   required = false,
+  autoComplete,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   type?: string;
   required?: boolean;
+  autoComplete?: string;
 }) {
+  // The label used to sit beside the input unattached: screen readers read an
+  // unnamed field and tapping the label didn't focus it.
+  const id = useId();
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-subtle">
+      <label htmlFor={id} className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-subtle">
         {label}
       </label>
       <input
+        id={id}
         type={type}
         required={required}
+        autoComplete={autoComplete}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-xl border border-black/15 px-4 py-3 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/20"

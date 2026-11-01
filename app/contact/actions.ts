@@ -319,7 +319,9 @@ export async function submitContactForm(formData: FormData) {
       entityId: data.id,
       entityLabel: name,
       summary: `New contact message from ${name}: ${subject}`,
-      href: `/admin/site/contact?open=${data.id}`,
+      // There is no admin page for contact messages (they arrive in the
+      // techteam inbox above); /admin/site/contact was a 404 from the bell.
+      href: "/admin",
       roles: ["site_admin"],
     });
 

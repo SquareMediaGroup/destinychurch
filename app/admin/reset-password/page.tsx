@@ -60,11 +60,12 @@ export default function ResetPasswordPage() {
           <div className="glass rounded-3xl p-8">
             <form action={formAction} className="flex flex-col gap-5">
               <div>
-                <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">
+                <label htmlFor="reset-password" className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">
                   New password
                 </label>
                 <input
                   type="password"
+                  id="reset-password"
                   name="password"
                   autoComplete="new-password"
                   required
@@ -74,11 +75,12 @@ export default function ResetPasswordPage() {
               </div>
 
               <div>
-                <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">
+                <label htmlFor="reset-confirm-password" className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">
                   Confirm password
                 </label>
                 <input
                   type="password"
+                  id="reset-confirm-password"
                   name="confirmPassword"
                   autoComplete="new-password"
                   required

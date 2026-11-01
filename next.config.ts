@@ -65,6 +65,14 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
+        // There has never been a /youth-alpha page — Youth Alpha is a section
+        // of /youth — but the course banner linked here, so banners already
+        // saved with this link (and anything printed from them) still land.
+        source: "/youth-alpha",
+        destination: "/youth",
+        permanent: true,
+      },
+      {
         // Destiny Recovery was rebranded to Destiny 12:2.
         source: "/destiny-recovery",
         destination: "/twelvetwo",

@@ -129,11 +129,13 @@ export function MessageMenu({
   const groups = items(m, actions);
   const rows = groups.reduce((n, g) => n + g.length, 0);
 
+  // Width clear of the side safe area (the side status bar and camera on iPhone Duo; 0 elsewhere).
+  const usableW = screen.width - insets.left - insets.right;
   // The quick row shrinks its cells on a narrow screen rather than running off it.
-  const cell = Math.min(CELL, Math.floor((screen.width - 16 - BAR_PAD * 2 - PLUS - 4) / QUICK_REACTIONS.length));
+  const cell = Math.min(CELL, Math.floor((usableW - 16 - BAR_PAD * 2 - PLUS - 4) / QUICK_REACTIONS.length));
   const bar = { w: cell * QUICK_REACTIONS.length + PLUS + 4 + BAR_PAD * 2, h: cell + BAR_PAD * 2 };
   const actionsH = rows * ROW_H + (groups.length - 1) * LINE + CARD_PAD * 2;
-  const card = { w: picking ? Math.min(screen.width - 16, CELL * PICKER_COLS + CARD_PAD * 2 + 10) : CARD_W, h: picking ? PICKER_H : actionsH };
+  const card = { w: picking ? Math.min(usableW - 16, CELL * PICKER_COLS + CARD_PAD * 2 + 10) : CARD_W, h: picking ? PICKER_H : actionsH };
 
   const layout = menuLayout({ bubble: anchor, screen: { w: screen.width, h: screen.height }, insets, mine: m.mine, bar, card });
 

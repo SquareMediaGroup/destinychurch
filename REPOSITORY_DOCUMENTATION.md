@@ -8117,6 +8117,23 @@ same database as the data rather than in a separate Synapse module.
   translucent solid fallback on Android / older iOS. The one surface primitive for app chrome.
   On real glass it drops any drop shadow in `style` (the glass draws its own depth), and interactive
   glass drops a pressed-state `opacity` (it has its own touch response); the fallback keeps both.
+- **iPhone Duo** (Apple HIG "Designing for iPhone Duo", Sept 2026): on the closed (outer) display,
+  and on the open display in landscape, the system puts the status bar, Dynamic Island and tab bar
+  on the **side**, so left/right safe-area insets are no longer always 0.
+  `src/components/ScreenInsets.tsx` handles this. The root stack's `contentStyle` pads every screen
+  by the window's left/right insets (`content()` in `app/_layout.tsx`). The screens that draw edge to
+  edge opt out and inset their own content: the tabs, the chat (its wallpaper stays full-bleed, while
+  messages, the header, the pinned bar and the composer are inset) and the photo viewer (its bars).
+  Each tab screen is wrapped in `withTabBarInsets`, which gives it its own `SafeAreaProvider`. That
+  provider measures the screen's real UIKit safe area, so its insets include the system tab bar on
+  whichever edge it is. `useTabBarClearance` keeps the old fixed bottom padding while the bar is at the
+  bottom, and drops to the home-indicator inset when the bar is on a side. The custom popups
+  (`MessageMenu` via `lib/menuLayout.ts`, `AttachSheet`, `SwitchBanner`) stay inside the side insets.
+  Photo grids use an even column count on wide screens (Group media 6/8, Appearance 4), so a partly
+  folded display splits them cleanly at the fold. On every other iPhone in portrait the side insets
+  are 0, so none of this changes the layout there. Not done yet: a list + chat split view on the
+  open display, keeping custom popups off the fold (React Native doesn't expose `ReservedRegion`
+  yet), and the app's portrait lock.
 - Checks: `npm run typecheck`, `npx expo lint`, `npx expo-doctor`, `npx expo export --platform ios --platform android`. CI runs typecheck and lint (the "Destiny One app" job).
 - GDPR notes (data map, processors, retention, erasure, review audit): `docs/destiny-one-gdpr.md`.
 - Staff guide (approvals, reports, review, takedown, suspension, blocks, settings, out of hours):

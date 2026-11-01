@@ -50,8 +50,11 @@ export default function YouthAlphaSection() {
   return (
     <>
       <section
+        // The target of every "Youth Alpha" link (COURSE_EVENT_META.youth_alpha.href)
+        // — there is no /youth-alpha page; Youth Alpha lives on /youth.
+        id="youth-alpha"
         style={{ background: "linear-gradient(135deg, #363f48 0%, #242e37 100%)" }}
-        className="relative overflow-hidden py-20"
+        className="relative scroll-mt-24 overflow-hidden py-20"
       >
         <div
           aria-hidden

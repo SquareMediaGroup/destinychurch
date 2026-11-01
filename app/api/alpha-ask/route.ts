@@ -51,7 +51,8 @@ export async function POST(req: Request) {
       return Response.json({ error: "Too many requests" }, { status: 429 });
     }
 
-    const { question } = await req.json();
+    // Malformed JSON is the caller's mistake (400), not a server failure.
+    const { question } = ((await req.json().catch(() => null)) ?? {}) as { question?: unknown };
 
     if (!question || typeof question !== "string") {
       return Response.json(

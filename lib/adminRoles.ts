@@ -99,6 +99,12 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
   { pattern: /^\/api\/admin\/alpha-events(\/|$)/, roles: ["event_admin"] },
   { pattern: /^\/api\/admin\/events(\/|$)/, roles: ["event_admin"] },
   { pattern: /^\/api\/admin\/featured-course(\/|$)/, roles: ["event_admin"] },
+  // The "Show banner" toggles on the course pages above write each course's
+  // own banner row. Without this every toggle read as off and saving failed
+  // with Forbidden for an Event Admin. The handler still keeps the sitewide
+  // banner (any non-course type) Super Admin only — see
+  // app/api/admin/banner/route.ts.
+  { pattern: /^\/api\/admin\/banner(\/|$)/, roles: ["event_admin"] },
 
   // Event admin — announcements, except the sitewide banner
   { pattern: /^\/admin\/popup(\/|$)/, roles: ["event_admin"] },

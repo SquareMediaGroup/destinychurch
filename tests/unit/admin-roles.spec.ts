@@ -46,6 +46,14 @@ test("a user with no roles reaches only the shared paths", () => {
   expect(hasAccess(NO_ROLES, "/admin/users")).toBe(false);
 });
 
+test("an event admin can reach the banner API for the course toggles, but not the Banner page", () => {
+  // The course pages' "Show banner" toggles call /api/admin/banner; the route
+  // itself refuses non-course types to anyone but a Super Admin.
+  expect(hasAccess(only("event_admin"), "/api/admin/banner")).toBe(true);
+  expect(hasAccess(only("event_admin"), "/admin/banner")).toBe(false);
+  expect(hasAccess(only("site_admin"), "/api/admin/banner")).toBe(false);
+});
+
 test("public paths are not the role system's business", () => {
   // Public pages are unmatched by middleware.
   expect(hasAccess(NO_ROLES, "/sermons")).toBe(true);

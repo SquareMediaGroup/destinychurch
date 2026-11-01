@@ -147,7 +147,7 @@ function SignInScreen({
           </div>
 
           {phase === "login" ? (
-            <LoginPanel formAction={formAction} pending={pending} error={state.error} />
+            <LoginPanel formAction={formAction} pending={pending} error={state.error} email={state.email} />
           ) : (
             <ChoosePanel
               email={session?.email}
@@ -261,10 +261,13 @@ function LoginPanel({
   formAction,
   pending,
   error,
+  email,
 }: {
   formAction: (formData: FormData) => void;
   pending: boolean;
   error?: string;
+  /** The address from the last failed attempt, so the form reset keeps it. */
+  email?: string;
 }) {
   return (
     <div className="animate-[fadeInUp_0.4s_ease-out_both]">
@@ -285,13 +288,15 @@ function LoginPanel({
       <div className="glass rounded-3xl p-8">
         <form action={formAction} className="flex flex-col gap-5">
           <div>
-            <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-on-dark-subtle">
+            <label htmlFor="login-email" className="mb-2 block text-xs font-bold uppercase tracking-wider text-on-dark-subtle">
               Email
             </label>
             <input
+              id="login-email"
               type="email"
               name="email"
               autoComplete="email"
+              defaultValue={email}
               required
               placeholder="you@example.com"
               className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-3.5 text-sm text-white placeholder:text-white/20 transition focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
@@ -300,7 +305,7 @@ function LoginPanel({
 
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <label className="block text-xs font-bold uppercase tracking-wider text-on-dark-subtle">
+              <label htmlFor="login-password" className="block text-xs font-bold uppercase tracking-wider text-on-dark-subtle">
                 Password
               </label>
               <Link
@@ -311,6 +316,7 @@ function LoginPanel({
               </Link>
             </div>
             <input
+              id="login-password"
               type="password"
               name="password"
               autoComplete="current-password"

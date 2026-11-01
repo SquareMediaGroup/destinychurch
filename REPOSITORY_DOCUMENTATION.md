@@ -594,22 +594,34 @@ migration was needed.
 
 ```sql
 CREATE TABLE hire_enquiries (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  email text NOT NULL,
-  phone text NOT NULL,
-  date_needed date NOT NULL,
-  event_description text NOT NULL,
-  approx_guests integer,
-  created_at timestamptz DEFAULT now()
+  id            bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name          text NOT NULL,
+  email         text NOT NULL,
+  phone         text NOT NULL,
+  organisation  text,
+  event_type    text NOT NULL,   -- "Other — <description>" when the visitor picked Other
+  space         text NOT NULL,
+  date          text NOT NULL,   -- YYYY-MM-DD from the form
+  start_time    text NOT NULL,
+  end_time      text NOT NULL,
+  attendance    text NOT NULL,
+  requirements  text,
+  message       text,
+  church_member text,            -- "Yes" / "No", asked for weddings (20261031_01 migration)
+  created_at    timestamptz NOT NULL DEFAULT now()
 );
 
--- RLS: Public insert; service role read
+-- RLS: "service only" — the server action writes with the service role
 ```
 
+There is no `event_type_other` column: the "Please describe your event" answer
+is folded into `event_type`. Sending a column the table doesn't have makes
+PostgREST reject the whole insert, which is how every enquiry failed between
+9 and 31 October 2026.
+
 **Used By:**
-- `app/hire/actions.ts` (server action) inserts submissions
-- Admin dashboard to view inquiries
+- `app/hire/actions.ts` (server action) inserts submissions and emails techteam@destinytees.uk
+- No admin page reads it yet — enquiries are handled from that email
 
 ---
 
@@ -3594,6 +3606,12 @@ Notes worth knowing before changing it:
 - **A page can own several types.** `/admin/alpha` manages Alpha and Youth Alpha together,
   which is why `types` is a list; the create form only shows the Type selector when there
   is more than one, and each type gets its own banner card and event list.
+- **`href` must be a page that exists.** Youth Alpha has no page of its own — it is the
+  `#youth-alpha` section of `/youth` (`components/youth-alpha/YouthAlphaSection.tsx`), so its
+  href is `/youth#youth-alpha`. It used to be `/youth-alpha`, a 404, and banner rows saved
+  with that link are caught by a redirect in `next.config.ts`.
+- **The banner cards call `/api/admin/banner`**, which Event Admins may use for course types
+  only (`canEditBannerType` in the route); the sitewide banner stays Super Admin only.
 - **Accent colour is applied as inline `rgba()`**, not Tailwind opacity classes, because the
   accent is per-course data and cannot be a compile-time class name. `hexToRgb` reproduces
   the `ACCENT_RGB` constants the pages used to hardcode.
@@ -6872,7 +6890,7 @@ always passes and isn't repeated per rule; anything under `/admin` or
 | Role | Admin pages | API routes |
 |---|---|---|
 | `training_admin` | `/admin/training/**` | `/api/admin/training/**` |
-| `event_admin` | Courses (`alpha`, `recovery`, `bible-course`, `cap-money`, `featured-course`) + Announcements except Banner (`popup`, `featured-event`, `event-popup`, `nfc`) | `/api/admin/{alpha-events,events,featured-course,featured-event,popup,nfc}` |
+| `event_admin` | Courses (`alpha`, `recovery`, `bible-course`, `cap-money`, `featured-course`) + Announcements except Banner (`popup`, `featured-event`, `event-popup`, `nfc`) | `/api/admin/{alpha-events,events,featured-course,featured-event,popup,nfc}`, plus `/api/admin/banner` for course banner types only (the course pages' "Show banner" toggles); the handler refuses the sitewide banner to anyone but a Super Admin |
 | `store_admin` | `/admin/store/**` | `/api/admin/{store,shop-hero}/**` |
 | `site_admin` | `/admin/posts`, `/admin/redirects`, `/admin/analytics`, `/admin/status` | `/api/admin/{posts,redirects,analytics,status}/**` |
 | `hr_admin` | `/admin/hr/**` (staff, leave, jobs, applications, documents, reviews, checklists) | `/api/admin/hr/**` |

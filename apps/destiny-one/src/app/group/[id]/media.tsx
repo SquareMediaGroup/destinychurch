@@ -22,8 +22,17 @@ import { errorMessage } from "@/state/session";
 import { ORANGE, useTheme } from "@/theme/tokens";
 
 type Tab = "photos" | "files";
-const COLUMNS = 3;
 const GAP = 2;
+
+/**
+ * Three across on a phone. On a wide screen (the open iPhone Duo), an even
+ * count so a partly folded display splits the grid cleanly at the fold
+ * (Apple HIG, "Designing for iPhone Duo"), with cells staying phone-sized.
+ */
+function columnsFor(width: number): number {
+  if (width < 500) return 3;
+  return width < 900 ? 6 : 8;
+}
 
 export default function GroupMedia() {
   const t = useTheme();
@@ -64,7 +73,10 @@ export default function GroupMedia() {
     if (url) void WebBrowser.openBrowserAsync(url);
   }
 
-  const cell = (width - 32 - GAP * (COLUMNS - 1)) / COLUMNS;
+  // The root stack pads the sides by the safe area (the side status bar on iPhone Duo).
+  const gridWidth = width - insets.left - insets.right - 32;
+  const columns = columnsFor(gridWidth);
+  const cell = Math.floor((gridWidth - GAP * (columns - 1)) / columns);
   const footer = loadingOlder ? <ActivityIndicator color={ORANGE} style={{ paddingVertical: 16 }} /> : undefined;
 
   const header = (
@@ -106,9 +118,10 @@ export default function GroupMedia() {
     <View style={{ flex: 1, backgroundColor: t.grouped }}>
       {tab === "photos" ? (
         <FlatList
-          key="photos"
+          // numColumns can't change on a mounted list, so a new count is a new list.
+          key={`photos-${columns}`}
           data={photos}
-          numColumns={COLUMNS}
+          numColumns={columns}
           keyExtractor={(m) => String(m.id)}
           ListHeaderComponent={header}
           ListFooterComponent={footer}

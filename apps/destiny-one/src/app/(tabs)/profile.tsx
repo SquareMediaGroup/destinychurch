@@ -9,6 +9,7 @@ import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { File, Paths } from "expo-file-system";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTabBarClearance, withTabBarInsets } from "@/components/ScreenInsets";
 import { D1_ROLE_LABELS, topRole } from "@destiny/shared";
 import Constants from "expo-constants";
 import { openDocument } from "@/components/SafetyNotice";
@@ -24,9 +25,13 @@ import { ORANGE, INK, useTheme } from "@/theme/tokens";
 const BETA_TAPS = 10;
 const TAP_WINDOW_MS = 2000;
 
-export default function Profile() {
+export default withTabBarInsets(Profile);
+
+function Profile() {
   const t = useTheme();
+  // Includes the tab bar, wherever the system put it (the side, on iPhone Duo).
   const insets = useSafeAreaInsets();
+  const bottomPad = useTabBarClearance(110);
   const { me, setMe, email, signOut, accounts } = useSession();
   const others = accounts.length - 1;
   const [signingOut, setSigningOut] = useState(false);
@@ -170,7 +175,7 @@ export default function Profile() {
 
   return (
     <>
-    <ScrollView style={{ flex: 1, backgroundColor: t.grouped }} contentContainerStyle={{ paddingTop: insets.top + 52, paddingHorizontal: 16, paddingBottom: 110, gap: 22 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: t.grouped }} contentContainerStyle={{ paddingTop: insets.top + 52, paddingLeft: insets.left + 16, paddingRight: insets.right + 16, paddingBottom: bottomPad, gap: 22 }}>
       <LargeTitle style={{ paddingHorizontal: 4 }}>Profile</LargeTitle>
 
       <Card style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 16, paddingLeft: 16 }}>

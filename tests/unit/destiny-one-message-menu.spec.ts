@@ -75,4 +75,16 @@ test.describe("Destiny One message menu layout", () => {
     const theirs = menuLayout({ ...base, mine: false, bubble: { x: 54, y: 400, w: 120, h: 44 } });
     expect(theirs.card.x).toBe(54);
   });
+
+  test("stays clear of a side safe area (iPhone Duo's side status bar and camera)", () => {
+    // Illustrative wide, short outer display with the status bar down the left.
+    const base = { screen: { w: 520, h: 640 }, insets: { top: 0, bottom: 20, left: 54, right: 0 }, bar: BAR, card: CARD };
+    const theirs = menuLayout({ ...base, mine: false, bubble: { x: 20, y: 300, w: 200, h: 44 } });
+    expect(theirs.bar.x).toBe(54 + EDGE);
+    expect(theirs.card.x).toBe(54 + EDGE);
+    const right = { ...base, insets: { top: 0, bottom: 20, left: 0, right: 54 } };
+    const mine = menuLayout({ ...right, mine: true, bubble: { x: 300, y: 300, w: 210, h: 44 } });
+    expect(mine.bar.x + BAR.w).toBe(520 - 54 - EDGE);
+    expect(mine.card.x + CARD.w).toBe(520 - 54 - EDGE);
+  });
 });

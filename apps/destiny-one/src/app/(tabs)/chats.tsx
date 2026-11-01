@@ -9,6 +9,7 @@ import { useMemo, useState } from "react";
 import { FlatList, Linking, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { Link, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTabBarClearance, withTabBarInsets } from "@/components/ScreenInsets";
 import { GlassSurface } from "@/components/GlassSurface";
 import { CardGroupRow, orderedGroups } from "@/components/GroupRows";
 import { SwipeActions, type SwipeAction } from "@/components/Swipe";
@@ -90,9 +91,13 @@ function ChatRow({ group: g }: { group: D1GroupSummary }) {
   );
 }
 
-export default function Chats() {
+export default withTabBarInsets(Chats);
+
+function Chats() {
   const t = useTheme();
+  // Includes the tab bar, wherever the system put it (the side, on iPhone Duo).
   const insets = useSafeAreaInsets();
+  const bottomPad = useTabBarClearance(110);
   const { communities, communitiesError, refreshCommunities, isLeader, assistant, outage } = useSession();
   const [filter, setFilter] = useState<Filter>("all");
   const [refreshing, setRefreshing] = useState(false);
@@ -185,7 +190,7 @@ export default function Chats() {
 
   if (!communities) {
     return (
-      <View style={{ flex: 1, backgroundColor: t.bg }}>
+      <View style={{ flex: 1, backgroundColor: t.bg, paddingLeft: insets.left, paddingRight: insets.right }}>
         {header}
         {communitiesError ? <ErrorState message={communitiesError} onRetry={() => void refreshCommunities()} /> : <ListSkeleton />}
       </View>
@@ -202,7 +207,7 @@ export default function Chats() {
   return (
     <FlatList
       style={{ flex: 1, backgroundColor: t.bg }}
-      contentContainerStyle={{ paddingBottom: 110 }}
+      contentContainerStyle={{ paddingBottom: bottomPad, paddingLeft: insets.left, paddingRight: insets.right }}
       data={cards}
       keyExtractor={(x) => x.community.id}
       ListHeaderComponent={header}

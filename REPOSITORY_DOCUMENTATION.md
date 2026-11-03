@@ -2837,6 +2837,8 @@ without an auth check, so they must never be reachable on the live site.
 | `/terms` | `app/terms/page.tsx` | Terms of use |
 | `/safeguarding` | `app/safeguarding/page.tsx` | Safeguarding policy |
 | `/data-gdpr` | `app/data-gdpr/page.tsx` | Data & GDPR policy |
+| `/app` | `app/app/page.tsx` | Destiny One landing page: coming 2027, pre-order / pre-register buttons, features, appearance, safeguarding rules, FAQ. Screens are the real app (web build, sample people) from `public/img/destiny-one/`, shown as rounded screens without a device frame (Apple's bezel licence doesn't cover Android software). Store buttons come from `webStoreLinks()` and read "Coming soon" until `D1_IOS_STORE_URL` / `D1_ANDROID_STORE_URL` are set |
+| `/discover` | `app/discover/page.tsx` | "Behind the build": before/after sliders of the old WordPress site vs the new one (home, visit, what's on, give, alpha, shop, plus the home page on a phone), the Lighthouse numbers, what makes it fast and accessible, how Smart Search works, and the stack. Images in `public/img/discover/` |
 | `/governance` | `app/governance/page.tsx` | Transparency page: charity + company registration details, trustees/directors, charitable objects, five-year financial history and filings. Data comes live from the Charity Commission and Companies House APIs via `lib/governance.server.ts`, cached weekly (`revalidate = 604800`), falling back to a stored snapshot per-regulator when a key is missing or an API is down |
 | `/administration` | `app/administration/page.tsx` | Stale-bookmark redirect to `/admin` |
 | `/auth/callback`, `/auth/confirm` | `app/auth/callback/route.ts`, `app/auth/confirm/route.ts` | Supabase OAuth callback and email-OTP verification route handlers |
@@ -3371,6 +3373,26 @@ keeps its own brand-coloured hero and CTA buttons rather than going through
 `components/ui/Button` — that component's variants are fixed Tailwind classes, not
 arbitrary hex colours, and each course's colour is a deliberate, already-coordinated brand
 decision (matched to `COURSE_ADMIN_PAGES`'s admin-side accent), not drift to converge.
+
+#### Destiny One page (`components/destiny-one-page/*`)
+
+- `AppScreen.tsx` — one app screenshot as a floating rounded screen. The radius is the iPhone's
+  display radius as an elliptical percentage (`rounded-[13.7%/6.8%]` for 402x812pt captures), so it
+  stays true at any size. No device frame on purpose: see `/app` above.
+- `StoreButtons.tsx` — the App Store / Google Play buttons. The site's own pills, not the stores'
+  badges (Apple's pre-order badge is only for a listing that takes pre-orders; swap to the official
+  download badges on launch day). A store with no link yet renders the same shape as an outline,
+  "Coming soon to the App Store".
+- `FeatureRow.tsx` — heading + points on one side, screens on the other, alternating with `flip`.
+
+#### Discover page (`components/discover/*`)
+
+- `BeforeAfterSlider.tsx` (client) — the new image underneath, the old one on top clipped from the
+  left (`clip-path: inset(0 0 0 x%)`), so "After" is left of the handle and "Before" right, like the
+  campaign film. Pointer capture for drag/tap; a visually hidden `<input type="range">` (step 5) for
+  keyboard and screen readers, whose focus ring is drawn on the handle. Takes any `aspect`.
+- `BeforeAfterGallery.tsx` (client) — WAI-ARIA tabs (arrow keys, Home/End) above one slider, for
+  `/img/discover/<key>-before.webp` and `-after.webp`.
 
 #### Governance (`components/governance/*`)
 
@@ -6760,6 +6782,11 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
 
 ### `lib/destinyOne/*` — Destiny One backend
 
+`storeLinks.ts` — `IOS_STORE_URL` / `ANDROID_STORE_URL` (env `D1_IOS_STORE_URL`, default TestFlight;
+`D1_ANDROID_STORE_URL`, default the `uk.destinytees.one` Play listing) for the app's update prompt
+(`/one/config`), and `webStoreLinks()` for the `/app` page, which only returns links that were set
+on purpose (https), so the website never links to TestFlight or an unpublished listing.
+
 Part 2 additions: `onboarding.ts` (pure: `onboardingState`, `ONBOARDING_MESSAGES`,
 `adultOnForDecision` — turns an admin's adult/under-18 choice + optional DOB into `adult_on`, and
 refuses a mismatch), `settings.server.ts` (`getSettings`, `retentionDays`), `adminData.server.ts`
@@ -7561,8 +7588,8 @@ ENABLE_SMART_SEARCH=true
 | Content | Strategy | TTL | Invalidation |
 |---------|----------|-----|--------------|
 | Static assets (`/img`, `/fonts`) | Immutable | 1 year | Filename change |
-| Home page | ISR | 1 hour | `revalidatePath("/")` |
-| Sermon archive | ISR | 4 hours | `revalidatePath("/sermons")` |
+| Home page | ISR | 30 seconds (`revalidate = 30`) | `revalidatePath("/")` |
+| Sermon archive | ISR | 30 minutes (`revalidate = 1800`) | `revalidatePath("/sermons")` |
 | Dynamic pages (`/[slug]`) | ISR | 24 hours | `revalidatePath("/[slug]")` |
 | Redirects | Edge | Infinite | Deploy |
 | API responses | None | - | Fresh on every request |

@@ -31,6 +31,8 @@ const pages: { path: string; title: RegExp; heading: RegExp }[] = [
   { path: '/hire', title: /Hire Our Venue/, heading: /Hire/ },
   { path: '/help', title: /Help/, heading: /Help/ },
   { path: '/governance', title: /Governance/, heading: /Governance/ },
+  { path: '/app', title: /Destiny One/, heading: /Destiny One/ },
+  { path: '/discover', title: /Behind the build/, heading: /built/ },
   { path: '/links', title: /Next Steps/, heading: /.+/ },
   { path: '/nfc', title: /Welcome/, heading: /.+/ },
   { path: '/shop', title: /Shop/, heading: /.+/ },

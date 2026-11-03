@@ -7,6 +7,10 @@ then "Oh, and one more thing" and Destiny One. They share everything except the 
 | --- | --- | --- |
 | `ComingIn2027` | Destiny One, "Coming in 2027", destinytees.uk/app | 3:30 |
 | `DownloadToday` | "Download today", App Store badge, destinytees.uk/app | 3:30 |
+| `DestinyOneFilm` | Destiny One alone, in more depth, with music; "Coming in 2027". Plays on /app | 1:03 |
+
+Finished renders are kept in `exports/` (the 4K `DownloadToday` and `Destiny-One-Film.mp4`) so they can be
+downloaded from GitHub; `out/` stays ignored for working renders.
 
 ## Commands
 
@@ -16,6 +20,7 @@ npm install
 npm run dev                      # Remotion Studio, to preview and tweak
 npx remotion render ComingIn2027 out/ComingIn2027.mp4
 npx remotion render DownloadToday out/DownloadToday.mp4
+npx remotion render DestinyOneFilm out/Destiny-One-Film.mp4
 npm run lint                     # eslint + tsc
 ```
 
@@ -46,8 +51,13 @@ before/after pairs for sliders in `stills/before-after/`. See `stills/README.md`
 
 - **The Destiny One screens use sample data.** Every person in them is made up (Jordan Ellis, Priya Shah…);
   the events and sermons are the church's real public ones. See `capture/destiny-one-sample-data.cjs`.
-- **There's no music.** Drop a licensed track in `public/` and add `<Audio src={staticFile("music.mp3")} />`
-  from `@remotion/media` in `Campaign.tsx`.
+- **Music.** The campaign films have none (post-production adds it). `DestinyOneFilm` uses "Inspired" by
+  Kevin MacLeod (incompetech.com), `public/audio/inspired.mp3`, licensed under Creative Commons: By Attribution
+  4.0 (https://creativecommons.org/licenses/by/4.0/). The licence needs that credit wherever the film is shown;
+  /app has it under the player. Swap the file in `DestinyOneFilm.tsx` to change the track.
+- **The web copy of the film** on /app is `public/img/destiny-one/film.mp4` (re-encoded, CRF 22, faststart)
+  with `film-poster.webp`. After re-rendering:
+  `ffmpeg -i out/Destiny-One-Film.mp4 -c:v libx264 -preset slow -crf 22 -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart ../../public/img/destiny-one/film.mp4`
 - The glass tab bar on Destiny One screens is drawn in the video, because the app's web build (used for the
   screenshots) shows its tabs differently. The status bar (9:41) is drawn too.
 - Look: light pages, no glows, and every move uses one aggressive ease in and out (`EASE` in

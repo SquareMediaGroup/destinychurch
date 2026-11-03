@@ -23,7 +23,8 @@ import {
   VisitScene,
   WebsiteEndScene,
   WhatsOnScene,
-  WhyScene,
+  WhyReasonScene,
+  WhyTitleScene,
 } from "./scenes/website";
 import { AiScene, AppIntroScene, AppearanceScene, ChatsScene, ComingSoonEnd, ConversationScene, DownloadEnd, FinalLogo, SafetyRulesScene, SafetyScene } from "./scenes/app";
 
@@ -48,8 +49,24 @@ export const Campaign: React.FC<CampaignProps> = ({ ending }) => {
           <IntroScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Why" durationInFrames={6.5 * fps}>
-          <WhyScene />
+        <TransitionSeries.Sequence name="Why" durationInFrames={3.5 * fps}>
+          <WhyTitleScene />
+        </TransitionSeries.Sequence>
+        {t}
+        <TransitionSeries.Sequence name="Why: accessibility" durationInFrames={4.2 * fps}>
+          <WhyReasonScene index={0} />
+        </TransitionSeries.Sequence>
+        {t}
+        <TransitionSeries.Sequence name="Why: ease of use" durationInFrames={4.2 * fps}>
+          <WhyReasonScene index={1} />
+        </TransitionSeries.Sequence>
+        {t}
+        <TransitionSeries.Sequence name="Why: speed" durationInFrames={4.2 * fps}>
+          <WhyReasonScene index={2} />
+        </TransitionSeries.Sequence>
+        {t}
+        <TransitionSeries.Sequence name="Why: design" durationInFrames={4.2 * fps}>
+          <WhyReasonScene index={3} />
         </TransitionSeries.Sequence>
         {t}
         <TransitionSeries.Sequence name="Before and after: home" durationInFrames={6.5 * fps}>
@@ -64,27 +81,27 @@ export const Campaign: React.FC<CampaignProps> = ({ ending }) => {
           <BeforeAfter name="whatson" title="What's On" />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Before and after: give" durationInFrames={3.5 * fps}>
-          <BeforeAfter name="give" title="Give" />
-        </TransitionSeries.Sequence>
-        {t}
-        <TransitionSeries.Sequence name="Before and after: alpha" durationInFrames={3.5 * fps}>
-          <BeforeAfter name="alpha" title="Alpha" />
-        </TransitionSeries.Sequence>
-        {t}
         <TransitionSeries.Sequence name="Before and after: phone" durationInFrames={5 * fps}>
           <BeforeAfterPhones />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Performance" durationInFrames={8 * fps}>
-          <PerformanceScene />
+        <TransitionSeries.Sequence name="Speed" durationInFrames={4.5 * fps}>
+          <PerformanceScene chart={0} />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Home" durationInFrames={8 * fps}>
+        <TransitionSeries.Sequence name="Data" durationInFrames={4.5 * fps}>
+          <PerformanceScene chart={1} />
+        </TransitionSeries.Sequence>
+        {t}
+        <TransitionSeries.Sequence name="Accessibility score" durationInFrames={4 * fps}>
+          <PerformanceScene chart={2} />
+        </TransitionSeries.Sequence>
+        {t}
+        <TransitionSeries.Sequence name="Home" durationInFrames={7 * fps}>
           <HomeScroll />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Smart Search" durationInFrames={9 * fps}>
+        <TransitionSeries.Sequence name="Smart Search" durationInFrames={8.5 * fps}>
           <SearchScene />
         </TransitionSeries.Sequence>
         {t}
@@ -92,15 +109,15 @@ export const Campaign: React.FC<CampaignProps> = ({ ending }) => {
           <SearchPhoneScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Sermons" durationInFrames={8 * fps}>
+        <TransitionSeries.Sequence name="Sermons" durationInFrames={7 * fps}>
           <SermonsScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="What's On" durationInFrames={8 * fps}>
+        <TransitionSeries.Sequence name="What's On" durationInFrames={7 * fps}>
           <WhatsOnScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Plan your visit" durationInFrames={8 * fps}>
+        <TransitionSeries.Sequence name="Plan your visit" durationInFrames={7 * fps}>
           <VisitScene />
         </TransitionSeries.Sequence>
         {t}
@@ -112,11 +129,11 @@ export const Campaign: React.FC<CampaignProps> = ({ ending }) => {
           <ShopBeforeAfter />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Shop checkout" durationInFrames={8 * fps}>
+        <TransitionSeries.Sequence name="Shop checkout" durationInFrames={7.5 * fps}>
           <ShopCheckoutScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Ministries" durationInFrames={5.5 * fps}>
+        <TransitionSeries.Sequence name="Ministries" durationInFrames={5 * fps}>
           <MinistriesScene />
         </TransitionSeries.Sequence>
         {t}
@@ -132,17 +149,17 @@ export const Campaign: React.FC<CampaignProps> = ({ ending }) => {
         <TransitionSeries.Sequence name="Help centre" durationInFrames={2.8 * fps}>
           <LittleThingSlide index={2} />
         </TransitionSeries.Sequence>
-        <TransitionSeries.Sequence name="Training" durationInFrames={2.8 * fps}>
+        <TransitionSeries.Sequence name="Training" durationInFrames={2.4 * fps}>
           <LittleThingSlide index={3} />
         </TransitionSeries.Sequence>
         <TransitionSeries.Sequence name="Governance" durationInFrames={2.8 * fps}>
           <LittleThingSlide index={4} />
         </TransitionSeries.Sequence>
-        <TransitionSeries.Sequence name="Links" durationInFrames={2.8 * fps}>
+        <TransitionSeries.Sequence name="Links" durationInFrames={2.4 * fps}>
           <LittleThingSlide index={5} />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Every screen" durationInFrames={6 * fps}>
+        <TransitionSeries.Sequence name="Every screen" durationInFrames={5.5 * fps}>
           <DevicesScene />
         </TransitionSeries.Sequence>
         {t}
@@ -167,7 +184,7 @@ export const Campaign: React.FC<CampaignProps> = ({ ending }) => {
           <ConversationScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="DestinyAI" durationInFrames={9.5 * fps}>
+        <TransitionSeries.Sequence name="DestinyAI" durationInFrames={9 * fps}>
           <AiScene />
         </TransitionSeries.Sequence>
         {t}
@@ -183,11 +200,11 @@ export const Campaign: React.FC<CampaignProps> = ({ ending }) => {
           <SafetyRulesScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name={ending === "coming-2027" ? "Coming in 2027" : "Download today"} durationInFrames={7 * fps}>
+        <TransitionSeries.Sequence name={ending === "coming-2027" ? "Coming in 2027" : "Download today"} durationInFrames={8 * fps}>
           {ending === "coming-2027" ? <ComingSoonEnd /> : <DownloadEnd />}
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Destiny Church" durationInFrames={4.5 * fps}>
+        <TransitionSeries.Sequence name="Destiny Church" durationInFrames={4.2 * fps}>
           <FinalLogo />
         </TransitionSeries.Sequence>
       </TransitionSeries>
@@ -195,5 +212,5 @@ export const Campaign: React.FC<CampaignProps> = ({ ending }) => {
   );
 };
 
-/** Sum of the scene lengths minus the 29 crossfades of 8 frames. Keep in sync with the timeline above. */
-export const CAMPAIGN_FRAMES = 6170;
+/** Sum of the scene lengths minus the 33 crossfades of 8 frames. Keep in sync with the timeline above. */
+export const CAMPAIGN_FRAMES = 6294;

@@ -5,8 +5,8 @@ then "Oh, and one more thing" and Destiny One. They share everything except the 
 
 | Composition | Ending | Length |
 | --- | --- | --- |
-| `ComingIn2027` | Destiny One, "Coming in 2027" | 3:26 |
-| `DownloadToday` | "Download today" with the App Store badge | 3:26 |
+| `ComingIn2027` | Destiny One, "Coming in 2027", destinytees.uk/app | 3:30 |
+| `DownloadToday` | "Download today", App Store badge, destinytees.uk/app | 3:30 |
 
 ## Commands
 
@@ -29,7 +29,7 @@ In a cloud container without Chrome, add `--browser-executable=/opt/pw-browsers/
 - `public/brand/` — official assets only: the Destiny Church logo and icon (from `public/img/brand`), the
   Destiny One app icon (`apps/destiny-one/assets/icon.png`), and Apple's App Store badge, used unmodified.
 - `public/bezels/` (gitignored) — Apple's iPhone 18 Pro and MacBook Pro 14" frames; see below.
-- **Performance figures** (`PerformanceScene`): Google Lighthouse 12.8, mobile, median of three runs on each
+- **Performance figures** (`PerformanceScene`, shown as bar charts: 3.5× slower, 94% less data, 96 vs 71 accessibility): Google Lighthouse 12.8, mobile, median of three runs on each
   home page (destinytees.uk vs destinychurch.vercel.app), 3 Nov 2026. Old → new: performance 36 → 90,
   accessibility 71 → 96, LCP 7.3 s → 2.1 s, page weight 13.7 MB → 0.8 MB (also FCP 2.8 → 1.1 s, CLS 0.354 → 0,
   SEO 92 → 100). Re-run before reusing them: `npx lighthouse <url> --only-categories=performance,accessibility`.
@@ -62,3 +62,5 @@ download before changing how they're used. Renders fail without the frames, so r
 - Copy in the safety scene mirrors the rules the server enforces (README in `apps/destiny-one`). Don't add
   "encrypted" or a lock: chats are reviewable by the safeguarding team.
 - Remotion is free for individuals, non-profits and companies of up to 3 people; see remotion.pro/license.
+
+- The endings point to **destinytees.uk/app**, which doesn't exist yet (404 on 3 Nov 2026). Build it before the films go out.

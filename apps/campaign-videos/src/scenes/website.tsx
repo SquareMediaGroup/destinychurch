@@ -53,45 +53,72 @@ export const IntroScene: React.FC = () => {
   );
 };
 
-// 2. Why it changed
-const REASONS: { title: string; body: string }[] = [
-  { title: "Accessibility", body: "Readable, keyboard friendly and calmer motion for everyone." },
-  { title: "Ease of use", body: "Find what you need in a tap, or just ask." },
-  { title: "Performance", body: "Pages that load in a fraction of the time." },
-  { title: "Better design", body: "A fresh look that feels like Destiny." },
+// 2. Why it changed, in everyday words: one reason per screen.
+const REASONS: { kicker: string; title: string; body: string }[] = [
+  {
+    kicker: "Easier for everyone",
+    title: "Easier for everyone to use.",
+    body: "Text that is easier to read, calmer movement on screen for anyone who finds it hard, and every page works with just a keyboard.",
+  },
+  {
+    kicker: "Easier to find things",
+    title: "Find what you need, fast.",
+    body: "Service times, events and sermons are a tap away. Or just type a question in your own words, and the website answers.",
+  },
+  {
+    kicker: "Much quicker",
+    title: "Pages open in a flash.",
+    body: "The new website loads over three times faster on a phone, and uses far less of your mobile data.",
+  },
+  {
+    kicker: "A fresh new look",
+    title: "Looks and feels like Destiny.",
+    body: "A clean, modern design built around our church, our people and our colours.",
+  },
 ];
 
-export const WhyScene: React.FC = () => {
+export const WhyTitleScene: React.FC = () => (
+  <Page bg={C.white}>
+    <Exit>
+      <Center gap={30}>
+        <Headline text="Why a new website?" size={120} stagger={5} />
+        <Body delay={30} size={46}>
+          Four reasons, and what they mean for you.
+        </Body>
+      </Center>
+    </Exit>
+  </Page>
+);
+
+export const WhyReasonScene: React.FC<{ index: number }> = ({ index }) => {
   const frame = useCurrentFrame();
+  const r = REASONS[index];
+  const num = kf(frame, [0, 40], [0, 1]);
   return (
     <Page>
       <Exit>
-        <AbsoluteFill style={{ alignItems: "center", paddingTop: 150 }}>
-          <Headline text="Why a new website?" size={100} />
-        </AbsoluteFill>
-        <AbsoluteFill style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 36, paddingTop: 220 }}>
-          {REASONS.map((r, i) => {
-            const p = kf(frame, [30 + i * 14, 70 + i * 14], [0, 1]);
-            return (
-              <div
-                key={r.title}
-                style={{
-                  width: 360,
-                  height: 300,
-                  borderRadius: 28,
-                  background: C.white,
-                  padding: "40px 36px",
-                  boxShadow: "0 12px 40px rgba(0,0,0,0.06)",
-                  opacity: p,
-                  translate: `0px ${(1 - p) * 160}px`,
-                }}
-              >
-                <div style={{ fontFamily: dosis, fontWeight: 700, fontSize: 28, letterSpacing: "0.16em", color: C.accent }}>0{i + 1}</div>
-                <div style={{ fontFamily: roboto, fontWeight: 700, fontSize: 46, letterSpacing: "-0.03em", color: C.ink, marginTop: 18 }}>{r.title}</div>
-                <div style={{ fontFamily: roboto, fontSize: 30, lineHeight: 1.35, color: C.muted, marginTop: 14 }}>{r.body}</div>
-              </div>
-            );
-          })}
+        <AbsoluteFill style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 110, padding: "0 160px" }}>
+          <div
+            style={{
+              fontFamily: roboto,
+              fontWeight: 700,
+              fontSize: 360,
+              letterSpacing: "-0.06em",
+              color: C.accent,
+              lineHeight: 1,
+              opacity: num,
+              translate: `0px ${(1 - num) * 120}px`,
+            }}
+          >
+            {index + 1}
+          </div>
+          <div style={{ width: 1000, display: "flex", flexDirection: "column", gap: 26 }}>
+            <Kicker delay={6}>{r.kicker}</Kicker>
+            <Headline text={r.title} size={96} align="left" delay={10} />
+            <Body delay={30} size={44} align="left" color={C.ink} maxWidth={980}>
+              {r.body}
+            </Body>
+          </div>
         </AbsoluteFill>
       </Exit>
     </Page>
@@ -171,48 +198,76 @@ export const BeforeAfterPhones: React.FC = () => {
   );
 };
 
-// 4. Performance: Lighthouse, mobile, median of three runs on each site (3 Nov 2026).
-const METRICS: { label: string; before: number; after: number; unit?: string; decimals?: number; better: "higher" | "lower" }[] = [
-  { label: "Performance score", before: 36, after: 90, better: "higher" },
-  { label: "Accessibility score", before: 71, after: 96, better: "higher" },
-  { label: "Main content loads in", before: 7.3, after: 2.1, unit: "s", decimals: 1, better: "lower" },
-  { label: "Page weight", before: 13.7, after: 0.8, unit: "MB", decimals: 1, better: "lower" },
+// 4. Performance, as plain comparisons with bars. Figures: Google Lighthouse, mobile, median of three
+// runs on each home page (3 Nov 2026): main content 7.3 s → 2.1 s, page weight 13.7 MB → 0.8 MB,
+// accessibility 71 → 96.
+type Bar = { label: string; value: number; note?: string; isNew?: boolean };
+const CHARTS: { title: string; bars: Bar[] }[] = [
+  {
+    title: "How fast the page loads on a phone",
+    bars: [
+      { label: "New website", value: 1, isNew: true },
+      { label: "Old website", value: 2.1 / 7.3, note: "3.5× slower" },
+    ],
+  },
+  {
+    title: "Mobile data used to open the home page",
+    bars: [
+      { label: "Old website", value: 1, note: "13.7 MB" },
+      { label: "New website", value: 0.8 / 13.7, note: "94% less", isNew: true },
+    ],
+  },
+  {
+    title: "Accessibility score",
+    bars: [
+      { label: "New website", value: 0.96, note: "96 / 100", isNew: true },
+      { label: "Old website", value: 0.71, note: "71 / 100" },
+    ],
+  },
 ];
 
-export const PerformanceScene: React.FC = () => {
+const BarRow: React.FC<{ bar: Bar; start: number }> = ({ bar, start }) => {
   const frame = useCurrentFrame();
+  const grow = kf(frame, [start, start + 46], [0, bar.value]);
+  const label = kf(frame, [start + 30, start + 50], [0, 1]);
+  return (
+    <div style={{ marginTop: 34 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontFamily: roboto, fontSize: 34 }}>
+        <span style={{ fontWeight: 600, color: bar.isNew ? C.ink : C.muted }}>{bar.label}</span>
+        <span style={{ fontWeight: 600, color: bar.isNew ? C.accent : C.muted, opacity: label }}>{bar.note ?? ""}</span>
+      </div>
+      <div style={{ height: 14, borderRadius: 7, background: "rgba(0,0,0,0.06)", marginTop: 14, overflow: "hidden" }}>
+        <div
+          style={{
+            width: `${grow * 100}%`,
+            height: "100%",
+            borderRadius: 7,
+            background: bar.isNew ? `linear-gradient(90deg, ${C.orange}, #FD0000 55%, #8106B1)` : "#B9B9BE",
+          }}
+        />
+      </div>
+    </div>
+  );
+};
+
+export const PerformanceScene: React.FC<{ chart: number }> = ({ chart }) => {
+  const frame = useCurrentFrame();
+  const c = CHARTS[chart];
   return (
     <Page bg={C.white}>
       <Exit>
-        <AbsoluteFill style={{ alignItems: "center", paddingTop: 90 }}>
-          <Kicker>Performance</Kicker>
-          <div style={{ height: 12 }} />
-          <Headline text="Faster in almost every way." size={92} accent={["Faster"]} />
+        <AbsoluteFill style={{ justifyContent: "center", padding: "0 260px" }}>
+          {chart === 0 ? <Kicker>Much quicker</Kicker> : null}
+          <div style={{ height: 16 }} />
+          <Headline text={c.title} size={76} align="left" />
+          <div style={{ height: 30 }} />
+          {c.bars.map((b, i) => (
+            <BarRow key={b.label} bar={b} start={34 + i * 18} />
+          ))}
         </AbsoluteFill>
-        <AbsoluteFill style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 40, paddingTop: 120 }}>
-          {METRICS.map((m, i) => {
-            const enter = kf(frame, [24 + i * 10, 64 + i * 10], [0, 1]);
-            const count = kf(frame, [70 + i * 10, 130 + i * 10], [0, 1]);
-            const value = m.before + (m.after - m.before) * count;
-            const fmt = (v: number) => (m.decimals ? v.toFixed(m.decimals) : Math.round(v).toString());
-            return (
-              <div key={m.label} style={{ width: 380, opacity: enter, translate: `0px ${(1 - enter) * 120}px`, textAlign: "center" }}>
-                <div style={{ fontFamily: roboto, fontWeight: 700, fontSize: 132, letterSpacing: "-0.05em", color: C.ink, lineHeight: 1 }}>
-                  {fmt(value)}
-                  <span style={{ fontSize: 60, letterSpacing: "-0.02em" }}>{m.unit ?? ""}</span>
-                </div>
-                <div style={{ fontFamily: roboto, fontWeight: 500, fontSize: 30, color: C.ink, marginTop: 18 }}>{m.label}</div>
-                <div style={{ fontFamily: roboto, fontSize: 26, color: C.muted, marginTop: 8 }}>
-                  was {fmt(m.before)}
-                  {m.unit ?? ""} on the old site
-                </div>
-              </div>
-            );
-          })}
-        </AbsoluteFill>
-        <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", paddingBottom: 70 }}>
-          <div style={{ fontFamily: roboto, fontSize: 22, color: C.muted, opacity: kf(frame, [120, 150], [0, 1]) }}>
-            Google Lighthouse, mobile, median of three runs on each home page, November 2026.
+        <AbsoluteFill style={{ justifyContent: "flex-end", padding: "0 260px 70px" }}>
+          <div style={{ fontFamily: roboto, fontSize: 22, color: C.muted, opacity: kf(frame, [60, 90], [0, 1]) }}>
+            Measured with Google Lighthouse on a simulated phone: each home page, middle result of three runs, November 2026.
           </div>
         </AbsoluteFill>
       </Exit>

@@ -223,6 +223,9 @@ export const ComingSoonEnd: React.FC = () => {
           Coming in 2027
         </div>
       </div>
+      <div style={{ fontFamily: roboto, fontSize: 36, color: C.muted, opacity: kf(frame, [76, 108], [0, 1]) }}>
+        Find out more at <span style={{ color: C.accent, fontWeight: 600 }}>destinytees.uk/app</span>
+      </div>
     </EndBrand>
   );
 };
@@ -237,6 +240,9 @@ export const DownloadEnd: React.FC = () => {
       </Body>
       {/* Apple's official badge, unmodified (App Store marketing guidelines). */}
       <Img src={staticFile("brand/app-store-badge.svg")} style={{ height: 110, width: 110 * (119.66407 / 40), marginTop: 10, opacity: p, translate: `0px ${(1 - p) * 40}px` }} />
+          <div style={{ fontFamily: roboto, fontSize: 36, color: C.muted, marginTop: 6, opacity: kf(frame, [84, 116], [0, 1]) }}>
+        Find out more at <span style={{ color: C.accent, fontWeight: 600 }}>destinytees.uk/app</span>
+      </div>
     </EndBrand>
   );
 };

@@ -14,7 +14,7 @@ export const kf = (frame: number, input: number[], output: number[]) => interpol
 export const useProgress = (start: number, duration: number) => kf(useCurrentFrame(), [start, start + duration], [0, 1]);
 
 /** 1 → 0 over the scene's last `frames` frames, for the exit move. */
-export const useExit = (frames = 16) => {
+export const useExit = (frames = 22) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
   return kf(frame, [durationInFrames - frames, durationInFrames], [1, 0]);
@@ -32,13 +32,13 @@ export const RevealText: React.FC<{
   stagger?: number;
   style?: React.CSSProperties;
   wordStyle?: (word: string, i: number) => React.CSSProperties | undefined;
-}> = ({ text, delay = 0, stagger = 3, style, wordStyle }) => {
+}> = ({ text, delay = 0, stagger = 4, style, wordStyle }) => {
   const frame = useCurrentFrame();
   const words = text.split(" ");
   return (
     <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", columnGap: "0.26em", ...style }}>
       {words.map((w, i) => {
-        const p = kf(frame, [delay + i * stagger, delay + i * stagger + 24], [0, 1]);
+        const p = kf(frame, [delay + i * stagger, delay + i * stagger + 32], [0, 1]);
         return (
           <span key={i} style={{ display: "inline-block", overflow: "hidden", paddingBottom: "0.08em" }}>
             <span style={{ display: "inline-block", translate: `0px ${(1 - p) * 110}%`, ...wordStyle?.(w, i) }}>{w}</span>
@@ -50,7 +50,7 @@ export const RevealText: React.FC<{
 };
 
 export const Kicker: React.FC<{ children: React.ReactNode; delay?: number }> = ({ children, delay = 0 }) => {
-  const p = useProgress(delay, 22);
+  const p = useProgress(delay, 28);
   return (
     <div
       style={{
@@ -72,7 +72,7 @@ export const Kicker: React.FC<{ children: React.ReactNode; delay?: number }> = (
 export const Headline: React.FC<{ text: string; delay?: number; stagger?: number; size?: number; align?: "center" | "left"; accent?: string[] }> = ({
   text,
   delay = 0,
-  stagger = 3,
+  stagger = 4,
   size = 110,
   align = "center",
   accent = [],
@@ -103,7 +103,7 @@ export const Body: React.FC<{ children: React.ReactNode; delay?: number; size?: 
   maxWidth = 1300,
   color = C.muted,
 }) => {
-  const p = useProgress(delay, 24);
+  const p = useProgress(delay, 30);
   return (
     <div style={{ fontFamily: roboto, fontSize: size, lineHeight: 1.32, color, textAlign: align, maxWidth, opacity: p, translate: `0px ${(1 - p) * 26}px` }}>
       {children}
@@ -325,3 +325,23 @@ export const AppIcon: React.FC<{ size: number; style?: React.CSSProperties }> = 
   <Img src={staticFile("brand/destiny-one-icon.png")} style={{ width: size, height: size, borderRadius: size * 0.2237, boxShadow: "0 20px 50px rgba(0,0,0,0.14)", ...style }} />
 );
 
+
+/**
+ * Punch in on one part of whatever it wraps: zoom to `zoom` around (x, y) (fractions of the wrapped box),
+ * hold, then back out. Timed in frames from the scene start.
+ */
+export const PunchIn: React.FC<{ children: React.ReactNode; at: number; hold: number; zoom?: number; x: number; y: number; style?: React.CSSProperties }> = ({
+  children,
+  at,
+  hold,
+  zoom = 1.8,
+  x,
+  y,
+  style,
+}) => {
+  const z = 1 + (zoom - 1) * usePunch(at, hold);
+  return <div style={{ scale: String(z), transformOrigin: `${x * 100}% ${y * 100}%`, ...style }}>{children}</div>;
+};
+
+/** 0 → 1 → 0 over a punch in: in, hold, out. Text beside the device fades by this so the zoom never covers it. */
+export const usePunch = (at: number, hold: number) => kf(useCurrentFrame(), [at, at + 36, at + 36 + hold, at + 72 + hold], [0, 1, 1, 0]);

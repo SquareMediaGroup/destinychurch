@@ -1,174 +1,218 @@
 import React from "react";
 import { AbsoluteFill, Img, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { C, anton, dosis, roboto } from "../theme";
-import { Body, Center, Headline, IPhone, Kicker, Logo, MacBook, Page, RevealText, kf, macScreen, useExit } from "../ui";
+import { C, dosis, roboto } from "../theme";
+import { Body, Center, Headline, IPhone, Kicker, Logo, MacBook, Page, PunchIn, kf, macScreen, useExit, usePunch } from "../ui";
 
-const FULL = 7400 / 3024; // full-page captures, cropped to 3024 x 7400
+const W_FULL = 3024; // full-page captures are 3024px wide (1512pt @2x)
+const aspect = (h: number) => h / W_FULL;
 
-/** Content leaves by drifting up as the scene ends. */
-const Exit: React.FC<{ children: React.ReactNode; frames?: number }> = ({ children, frames = 16 }) => {
+/** Content drifts up and out as the scene ends. */
+const Exit: React.FC<{ children: React.ReactNode; frames?: number }> = ({ children, frames = 22 }) => {
   const e = useExit(frames);
-  return <AbsoluteFill style={{ opacity: e, translate: `0px ${(1 - e) * -80}px` }}>{children}</AbsoluteFill>;
+  return <AbsoluteFill style={{ opacity: e, translate: `0px ${(1 - e) * -90}px` }}>{children}</AbsoluteFill>;
 };
 
-/** A device rising into place, then holding. */
-const useRise = (start: number, distance = 700) => {
+/** A device rising into place over `frames`, then holding still. */
+const Rise: React.FC<{ children: React.ReactNode; delay?: number; distance?: number; frames?: number; style?: React.CSSProperties }> = ({ children, delay = 0, distance = 760, frames = 46, style }) => {
   const frame = useCurrentFrame();
-  return { translate: `0px ${kf(frame, [start, start + 34], [distance, 0])}px` };
+  return <div style={{ position: "absolute", translate: `0px ${kf(frame, [delay, delay + frames], [distance, 0])}px`, ...style }}>{children}</div>;
 };
 
-// 1. Cold open
-export const OpenScene: React.FC = () => (
-  <Page bg={C.white}>
-    <Exit>
-      <Center>
-        <RevealText text="Welcome home." delay={10} stagger={8} style={{ fontFamily: anton, fontSize: 230, color: C.ink, textTransform: "uppercase" }} />
-        <Body delay={40} size={50}>
-          Make real friends. Find real purpose.
+/** Title block at the top of a scene. */
+const Title: React.FC<{ kicker?: string; title: string; body?: string; accent?: string[]; size?: number }> = ({ kicker, title, body, accent, size = 80 }) => (
+  <AbsoluteFill style={{ alignItems: "center", paddingTop: 70 }}>
+    {kicker ? <Kicker>{kicker}</Kicker> : null}
+    <div style={{ height: 12 }} />
+    <Headline text={title} size={size} accent={accent} />
+    {body ? (
+      <>
+        <div style={{ height: 10 }} />
+        <Body delay={20} size={36}>
+          {body}
         </Body>
-      </Center>
-    </Exit>
-  </Page>
+      </>
+    ) : null}
+  </AbsoluteFill>
 );
 
-// 2. Logo + announcement
+// 1. Logo + announcement
 export const IntroScene: React.FC = () => {
   const frame = useCurrentFrame();
-  const logo = kf(frame, [2, 30], [0, 1]);
+  const logo = kf(frame, [4, 44], [0, 1]);
   return (
     <Page bg={C.white}>
       <Exit>
-        <Center gap={60}>
+        <Center gap={64}>
           <div style={{ opacity: logo, scale: String(0.9 + 0.1 * logo) }}>
             <Logo width={760} />
           </div>
-          <Headline text="Introducing our new website." delay={26} size={96} accent={["new"]} />
+          <Headline text="Introducing our new website." delay={34} size={100} accent={["new"]} />
         </Center>
       </Exit>
     </Page>
   );
 };
 
-// 3. Before and after: the old destinytees.uk home page wipes away to the new one.
-export const BeforeAfterScene: React.FC = () => {
+// 2. Why it changed
+const REASONS: { title: string; body: string }[] = [
+  { title: "Accessibility", body: "Readable, keyboard friendly and calmer motion for everyone." },
+  { title: "Ease of use", body: "Find what you need in a tap, or just ask." },
+  { title: "Performance", body: "Pages that load in a fraction of the time." },
+  { title: "Better design", body: "A fresh look that feels like Destiny." },
+];
+
+export const WhyScene: React.FC = () => {
   const frame = useCurrentFrame();
-  const W = 1500;
-  const { w, h } = macScreen(W);
-  const wipe = kf(frame, [52, 96], [0, 1]);
-  const pill = (text: string, side: "left" | "right", visible: number) => (
-    <div
-      style={{
-        position: "absolute",
-        bottom: 22,
-        [side]: 22,
-        padding: "8px 20px",
-        borderRadius: 999,
-        background: "rgba(29,29,31,0.78)",
-        color: C.white,
-        fontFamily: dosis,
-        fontWeight: 700,
-        fontSize: 22,
-        letterSpacing: "0.18em",
-        textTransform: "uppercase",
-        opacity: visible,
-      }}
-    >
-      {text}
-    </div>
-  );
   return (
     <Page>
       <Exit>
-        <AbsoluteFill style={{ alignItems: "center", paddingTop: 90 }}>
-          <Headline text="A fresh new look." size={96} accent={["new"]} />
-          <div style={{ position: "absolute", top: 230, ...useRise(0) }}>
-            <MacBook src="site/home.jpg" width={W}>
-              <div style={{ position: "absolute", inset: 0, clipPath: `inset(0 0 0 ${wipe * 100}%)` }}>
-                <Img src={staticFile("site/old-home.jpg")} style={{ position: "absolute", width: w, height: h }} />
-                {pill("Before", "right", 1 - kf(frame, [80, 92], [0, 1]))}
+        <AbsoluteFill style={{ alignItems: "center", paddingTop: 150 }}>
+          <Headline text="Why a new website?" size={100} />
+        </AbsoluteFill>
+        <AbsoluteFill style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 36, paddingTop: 220 }}>
+          {REASONS.map((r, i) => {
+            const p = kf(frame, [30 + i * 14, 70 + i * 14], [0, 1]);
+            return (
+              <div
+                key={r.title}
+                style={{
+                  width: 360,
+                  height: 300,
+                  borderRadius: 28,
+                  background: C.white,
+                  padding: "40px 36px",
+                  boxShadow: "0 12px 40px rgba(0,0,0,0.06)",
+                  opacity: p,
+                  translate: `0px ${(1 - p) * 160}px`,
+                }}
+              >
+                <div style={{ fontFamily: dosis, fontWeight: 700, fontSize: 28, letterSpacing: "0.16em", color: C.accent }}>0{i + 1}</div>
+                <div style={{ fontFamily: roboto, fontWeight: 700, fontSize: 46, letterSpacing: "-0.03em", color: C.ink, marginTop: 18 }}>{r.title}</div>
+                <div style={{ fontFamily: roboto, fontSize: 30, lineHeight: 1.35, color: C.muted, marginTop: 14 }}>{r.body}</div>
               </div>
-              {pill("After", "left", kf(frame, [84, 98], [0, 1]))}
-              <div style={{ position: "absolute", top: 0, bottom: 0, left: `${wipe * 100}%`, width: 3, marginLeft: -1.5, background: C.white, opacity: wipe > 0.01 && wipe < 0.99 ? 1 : 0 }} />
-            </MacBook>
-          </div>
+            );
+          })}
         </AbsoluteFill>
       </Exit>
     </Page>
   );
 };
 
-// 4. Hero: the MacBook rises, then the page scrolls a little.
-export const HeroScene: React.FC = () => {
-  const frame = useCurrentFrame();
-  return (
-    <Page>
-      <Exit>
-        <AbsoluteFill style={{ alignItems: "center", paddingTop: 100 }}>
-          <Kicker>All new</Kicker>
-          <div style={{ height: 14 }} />
-          <Headline text="Made for everyone who walks through our doors." delay={6} size={76} />
-          <div style={{ position: "absolute", top: 330, ...useRise(4, 800) }}>
-            <MacBook src="site/home-full.jpg" width={1560} sourceAspect={FULL} scroll={kf(frame, [60, 130], [0, 0.1])} />
-          </div>
-        </AbsoluteFill>
-      </Exit>
-    </Page>
-  );
-};
+// 3. Before and after: the old WordPress page wipes away to the new one.
+const Pill: React.FC<{ text: string; side: "left" | "right"; visible: number }> = ({ text, side, visible }) => (
+  <div
+    style={{
+      position: "absolute",
+      bottom: 20,
+      [side]: 20,
+      padding: "8px 18px",
+      borderRadius: 999,
+      background: "rgba(29,29,31,0.8)",
+      color: C.white,
+      fontFamily: dosis,
+      fontWeight: 700,
+      fontSize: 20,
+      letterSpacing: "0.18em",
+      textTransform: "uppercase",
+      opacity: visible,
+    }}
+  >
+    {text}
+  </div>
+);
 
-// 5. Smart Search: question typed, answer appears, then a push in on the answer.
-export const SearchScene: React.FC = () => {
-  const frame = useCurrentFrame();
-  const W = 1220;
-  const { w, h } = macScreen(W);
-  const typed = kf(frame, [64, 72], [0, 1]);
-  const answer = kf(frame, [110, 120], [0, 1]);
-  const zoom = kf(frame, [128, 168], [1, 1.75]);
-  return (
-    <Page>
-      <Exit>
-        <AbsoluteFill style={{ flexDirection: "row", alignItems: "center", padding: "0 100px", gap: 70 }}>
-          <div style={{ width: 520, display: "flex", flexDirection: "column", gap: 24 }}>
-            <Kicker>Smart Search</Kicker>
-            <Headline text="Just ask." size={140} align="left" />
-            <Body delay={26} align="left" size={40}>
-              Ask anything about Destiny in your own words, and get a real answer in seconds.
-            </Body>
-          </div>
-          <div style={{ ...useRise(0, 900) }}>
-            <MacBook src="site/search-open.jpg" width={W}>
-              <div style={{ position: "absolute", inset: 0, scale: String(zoom), transformOrigin: "50% 86%" }}>
-                <Img src={staticFile("site/search-open.jpg")} style={{ position: "absolute", width: w, height: h }} />
-                <Img src={staticFile("site/search-typed.jpg")} style={{ position: "absolute", width: w, height: h, opacity: typed }} />
-                <Img src={staticFile("site/search-answer.jpg")} style={{ position: "absolute", width: w, height: h, opacity: answer }} />
-              </div>
-            </MacBook>
-          </div>
-        </AbsoluteFill>
-      </Exit>
-    </Page>
-  );
-};
-
-/** Headline on top, a MacBook below that rises in, then scrolls the page in two eased moves. */
-const PageScene: React.FC<{ kicker: string; title: string; body: string; src: string; stops: [number, number]; accent?: string[] }> = ({ kicker, title, body, src, stops, accent }) => {
+export const BeforeAfter: React.FC<{ name: string; title: string; first?: boolean }> = ({ name, title, first }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
-  const mid = Math.round(durationInFrames * 0.55);
-  const scroll = kf(frame, [36, 64, mid, mid + 28], [0, stops[0], stops[0], stops[1]]);
+  const W = 1140;
+  const { w, h } = macScreen(W);
+  const start = first ? 60 : 30;
+  const wipe = kf(frame, [start, start + 48], [0, 1]);
   return (
     <Page>
       <Exit>
+        <Title kicker={first ? "Before and after" : undefined} title={title} size={first ? 88 : 72} />
+        <Rise delay={0} distance={first ? 760 : 0} style={{ left: 960 - W / 2, top: 250 }}>
+          <MacBook src={`site/new-${name}.jpg`} width={W}>
+            <div style={{ position: "absolute", inset: 0, clipPath: `inset(0 0 0 ${wipe * 100}%)` }}>
+              <Img src={staticFile(`site/old-${name}.jpg`)} style={{ position: "absolute", width: w, height: h }} />
+              <Pill text="Before" side="right" visible={1 - kf(frame, [start + 30, start + 44], [0, 1])} />
+            </div>
+            <Pill text="After" side="left" visible={kf(frame, [start + 34, start + 50], [0, 1]) * kf(frame, [durationInFrames - 30, durationInFrames - 20], [1, 0])} />
+            <div style={{ position: "absolute", top: 0, bottom: 0, left: `${wipe * 100}%`, width: 3, marginLeft: -1.5, background: C.white, opacity: wipe > 0.01 && wipe < 0.99 ? 1 : 0 }} />
+          </MacBook>
+        </Rise>
+      </Exit>
+    </Page>
+  );
+};
+
+/** The same before/after on two phones side by side. */
+export const BeforeAfterPhones: React.FC = () => {
+  const frame = useCurrentFrame();
+  const a = kf(frame, [0, 46], [760, 0]);
+  const b = kf(frame, [16, 62], [760, 0]);
+  return (
+    <Page>
+      <Exit>
+        <Title title="And on your phone." size={80} />
+        <div style={{ position: "absolute", left: 960 - 420, top: 230, display: "flex", gap: 90 }}>
+          <div style={{ translate: `0px ${a}px`, textAlign: "center" }}>
+            <IPhone src="site/old-home-m.jpg" height={700} color="black" />
+            <div style={{ fontFamily: dosis, fontWeight: 700, fontSize: 24, letterSpacing: "0.18em", color: C.muted, marginTop: 18 }}>BEFORE</div>
+          </div>
+          <div style={{ translate: `0px ${b}px`, textAlign: "center" }}>
+            <IPhone src="site/new-home-m.jpg" height={700} />
+            <div style={{ fontFamily: dosis, fontWeight: 700, fontSize: 24, letterSpacing: "0.18em", color: C.accent, marginTop: 18 }}>AFTER</div>
+          </div>
+        </div>
+      </Exit>
+    </Page>
+  );
+};
+
+// 4. Performance: Lighthouse, mobile, median of three runs on each site (3 Nov 2026).
+const METRICS: { label: string; before: number; after: number; unit?: string; decimals?: number; better: "higher" | "lower" }[] = [
+  { label: "Performance score", before: 36, after: 90, better: "higher" },
+  { label: "Accessibility score", before: 71, after: 96, better: "higher" },
+  { label: "Main content loads in", before: 7.3, after: 2.1, unit: "s", decimals: 1, better: "lower" },
+  { label: "Page weight", before: 13.7, after: 0.8, unit: "MB", decimals: 1, better: "lower" },
+];
+
+export const PerformanceScene: React.FC = () => {
+  const frame = useCurrentFrame();
+  return (
+    <Page bg={C.white}>
+      <Exit>
         <AbsoluteFill style={{ alignItems: "center", paddingTop: 90 }}>
-          <Kicker>{kicker}</Kicker>
-          <div style={{ height: 14 }} />
-          <Headline text={title} size={84} accent={accent} />
-          <div style={{ height: 10 }} />
-          <Body delay={18} size={38}>
-            {body}
-          </Body>
-          <div style={{ position: "absolute", top: 400, ...useRise(4, 800) }}>
-            <MacBook src={src} width={1440} sourceAspect={FULL} scroll={scroll} />
+          <Kicker>Performance</Kicker>
+          <div style={{ height: 12 }} />
+          <Headline text="Faster in almost every way." size={92} accent={["Faster"]} />
+        </AbsoluteFill>
+        <AbsoluteFill style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 40, paddingTop: 120 }}>
+          {METRICS.map((m, i) => {
+            const enter = kf(frame, [24 + i * 10, 64 + i * 10], [0, 1]);
+            const count = kf(frame, [70 + i * 10, 130 + i * 10], [0, 1]);
+            const value = m.before + (m.after - m.before) * count;
+            const fmt = (v: number) => (m.decimals ? v.toFixed(m.decimals) : Math.round(v).toString());
+            return (
+              <div key={m.label} style={{ width: 380, opacity: enter, translate: `0px ${(1 - enter) * 120}px`, textAlign: "center" }}>
+                <div style={{ fontFamily: roboto, fontWeight: 700, fontSize: 132, letterSpacing: "-0.05em", color: C.ink, lineHeight: 1 }}>
+                  {fmt(value)}
+                  <span style={{ fontSize: 60, letterSpacing: "-0.02em" }}>{m.unit ?? ""}</span>
+                </div>
+                <div style={{ fontFamily: roboto, fontWeight: 500, fontSize: 30, color: C.ink, marginTop: 18 }}>{m.label}</div>
+                <div style={{ fontFamily: roboto, fontSize: 26, color: C.muted, marginTop: 8 }}>
+                  was {fmt(m.before)}
+                  {m.unit ?? ""} on the old site
+                </div>
+              </div>
+            );
+          })}
+        </AbsoluteFill>
+        <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", paddingBottom: 70 }}>
+          <div style={{ fontFamily: roboto, fontSize: 22, color: C.muted, opacity: kf(frame, [120, 150], [0, 1]) }}>
+            Google Lighthouse, mobile, median of three runs on each home page, November 2026.
           </div>
         </AbsoluteFill>
       </Exit>
@@ -176,19 +220,200 @@ const PageScene: React.FC<{ kicker: string; title: string; body: string; src: st
   );
 };
 
+/** Headline on top, MacBook below; the page scrolls down in eased steps, holding at each stop. */
+const ScrollScene: React.FC<{ kicker: string; title: string; body: string; src: string; srcHeight: number; stops: number[]; accent?: string[] }> = ({
+  kicker,
+  title,
+  body,
+  src,
+  srcHeight,
+  stops,
+  accent,
+}) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  // One move per stop, spread evenly, each 40 frames with a hold after it.
+  const span = (durationInFrames - 90) / stops.length;
+  const input: number[] = [50];
+  const output: number[] = [0];
+  stops.forEach((s, i) => {
+    input.push(50 + i * span + 40, 50 + (i + 1) * span);
+    output.push(s, s);
+  });
+  const scroll = kf(frame, input, output);
+  const W = 1040;
+  return (
+    <Page>
+      <Exit>
+        <Title kicker={kicker} title={title} body={body} accent={accent} size={76} />
+        <Rise delay={4} style={{ left: 960 - W / 2, top: 320 }}>
+          <MacBook src={src} width={W} sourceAspect={aspect(srcHeight)} scroll={scroll} />
+        </Rise>
+      </Exit>
+    </Page>
+  );
+};
+
+export const HomeScroll: React.FC = () => (
+  <ScrollScene kicker="All new" title="Made for everyone who walks through our doors." body="What's on, the latest message, and your next step, all on the home page." src="site/home-full.jpg" srcHeight={10320} stops={[0.12, 0.3, 0.52]} />
+);
+
 export const SermonsScene: React.FC = () => (
-  <PageScene kicker="Sermons" title="Every message. Watch or listen." body="The latest Sunday, the full archive, and search that finds the one you remember." src="site/sermons-full.jpg" stops={[0.12, 0.33]} accent={["listen"]} />
+  <ScrollScene kicker="Sermons" title="Every message. Watch or listen." body="The latest Sunday, the full archive, and search that finds the one you remember." src="site/sermons-full.jpg" srcHeight={11296} stops={[0.12, 0.3, 0.55]} accent={["listen"]} />
 );
 
 export const WhatsOnScene: React.FC = () => (
-  <PageScene kicker="What's On" title="Never miss what's on." body="Every event and course in one place, with sign up, maps and a calendar invite." src="site/whatson-full.jpg" stops={[0.1, 0.22]} />
+  <ScrollScene kicker="What's On" title="Never miss what's on." body="Every event and course in one place, with sign up, maps and a calendar invite." src="site/whatson-full.jpg" srcHeight={12000} stops={[0.06, 0.24, 0.42]} />
 );
 
 export const VisitScene: React.FC = () => (
-  <PageScene kicker="Plan your visit" title="Your first Sunday, sorted." body="Service times, parking and what to expect, before you walk through the doors." src="site/visit-full.jpg" stops={[0.1, 0.2]} accent={["sorted"]} />
+  <ScrollScene kicker="Plan your visit" title="Your first Sunday, sorted." body="Service times, parking, what happens in the service, kids, and the questions people ask." src="site/visit-full.jpg" srcHeight={12000} stops={[0.1, 0.32, 0.58]} accent={["sorted"]} />
 );
 
-// 8. Ministries grid
+// 5. Smart Search, typed out, then the answer, then a punch in on it.
+export const SearchScene: React.FC = () => {
+  const frame = useCurrentFrame();
+  const W = 1180;
+  const { w, h } = macScreen(W);
+  // Six typing frames, a beat, then the answer.
+  const step = Math.min(6, Math.max(1, Math.floor((frame - 46) / 7) + 1));
+  const answered = frame > 46 + 6 * 7 + 18;
+  const src = answered ? "site/ss-answer.jpg" : `site/ss-type-${step}.jpg`;
+  return (
+    <Page>
+      <Exit>
+        <AbsoluteFill style={{ flexDirection: "row", alignItems: "center", padding: "0 110px", gap: 60 }}>
+          <div style={{ width: 500, display: "flex", flexDirection: "column", gap: 24, opacity: 1 - usePunch(150, 70) }}>
+            <Kicker>Smart Search</Kicker>
+            <Headline text="Just ask." size={130} align="left" />
+            <Body delay={26} align="left" size={38}>
+              Ask anything about Destiny in your own words. Smart Search answers, and points you to the right page.
+            </Body>
+          </div>
+          <div style={{ position: "relative", width: W, height: W * (2540 / 3860) }}>
+            <Rise delay={0} distance={800}>
+              <PunchIn at={150} hold={70} zoom={2.1} x={0.5} y={0.83}>
+                <MacBook src="site/ss-type-1.jpg" width={W}>
+                  <Img src={staticFile(src)} style={{ position: "absolute", width: w, height: h }} />
+                </MacBook>
+              </PunchIn>
+            </Rise>
+          </div>
+        </AbsoluteFill>
+      </Exit>
+    </Page>
+  );
+};
+
+/** The same on a phone: "How do I get baptised?", and an answer with a button to the right page. */
+export const SearchPhoneScene: React.FC = () => {
+  const frame = useCurrentFrame();
+  const step = Math.min(6, Math.max(1, Math.floor((frame - 40) / 6) + 1));
+  const answered = frame > 40 + 6 * 6 + 16;
+  return (
+    <Page>
+      <Exit>
+        <AbsoluteFill style={{ flexDirection: "row-reverse", alignItems: "center", justifyContent: "center", gap: 140 }}>
+          <div style={{ width: 720, display: "flex", flexDirection: "column", gap: 24, opacity: 1 - usePunch(110, 60) }}>
+            <Kicker>Smart Search</Kicker>
+            <Headline text="From a question to the next step." size={84} align="left" />
+            <Body delay={24} align="left" size={38}>
+              Ask how to get baptised, and the answer comes with a button straight to sign up.
+            </Body>
+          </div>
+          <div style={{ position: "relative", width: 400, height: 820 }}>
+            <Rise delay={0} distance={860}>
+              <PunchIn at={110} hold={60} zoom={1.7} x={0.4} y={0.72}>
+                <IPhone src={answered ? "site/ss-m-answer.jpg" : `site/ss-m-type-${step}.jpg`} height={820} />
+              </PunchIn>
+            </Rise>
+          </div>
+        </AbsoluteFill>
+      </Exit>
+    </Page>
+  );
+};
+
+// 6. The shop has moved
+export const ShopMoveScene: React.FC = () => {
+  const frame = useCurrentFrame();
+  const swap = kf(frame, [70, 110], [0, 1]);
+  return (
+    <Page bg={C.white}>
+      <Exit>
+        <Center gap={40}>
+          <Kicker>Shop</Kicker>
+          <Headline text="Our shop has moved home." size={100} />
+          <div style={{ height: 30 }} />
+          <div style={{ position: "relative", height: 90, width: 1200, overflow: "hidden" }}>
+            <div style={{ position: "absolute", inset: 0, textAlign: "center", fontFamily: roboto, fontWeight: 500, fontSize: 72, color: C.muted, translate: `0px ${-swap * 100}%`, textDecoration: "line-through", textDecorationThickness: 4 }}>
+              shop.destinytees.uk
+            </div>
+            <div style={{ position: "absolute", inset: 0, textAlign: "center", fontFamily: roboto, fontWeight: 700, fontSize: 72, color: C.accent, translate: `0px ${(1 - swap) * 100}%` }}>destinytees.uk/shop</div>
+          </div>
+        </Center>
+      </Exit>
+    </Page>
+  );
+};
+
+export const ShopBeforeAfter: React.FC = () => {
+  const frame = useCurrentFrame();
+  const W = 1140;
+  const { w, h } = macScreen(W);
+  const wipe = kf(frame, [36, 84], [0, 1]);
+  const scroll = kf(frame, [110, 160], [0, 0.42]);
+  return (
+    <Page>
+      <Exit>
+        <Title title="A much better shop." size={80} accent={["better"]} />
+        <Rise delay={0} style={{ left: 960 - W / 2, top: 240 }}>
+          <MacBook src="site/shop-full.jpg" width={W} sourceAspect={aspect(6302)} scroll={scroll}>
+            <div style={{ position: "absolute", inset: 0, clipPath: `inset(0 0 0 ${wipe * 100}%)` }}>
+              <Img src={staticFile("site/old-shop.jpg")} style={{ position: "absolute", width: w, height: h }} />
+              <Pill text="Before" side="right" visible={1 - kf(frame, [66, 80], [0, 1])} />
+            </div>
+            <Pill text="After" side="left" visible={kf(frame, [70, 86], [0, 1])} />
+          </MacBook>
+        </Rise>
+      </Exit>
+    </Page>
+  );
+};
+
+/** Product page, punch in on Add to basket, then checkout without leaving the site. */
+export const ShopCheckoutScene: React.FC = () => {
+  const frame = useCurrentFrame();
+  const W = 1120;
+  const { w, h } = macScreen(W);
+  const toCheckout = kf(frame, [150, 162], [0, 1]);
+  return (
+    <Page>
+      <Exit>
+        <AbsoluteFill style={{ flexDirection: "row", alignItems: "center", padding: "0 110px", gap: 60 }}>
+          <div style={{ width: 560, display: "flex", flexDirection: "column", gap: 24, opacity: 1 - usePunch(60, 50) }}>
+            <Kicker>Checkout</Kicker>
+            <Headline text="Pay without leaving the site." size={84} align="left" />
+            <Body delay={24} align="left" size={38}>
+              Apple Pay, card and more, right on the page. Collect your order on a Sunday.
+            </Body>
+          </div>
+          <div style={{ position: "relative", width: W, height: W * (2540 / 3860) }}>
+            <Rise delay={0} distance={800}>
+              <PunchIn at={60} hold={50} zoom={1.9} x={0.72} y={0.56}>
+                <MacBook src="site/shop-product.jpg" width={W}>
+                  <Img src={staticFile("site/shop-checkout.jpg")} style={{ position: "absolute", width: w, height: h, opacity: toCheckout }} />
+                </MacBook>
+              </PunchIn>
+            </Rise>
+          </div>
+        </AbsoluteFill>
+      </Exit>
+    </Page>
+  );
+};
+
+// 7. Ministries grid
 const tiles: { src: string; label: string }[] = [
   { src: "site/kids.jpg", label: "Destiny Kids" },
   { src: "site/youth.jpg", label: "Destiny Youth" },
@@ -197,27 +422,27 @@ const tiles: { src: string; label: string }[] = [
   { src: "site/alpha.jpg", label: "Alpha" },
   { src: "site/serve.jpg", label: "Serve" },
   { src: "site/give.jpg", label: "Give" },
-  { src: "site/shop.jpg", label: "Shop" },
+  { src: "site/visit.jpg", label: "Plan your visit" },
 ];
 
 export const MinistriesScene: React.FC = () => {
   const frame = useCurrentFrame();
-  const TW = 400;
+  const TW = 380;
   const TH = TW * (982 / 1512);
   return (
     <Page>
       <Exit>
-        <AbsoluteFill style={{ alignItems: "center", paddingTop: 100 }}>
-          <Headline text="A place for every age and stage." size={84} accent={["every"]} />
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(4, ${TW}px)`, gap: 34, marginTop: 80 }}>
+        <AbsoluteFill style={{ alignItems: "center", paddingTop: 110 }}>
+          <Headline text="A place for every age and stage." size={80} accent={["every"]} />
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(4, ${TW}px)`, gap: 32, marginTop: 80 }}>
             {tiles.map((t, i) => {
-              const p = kf(frame, [14 + i * 4, 44 + i * 4], [0, 1]);
+              const p = kf(frame, [20 + i * 6, 64 + i * 6], [0, 1]);
               return (
-                <div key={t.label} style={{ opacity: p, translate: `0px ${(1 - p) * 120}px` }}>
-                  <div style={{ width: TW, height: TH, borderRadius: 16, overflow: "hidden", boxShadow: "0 18px 40px rgba(0,0,0,0.12)" }}>
+                <div key={t.label} style={{ opacity: p, translate: `0px ${(1 - p) * 140}px` }}>
+                  <div style={{ width: TW, height: TH, borderRadius: 16, overflow: "hidden", boxShadow: "0 14px 36px rgba(0,0,0,0.1)" }}>
                     <Img src={staticFile(t.src)} style={{ width: TW, height: TH }} />
                   </div>
-                  <div style={{ fontFamily: roboto, fontWeight: 500, fontSize: 30, color: C.ink, marginTop: 16, textAlign: "center" }}>{t.label}</div>
+                  <div style={{ fontFamily: roboto, fontWeight: 500, fontSize: 28, color: C.ink, marginTop: 14, textAlign: "center" }}>{t.label}</div>
                 </div>
               );
             })}
@@ -228,13 +453,11 @@ export const MinistriesScene: React.FC = () => {
   );
 };
 
-// 9. The little things: quick cuts, alternating sides.
+// 8. The little things
 type Little = { kicker: string; title: string; src: string; mobile?: boolean };
 export const LITTLE_THINGS: Little[] = [
   { kicker: "Accessibility", title: "Reduce motion, readable text, and keyboard friendly throughout.", src: "site/accessibility.jpg" },
   { kicker: "Back of the seat", title: "Tap your phone on the seat for the Connect Card and giving.", src: "site/nfc-m.jpg", mobile: true },
-  { kicker: "Song requests", title: "Pick the tunes at events. Clean songs only.", src: "site/songs-m.jpg", mobile: true },
-  { kicker: "Talent show", title: "Vote for your favourite act from your seat.", src: "site/talent-m.jpg", mobile: true },
   { kicker: "Help centre", title: "Answers to the questions people actually ask.", src: "site/help.jpg" },
   { kicker: "Training", title: "Everything our serving teams need, in one place.", src: "site/training.jpg" },
   { kicker: "Governance", title: "Our charity and company records, live and open to all.", src: "site/governance.jpg" },
@@ -245,16 +468,16 @@ export const LittleThingSlide: React.FC<{ index: number }> = ({ index }) => {
   const frame = useCurrentFrame();
   const { kicker, title, src, mobile } = LITTLE_THINGS[index];
   const flip = index % 2 === 1;
-  const slide = kf(frame, [0, 22], [flip ? -600 : 600, 0]);
+  const slide = kf(frame, [0, 34], [flip ? -700 : 700, 0]);
   return (
     <Page>
-      <Exit frames={10}>
-        <AbsoluteFill style={{ flexDirection: flip ? "row-reverse" : "row", alignItems: "center", justifyContent: "center", gap: 100, padding: "0 110px" }}>
-          <div style={{ width: 620, display: "flex", flexDirection: "column", gap: 20 }}>
+      <Exit frames={14}>
+        <AbsoluteFill style={{ flexDirection: flip ? "row-reverse" : "row", alignItems: "center", justifyContent: "center", gap: 110, padding: "0 140px" }}>
+          <div style={{ width: 600, display: "flex", flexDirection: "column", gap: 20 }}>
             <Kicker>{kicker}</Kicker>
-            <Headline text={title} size={72} align="left" delay={2} stagger={2} />
+            <Headline text={title} size={66} align="left" delay={4} stagger={3} />
           </div>
-          <div style={{ translate: `${slide}px 0px` }}>{mobile ? <IPhone src={src} height={860} /> : <MacBook src={src} width={1080} />}</div>
+          <div style={{ translate: `${slide}px 0px` }}>{mobile ? <IPhone src={src} height={800} /> : <MacBook src={src} width={980} />}</div>
         </AbsoluteFill>
       </Exit>
     </Page>
@@ -263,51 +486,49 @@ export const LittleThingSlide: React.FC<{ index: number }> = ({ index }) => {
 
 export const LittleThingsTitle: React.FC = () => (
   <Page bg={C.white}>
-    <Exit frames={10}>
+    <Exit frames={14}>
       <Center>
-        <Headline text="And all the little things." size={130} accent={["little"]} stagger={4} />
+        <Headline text="And all the little things." size={124} accent={["little"]} stagger={5} />
       </Center>
     </Exit>
   </Page>
 );
 
-// 10. Every screen: MacBook with two iPhones in front of it.
+// 9. Every screen
 export const DevicesScene: React.FC = () => {
   const frame = useCurrentFrame();
-  const left = kf(frame, [16, 50], [700, 0]);
-  const right = kf(frame, [22, 56], [700, 0]);
+  const left = kf(frame, [22, 66], [760, 0]);
+  const right = kf(frame, [30, 74], [760, 0]);
   return (
     <Page>
       <Exit>
-        <AbsoluteFill style={{ alignItems: "center", paddingTop: 80 }}>
-          <Headline text="Beautiful on every screen." size={92} />
-        </AbsoluteFill>
-        <div style={{ position: "absolute", left: 960 - 650, top: 250, ...useRise(4, 800) }}>
-          <MacBook src="site/home.jpg" width={1300} />
+        <Title title="Beautiful on every screen." size={86} />
+        <Rise delay={6} style={{ left: 960 - 560, top: 240 }}>
+          <MacBook src="site/home.jpg" width={1120} />
+        </Rise>
+        <div style={{ position: "absolute", left: 170, top: 460, translate: `0px ${left}px` }}>
+          <IPhone src="site/search-answer-m.jpg" height={540} />
         </div>
-        <div style={{ position: "absolute", left: 120, top: 420, translate: `0px ${left}px` }}>
-          <IPhone src="site/search-answer-m.jpg" height={620} />
-        </div>
-        <div style={{ position: "absolute", right: 120, top: 420, translate: `0px ${right}px` }}>
-          <IPhone src="site/sermons-m.jpg" height={620} color="black" />
+        <div style={{ position: "absolute", right: 170, top: 460, translate: `0px ${right}px` }}>
+          <IPhone src="site/sermons-m.jpg" height={540} color="black" />
         </div>
       </Exit>
     </Page>
   );
 };
 
-// 11. The "finished" ending
+// 10. The "finished" ending
 export const WebsiteEndScene: React.FC = () => {
   const frame = useCurrentFrame();
-  const logo = kf(frame, [4, 34], [0, 1]);
+  const logo = kf(frame, [6, 46], [0, 1]);
   return (
     <Page bg={C.white}>
-      <Exit frames={24}>
+      <Exit frames={30}>
         <Center gap={40}>
           <div style={{ opacity: logo, scale: String(0.92 + 0.08 * logo) }}>
             <Logo width={820} />
           </div>
-          <div style={{ fontFamily: dosis, fontWeight: 600, fontSize: 42, letterSpacing: "0.18em", color: C.muted, textTransform: "uppercase", opacity: kf(frame, [30, 54], [0, 1]) }}>
+          <div style={{ fontFamily: dosis, fontWeight: 600, fontSize: 42, letterSpacing: "0.18em", color: C.muted, textTransform: "uppercase", opacity: kf(frame, [40, 70], [0, 1]) }}>
             The new website
           </div>
         </Center>
@@ -316,12 +537,12 @@ export const WebsiteEndScene: React.FC = () => {
   );
 };
 
-// 12. One more thing
+// 11. One more thing
 export const OneMoreThingScene: React.FC = () => (
   <Page bg={C.white}>
     <Exit>
       <Center>
-        <Headline text="Oh, and one more thing." size={104} delay={8} stagger={6} />
+        <Headline text="Oh, and one more thing." size={104} delay={10} stagger={7} />
       </Center>
     </Exit>
   </Page>

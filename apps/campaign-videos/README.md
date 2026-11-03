@@ -5,8 +5,8 @@ then "Oh, and one more thing" and Destiny One. They share everything except the 
 
 | Composition | Ending | Length |
 | --- | --- | --- |
-| `ComingIn2027` | Destiny One, "Coming in 2027" | 1:56 |
-| `DownloadToday` | "Download today" with the App Store badge | 1:56 |
+| `ComingIn2027` | Destiny One, "Coming in 2027" | 3:26 |
+| `DownloadToday` | "Download today" with the App Store badge | 3:26 |
 
 ## Commands
 
@@ -29,6 +29,10 @@ In a cloud container without Chrome, add `--browser-executable=/opt/pw-browsers/
 - `public/brand/` — official assets only: the Destiny Church logo and icon (from `public/img/brand`), the
   Destiny One app icon (`apps/destiny-one/assets/icon.png`), and Apple's App Store badge, used unmodified.
 - `public/bezels/` (gitignored) — Apple's iPhone 18 Pro and MacBook Pro 14" frames; see below.
+- **Performance figures** (`PerformanceScene`): Google Lighthouse 12.8, mobile, median of three runs on each
+  home page (destinytees.uk vs destinychurch.vercel.app), 3 Nov 2026. Old → new: performance 36 → 90,
+  accessibility 71 → 96, LCP 7.3 s → 2.1 s, page weight 13.7 MB → 0.8 MB (also FCP 2.8 → 1.1 s, CLS 0.354 → 0,
+  SEO 92 → 100). Re-run before reusing them: `npx lighthouse <url> --only-categories=performance,accessibility`.
 - `public/site/`, `public/app/` — real screenshots of the website (the dev site, destinychurch.vercel.app),
   the old site at destinytees.uk (`old-home.jpg`, for the before/after), and Destiny One. Desktop captures
   are 1512x982pt @2x (the MacBook Pro 14" screen); phone captures are 402x812pt @3x (the iPhone 18 Pro

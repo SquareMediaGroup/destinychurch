@@ -3,7 +3,7 @@
 // Run from the repo root so require('playwright') resolves to the preinstalled copy.
 const { chromium } = require('playwright');
 const out = process.argv[2];
-const pages = [
+const pages = process.env.ONLY ? JSON.parse(process.env.ONLY) : [
   ['home','/'],['sermons','/sermons'],['whatson','/whats-on'],['visit','/visit'],['give','/give'],
   ['shop','/shop'],['kids','/kids'],['youth','/youth'],['connect','/connect'],['about','/about'],
   ['accessibility','/accessibility'],['governance','/governance'],['links','/links'],['nfc','/nfc'],
@@ -24,6 +24,12 @@ const pages = [
       await p.waitForTimeout(2500);
       await p.screenshot({ path: `${out}/${name}${suffix}.png` });
       // tall version for scrolling shots
+      // Scroll through first so sections that fade in on scroll have appeared, then go back to the top.
+      await p.evaluate(async () => {
+        for (let y = 0; y < document.body.scrollHeight; y += 500) { window.scrollTo(0, y); await new Promise((r) => setTimeout(r, 250)); }
+        window.scrollTo(0, 0);
+      }).catch(() => {});
+      await p.waitForTimeout(1500);
       await p.screenshot({ path: `${out}/${name}${suffix}-full.png`, fullPage: true }).catch(()=>{});
       console.log('ok', name + suffix);
     }

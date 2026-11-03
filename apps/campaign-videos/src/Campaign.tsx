@@ -4,22 +4,28 @@ import { fade } from "@remotion/transitions/fade";
 import { AbsoluteFill, useVideoConfig } from "remotion";
 import { C } from "./theme";
 import {
-  BeforeAfterScene,
-  HeroScene,
+  BeforeAfter,
+  BeforeAfterPhones,
+  DevicesScene,
+  HomeScroll,
   IntroScene,
   LittleThingSlide,
   LittleThingsTitle,
   MinistriesScene,
-  DevicesScene,
   OneMoreThingScene,
-  OpenScene,
+  PerformanceScene,
+  SearchPhoneScene,
   SearchScene,
   SermonsScene,
+  ShopBeforeAfter,
+  ShopCheckoutScene,
+  ShopMoveScene,
   VisitScene,
   WebsiteEndScene,
   WhatsOnScene,
+  WhyScene,
 } from "./scenes/website";
-import { AiScene, AppIntroScene, AppearanceScene, ChatsScene, ComingSoonEnd, ConversationScene, DownloadEnd, EventsScene, FinalLogo, SafetyScene } from "./scenes/app";
+import { AiScene, AppIntroScene, AppearanceScene, ChatsScene, ComingSoonEnd, ConversationScene, DownloadEnd, FinalLogo, SafetyRulesScene, SafetyScene } from "./scenes/app";
 
 export type CampaignProps = {
   readonly ending: "coming-2027" | "download-today";
@@ -29,9 +35,8 @@ export type CampaignProps = {
 const X = 8;
 
 /**
- * Website first: hero, then the main features, then the little things,
- * then a full "this is the end" logo. Then "one more thing" and Destiny One,
- * with one of two endings.
+ * The website first: why it changed, before and after, how much faster it is, then its features,
+ * the shop, and the little things. It ends on the logo, then "one more thing" introduces Destiny One.
  */
 export const Campaign: React.FC<CampaignProps> = ({ ending }) => {
   const { fps } = useVideoConfig();
@@ -39,116 +44,150 @@ export const Campaign: React.FC<CampaignProps> = ({ ending }) => {
   return (
     <AbsoluteFill style={{ background: C.page }}>
       <TransitionSeries>
-        <TransitionSeries.Sequence name="Welcome home" durationInFrames={4 * fps}>
-          <OpenScene />
-        </TransitionSeries.Sequence>
-        {t}
-        <TransitionSeries.Sequence name="New website" durationInFrames={4 * fps}>
+        <TransitionSeries.Sequence name="New website" durationInFrames={5 * fps}>
           <IntroScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Before and after" durationInFrames={5 * fps}>
-          <BeforeAfterScene />
+        <TransitionSeries.Sequence name="Why" durationInFrames={6.5 * fps}>
+          <WhyScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Hero" durationInFrames={5 * fps}>
-          <HeroScene />
+        <TransitionSeries.Sequence name="Before and after: home" durationInFrames={6.5 * fps}>
+          <BeforeAfter name="home" title="A fresh new look." first />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Smart Search" durationInFrames={7 * fps}>
+        <TransitionSeries.Sequence name="Before and after: visit" durationInFrames={3.5 * fps}>
+          <BeforeAfter name="visit" title="Plan your visit" />
+        </TransitionSeries.Sequence>
+        {t}
+        <TransitionSeries.Sequence name="Before and after: what's on" durationInFrames={3.5 * fps}>
+          <BeforeAfter name="whatson" title="What's On" />
+        </TransitionSeries.Sequence>
+        {t}
+        <TransitionSeries.Sequence name="Before and after: give" durationInFrames={3.5 * fps}>
+          <BeforeAfter name="give" title="Give" />
+        </TransitionSeries.Sequence>
+        {t}
+        <TransitionSeries.Sequence name="Before and after: alpha" durationInFrames={3.5 * fps}>
+          <BeforeAfter name="alpha" title="Alpha" />
+        </TransitionSeries.Sequence>
+        {t}
+        <TransitionSeries.Sequence name="Before and after: phone" durationInFrames={5 * fps}>
+          <BeforeAfterPhones />
+        </TransitionSeries.Sequence>
+        {t}
+        <TransitionSeries.Sequence name="Performance" durationInFrames={8 * fps}>
+          <PerformanceScene />
+        </TransitionSeries.Sequence>
+        {t}
+        <TransitionSeries.Sequence name="Home" durationInFrames={8 * fps}>
+          <HomeScroll />
+        </TransitionSeries.Sequence>
+        {t}
+        <TransitionSeries.Sequence name="Smart Search" durationInFrames={9 * fps}>
           <SearchScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Sermons" durationInFrames={5.5 * fps}>
+        <TransitionSeries.Sequence name="Smart Search on a phone" durationInFrames={7 * fps}>
+          <SearchPhoneScene />
+        </TransitionSeries.Sequence>
+        {t}
+        <TransitionSeries.Sequence name="Sermons" durationInFrames={8 * fps}>
           <SermonsScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="What's On" durationInFrames={5 * fps}>
+        <TransitionSeries.Sequence name="What's On" durationInFrames={8 * fps}>
           <WhatsOnScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Plan your visit" durationInFrames={4.5 * fps}>
+        <TransitionSeries.Sequence name="Plan your visit" durationInFrames={8 * fps}>
           <VisitScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Ministries" durationInFrames={5 * fps}>
+        <TransitionSeries.Sequence name="Shop has moved" durationInFrames={5 * fps}>
+          <ShopMoveScene />
+        </TransitionSeries.Sequence>
+        {t}
+        <TransitionSeries.Sequence name="Shop before and after" durationInFrames={6.5 * fps}>
+          <ShopBeforeAfter />
+        </TransitionSeries.Sequence>
+        {t}
+        <TransitionSeries.Sequence name="Shop checkout" durationInFrames={8 * fps}>
+          <ShopCheckoutScene />
+        </TransitionSeries.Sequence>
+        {t}
+        <TransitionSeries.Sequence name="Ministries" durationInFrames={5.5 * fps}>
           <MinistriesScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Little things title" durationInFrames={2.2 * fps}>
+        <TransitionSeries.Sequence name="Little things title" durationInFrames={2.5 * fps}>
           <LittleThingsTitle />
         </TransitionSeries.Sequence>
-        <TransitionSeries.Sequence name="Accessibility" durationInFrames={2 * fps}>
+        <TransitionSeries.Sequence name="Accessibility" durationInFrames={2.8 * fps}>
           <LittleThingSlide index={0} />
         </TransitionSeries.Sequence>
-        <TransitionSeries.Sequence name="Back of the seat" durationInFrames={2 * fps}>
+        <TransitionSeries.Sequence name="Back of the seat" durationInFrames={2.8 * fps}>
           <LittleThingSlide index={1} />
         </TransitionSeries.Sequence>
-        <TransitionSeries.Sequence name="Song requests" durationInFrames={2 * fps}>
+        <TransitionSeries.Sequence name="Help centre" durationInFrames={2.8 * fps}>
           <LittleThingSlide index={2} />
         </TransitionSeries.Sequence>
-        <TransitionSeries.Sequence name="Talent show" durationInFrames={2 * fps}>
+        <TransitionSeries.Sequence name="Training" durationInFrames={2.8 * fps}>
           <LittleThingSlide index={3} />
         </TransitionSeries.Sequence>
-        <TransitionSeries.Sequence name="Help centre" durationInFrames={2 * fps}>
+        <TransitionSeries.Sequence name="Governance" durationInFrames={2.8 * fps}>
           <LittleThingSlide index={4} />
         </TransitionSeries.Sequence>
-        <TransitionSeries.Sequence name="Training" durationInFrames={2 * fps}>
+        <TransitionSeries.Sequence name="Links" durationInFrames={2.8 * fps}>
           <LittleThingSlide index={5} />
         </TransitionSeries.Sequence>
-        <TransitionSeries.Sequence name="Governance" durationInFrames={2 * fps}>
-          <LittleThingSlide index={6} />
-        </TransitionSeries.Sequence>
-        <TransitionSeries.Sequence name="Links" durationInFrames={2 * fps}>
-          <LittleThingSlide index={7} />
-        </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Every screen" durationInFrames={5.5 * fps}>
+        <TransitionSeries.Sequence name="Every screen" durationInFrames={6 * fps}>
           <DevicesScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Website end" durationInFrames={4.5 * fps}>
+        <TransitionSeries.Sequence name="Website end" durationInFrames={5 * fps}>
           <WebsiteEndScene />
         </TransitionSeries.Sequence>
         <TransitionSeries.Sequence name="Pause" durationInFrames={0.6 * fps}>
           <AbsoluteFill style={{ background: C.white }} />
         </TransitionSeries.Sequence>
-        <TransitionSeries.Sequence name="One more thing" durationInFrames={3.4 * fps}>
+        <TransitionSeries.Sequence name="One more thing" durationInFrames={4 * fps}>
           <OneMoreThingScene />
         </TransitionSeries.Sequence>
-        <TransitionSeries.Sequence name="Destiny One" durationInFrames={5 * fps}>
+        <TransitionSeries.Sequence name="Destiny One" durationInFrames={6 * fps}>
           <AppIntroScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Chats" durationInFrames={5 * fps}>
+        <TransitionSeries.Sequence name="Chats" durationInFrames={6 * fps}>
           <ChatsScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Conversation" durationInFrames={5.5 * fps}>
+        <TransitionSeries.Sequence name="Conversation" durationInFrames={7 * fps}>
           <ConversationScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="DestinyAI" durationInFrames={5 * fps}>
+        <TransitionSeries.Sequence name="DestinyAI" durationInFrames={9.5 * fps}>
           <AiScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Events" durationInFrames={4.5 * fps}>
-          <EventsScene />
-        </TransitionSeries.Sequence>
-        {t}
-        <TransitionSeries.Sequence name="Appearance" durationInFrames={5 * fps}>
+        <TransitionSeries.Sequence name="Appearance" durationInFrames={6 * fps}>
           <AppearanceScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Safety" durationInFrames={5 * fps}>
+        <TransitionSeries.Sequence name="Safety" durationInFrames={7 * fps}>
           <SafetyScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name={ending === "coming-2027" ? "Coming in 2027" : "Download today"} durationInFrames={5.5 * fps}>
+        <TransitionSeries.Sequence name="Safety rules" durationInFrames={7.5 * fps}>
+          <SafetyRulesScene />
+        </TransitionSeries.Sequence>
+        {t}
+        <TransitionSeries.Sequence name={ending === "coming-2027" ? "Coming in 2027" : "Download today"} durationInFrames={7 * fps}>
           {ending === "coming-2027" ? <ComingSoonEnd /> : <DownloadEnd />}
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="Destiny Church" durationInFrames={3 * fps}>
+        <TransitionSeries.Sequence name="Destiny Church" durationInFrames={4.5 * fps}>
           <FinalLogo />
         </TransitionSeries.Sequence>
       </TransitionSeries>
@@ -156,5 +195,5 @@ export const Campaign: React.FC<CampaignProps> = ({ ending }) => {
   );
 };
 
-/** Sum of the scene lengths minus the 19 crossfades of 8 frames. Keep in sync with the timeline above. */
-export const CAMPAIGN_FRAMES = 3469;
+/** Sum of the scene lengths minus the 29 crossfades of 8 frames. Keep in sync with the timeline above. */
+export const CAMPAIGN_FRAMES = 6170;

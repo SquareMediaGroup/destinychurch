@@ -118,10 +118,18 @@ const messages = {
   ],
 };
 
+// AI_STAGE (env) steps through a DestinyAI conversation for the demo: 1 the question, 2 the answer,
+// 3 a follow-up that plays a sermon in the chat.
+const AI_STAGE = Number(process.env.AI_STAGE || 2);
+const destinyAi = { id: "destinyai", displayName: "DestinyAI" };
 messages["g-ai"] = [
   msg("g-ai", people.me, "What's on at church this week?", 4),
-  msg("g-ai", { id: "destinyai", displayName: "DestinyAI" }, "Here's what's coming up:\n\n- Alpha at Destiny, Wednesday 7:30pm\n- XCEL Men's Conference, Friday 7:30pm\n- Sunday service at 11am, with prayer from 10am\n\nWant me to share one of these to a chat?", 3),
-];
+  msg("g-ai", destinyAi, "Here's what's coming up:\n\n- Alpha at Destiny, Wednesday 7:30pm\n- XCEL Men's Conference, Friday 7:30pm\n- Sunday service at 11am, with prayer from 10am\n\nWant me to share one of these to a chat?", 3),
+  msg("g-ai", people.me, "Can I watch last Sunday's message?", 2),
+  msg("g-ai", destinyAi, "Of course. Here's last Sunday's message, \"Unstoppable Vision\" with Jonathan Harris:", 1, {
+    content: { kind: "sermon", sermon: { videoId: "0PpN71rVRJc", title: "Unstoppable Vision", speaker: "Jonathan Harris", thumbnailUrl: "https://i.ytimg.com/vi/0PpN71rVRJc/hqdefault.jpg", publishedAt: ago(60 * 24 * 7), durationSeconds: 3120 } },
+  }),
+].slice(0, AI_STAGE === 1 ? 1 : AI_STAGE === 2 ? 2 : 4);
 const lastOf = (groupId) => {
   const list = messages[groupId];
   if (!list || !list.length) return null;

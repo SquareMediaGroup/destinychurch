@@ -33,6 +33,8 @@ const eslintConfig = defineConfig([
     "apps/talent-buzzer/**",
     // status.destinytees.uk: its own Next app and Vercel project (CI job status-page).
     "apps/status/**",
+    // Campaign videos: a Remotion project with its own package.json and checks.
+    "apps/campaign-videos/**",
     // Agent worktrees are full copies of the app, gitignored; linting them
     // would report every problem twice.
     ".claude/**",

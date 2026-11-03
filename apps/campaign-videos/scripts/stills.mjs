@@ -10,6 +10,6 @@ const composition = await selectComposition({ serveUrl, id, browserExecutable })
 const frames = only ? only.split(",").map(Number) : [];
 if (!only) for (let f = 20; f < composition.durationInFrames; f += Number(every)) frames.push(f);
 for (const frame of frames) {
-  await renderStill({ composition, serveUrl, output: `${outDir}/${id}-${String(frame).padStart(4, "0")}.jpg`, frame, imageFormat: "jpeg", jpegQuality: 80, browserExecutable, scale: 0.5 });
+  await renderStill({ composition, serveUrl, output: `${outDir}/${id}-${String(frame).padStart(4, "0")}.jpg`, frame, imageFormat: "jpeg", jpegQuality: 80, browserExecutable, scale: Number(process.env.SCALE || 0.5) });
   console.log("still", frame);
 }

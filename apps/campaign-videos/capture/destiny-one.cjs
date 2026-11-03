@@ -1,8 +1,7 @@
 // Screenshots the real Destiny One app (its Expo web build) with sample data instead of the API.
 // 1. In apps/destiny-one: EXPO_PUBLIC_SUPABASE_URL=https://demo.supabase.co EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=demo-key
 //    EXPO_PUBLIC_API_BASE_URL=https://api.demo.local npx expo export --platform web --output-dir <d1-web>
-// 2. D1_WEB=<d1-web> node capture/destiny-one.cjs <outDir> /chats /group/g-worship ...  (DARK=1 for dark mode, H=1500 for a tall capture,
-//    W=626 H=890 TAG=duo for the iPhone Duo inner display)
+// 2. D1_WEB=<d1-web> node capture/destiny-one.cjs <outDir> /chats /group/g-worship ...  (DARK=1 for dark mode, H=1500 for a tall capture)
 // The web build draws the tab bar as a strip at the top; it's hidden here and the video draws the iPhone glass tab bar instead.
 const { chromium } = require('playwright');
 const fs = require('fs'); const path = require('path');
@@ -17,7 +16,7 @@ const mime = { '.js': 'application/javascript', '.html': 'text/html', '.css': 't
 (async () => {
   const b = await chromium.launch();
   const dark = process.env.DARK === '1';
-  const ctx = await b.newContext({ viewport: { width: Number(process.env.W || 393), height: Number(process.env.H || 852) }, deviceScaleFactor: 3, isMobile: true, hasTouch: true, colorScheme: dark ? 'dark' : 'light' });
+  const ctx = await b.newContext({ viewport: { width: Number(process.env.W || 402), height: Number(process.env.H || 812) }, deviceScaleFactor: 3, isMobile: true, hasTouch: true, colorScheme: dark ? 'dark' : 'light' });
   await ctx.addInitScript(([s, id]) => {
     localStorage.setItem('sb-demo-auth-token', s);
     localStorage.setItem('d1.setupSeen.v1.' + id, '1');

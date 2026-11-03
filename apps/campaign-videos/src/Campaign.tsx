@@ -10,7 +10,7 @@ import {
   LittleThingSlide,
   LittleThingsTitle,
   MinistriesScene,
-  MobileScene,
+  DevicesScene,
   OneMoreThingScene,
   OpenScene,
   SearchScene,
@@ -19,13 +19,14 @@ import {
   WebsiteEndScene,
   WhatsOnScene,
 } from "./scenes/website";
-import { AiScene, AppIntroScene, AppearanceScene, ChatsScene, ComingSoonEnd, ConversationScene, DownloadEnd, DuoScene, EventsScene, FinalLogo, SafetyScene } from "./scenes/app";
+import { AiScene, AppIntroScene, AppearanceScene, ChatsScene, ComingSoonEnd, ConversationScene, DownloadEnd, EventsScene, FinalLogo, SafetyScene } from "./scenes/app";
 
 export type CampaignProps = {
   readonly ending: "coming-2027" | "download-today";
 };
 
-const X = 12; // crossfade length in frames
+// Scenes leave with their own eased move, so the crossfade between them is short.
+const X = 8;
 
 /**
  * Website first: hero, then the main features, then the little things,
@@ -36,7 +37,7 @@ export const Campaign: React.FC<CampaignProps> = ({ ending }) => {
   const { fps } = useVideoConfig();
   const t = <TransitionSeries.Transition presentation={fade()} timing={linearTiming({ durationInFrames: X })} />;
   return (
-    <AbsoluteFill style={{ background: C.ink }}>
+    <AbsoluteFill style={{ background: C.page }}>
       <TransitionSeries>
         <TransitionSeries.Sequence name="Welcome home" durationInFrames={4 * fps}>
           <OpenScene />
@@ -103,14 +104,14 @@ export const Campaign: React.FC<CampaignProps> = ({ ending }) => {
         </TransitionSeries.Sequence>
         {t}
         <TransitionSeries.Sequence name="Every screen" durationInFrames={5.5 * fps}>
-          <MobileScene />
+          <DevicesScene />
         </TransitionSeries.Sequence>
         {t}
         <TransitionSeries.Sequence name="Website end" durationInFrames={4.5 * fps}>
           <WebsiteEndScene />
         </TransitionSeries.Sequence>
         <TransitionSeries.Sequence name="Pause" durationInFrames={0.6 * fps}>
-          <AbsoluteFill style={{ background: "#000" }} />
+          <AbsoluteFill style={{ background: C.white }} />
         </TransitionSeries.Sequence>
         <TransitionSeries.Sequence name="One more thing" durationInFrames={3.4 * fps}>
           <OneMoreThingScene />
@@ -139,10 +140,6 @@ export const Campaign: React.FC<CampaignProps> = ({ ending }) => {
           <AppearanceScene />
         </TransitionSeries.Sequence>
         {t}
-        <TransitionSeries.Sequence name="iPhone Duo" durationInFrames={5 * fps}>
-          <DuoScene />
-        </TransitionSeries.Sequence>
-        {t}
         <TransitionSeries.Sequence name="Safety" durationInFrames={5 * fps}>
           <SafetyScene />
         </TransitionSeries.Sequence>
@@ -159,5 +156,5 @@ export const Campaign: React.FC<CampaignProps> = ({ ending }) => {
   );
 };
 
-/** Sum of the scene lengths minus the 20 crossfades. Keep in sync with the timeline above. */
-export const CAMPAIGN_FRAMES = 3531;
+/** Sum of the scene lengths minus the 19 crossfades of 8 frames. Keep in sync with the timeline above. */
+export const CAMPAIGN_FRAMES = 3469;

@@ -1,5 +1,5 @@
 import { loadFont } from "@remotion/fonts";
-import { staticFile } from "remotion";
+import { Easing, staticFile } from "remotion";
 
 // Brand typography (DC Brand Asset Style Guide): Roboto for body, Dosis for
 // sub headers. Anton stands in for the display face the website's hero uses.
@@ -13,21 +13,19 @@ void loadFont({ family: roboto, url: staticFile("fonts/Roboto.woff2"), weight: "
 void loadFont({ family: dosis, url: staticFile("fonts/Dosis.woff2"), weight: "200 800" });
 void loadFont({ family: anton, url: staticFile("fonts/Anton.woff2"), weight: "400" });
 
-// Pillar palette + neutrals from the brand guide.
+// Light, product-film look: near-white page, near-black ink, the brand orange as the one accent.
 export const C = {
-  red: "#FD0000",
-  orange: "#F58021",
-  blue: "#0857BA",
-  green: "#028002",
-  purple: "#8106B1",
-  grey: "#363F48",
-  ink: "#0B0B0C",
+  page: "#F5F5F7",
   white: "#FFFFFF",
-  muted: "rgba(255,255,255,0.62)",
+  ink: "#1D1D1F",
+  muted: "#6E6E73",
+  // Brand orange (#F58021) is too light for text on white; this deeper tone is the same hue.
+  accent: "#D2600A",
+  orange: "#F58021",
+  grey: "#363F48",
 };
 
 export const FPS = 30;
-export const s = (seconds: number) => Math.round(seconds * FPS);
 
-// Apple-like ease-out.
-export const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
+/** Aggressive ease in and out: slow off the mark, fast through the middle, a long soft landing. */
+export const EASE = Easing.bezier(0.86, 0, 0.07, 1);

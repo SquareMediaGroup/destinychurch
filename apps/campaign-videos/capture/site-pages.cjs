@@ -1,5 +1,5 @@
-// Screenshots the refreshed website (destinychurch.vercel.app) at desktop (1440x900 @2x) and
-// phone (390x844 @3x) sizes, plus full-page captures. Usage: node capture/site-pages.cjs <outDir>
+// Screenshots the refreshed website (destinychurch.vercel.app) at MacBook Pro 14" (1512x982 @2x) and
+// iPhone 18 Pro (402x812 @3x: its 874pt screen less the 62pt status bar) sizes, matching Apple's bezels, plus full-page captures. Usage: node capture/site-pages.cjs <outDir>
 // Run from the repo root so require('playwright') resolves to the preinstalled copy.
 const { chromium } = require('playwright');
 const out = process.argv[2];
@@ -11,7 +11,7 @@ const pages = [
 ];
 (async () => {
   const b = await chromium.launch();
-  for (const [vw, vh, dpr, suffix, mobile] of [[1440, 900, 2, '', false], [390, 844, 3, '-m', true]]) {
+  for (const [vw, vh, dpr, suffix, mobile] of [[1512, 982, 2, '', false], [402, 812, 3, '-m', true]]) {
     const ctx = await b.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: dpr, isMobile: mobile, hasTouch: mobile });
     // pre-accept cookie consent if site uses localStorage/cookie; we'll also try clicking
     const p = await ctx.newPage();

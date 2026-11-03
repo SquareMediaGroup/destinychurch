@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, Easing, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
 import { C, anton, dosis, roboto } from "../theme";
-import { AppScreen, Body, Browser, Center, Glow, Headline, Kicker, Logo, RevealText, Shot, useExit, useProgress } from "../ui";
+import { AppScreen, Body, Browser, Center, DUO_INNER, DUO_OUTER, Foldable, Glow, Headline, Kicker, Logo, RevealText, ScreenImage, Shot, useExit, useProgress } from "../ui";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const ease = Easing.bezier(0.16, 1, 0.3, 1);
@@ -46,6 +46,56 @@ export const IntroScene: React.FC = () => {
         </div>
         <Headline text="Introducing our new website." delay={34} size={96} accent={["new"]} />
       </Center>
+    </Dark>
+  );
+};
+
+// Before and after: the old site (destinytees.uk), wiped away to reveal the new one.
+export const BeforeAfterScene: React.FC = () => {
+  const frame = useCurrentFrame();
+  const enter = useProgress(0, 30);
+  const wipe = interpolate(frame, [50, 100], [0, 1], { ...clamp, easing: Easing.bezier(0.65, 0, 0.35, 1) });
+  const exit = useExit(12);
+  const W = 1320;
+  const H = W * DESKTOP;
+  const label = (text: string, side: "left" | "right", visible: number) => (
+    <div
+      style={{
+        position: "absolute",
+        top: 24,
+        [side]: 24,
+        padding: "10px 22px",
+        borderRadius: 999,
+        background: "rgba(0,0,0,0.6)",
+        color: C.white,
+        fontFamily: dosis,
+        fontWeight: 700,
+        fontSize: 26,
+        letterSpacing: "0.18em",
+        textTransform: "uppercase",
+        opacity: visible,
+      }}
+    >
+      {text}
+    </div>
+  );
+  return (
+    <Dark>
+      <Glow intensity={0.25} />
+      <AbsoluteFill style={{ alignItems: "center", paddingTop: 96, opacity: exit }}>
+        <Headline text="A fresh new look." size={96} accent={["new"]} />
+        <div style={{ position: "absolute", top: 260, opacity: enter, translate: `0px ${(1 - enter) * 120}px` }}>
+          <Browser width={W}>
+            <Img src={staticFile("site/home.jpg")} style={{ position: "absolute", width: W, height: H }} />
+            <div style={{ position: "absolute", inset: 0, clipPath: `inset(0 0 0 ${wipe * 100}%)` }}>
+              <Img src={staticFile("site/old-home.jpg")} style={{ position: "absolute", width: W, height: H, filter: "saturate(0.7)" }} />
+              {label("Before", "right", 1 - wipe)}
+            </div>
+            {label("After", "left", interpolate(wipe, [0.6, 1], [0, 1], clamp))}
+            <div style={{ position: "absolute", top: 0, bottom: 0, left: `${wipe * 100}%`, width: 4, marginLeft: -2, background: C.white, opacity: wipe > 0 && wipe < 1 ? 1 : 0, boxShadow: "0 0 30px rgba(255,255,255,0.8)" }} />
+          </Browser>
+        </div>
+      </AbsoluteFill>
     </Dark>
   );
 };
@@ -255,30 +305,38 @@ export const LittleThingsTitle: React.FC = () => {
 
 export const LittleThingSlide: React.FC<{ index: number }> = ({ index }) => <LittleThing {...LITTLE_THINGS[index]} index={index} />;
 
-// 10. Every screen
+// 10. Every screen, iPhone Duo included
 export const MobileScene: React.FC = () => {
   const frame = useCurrentFrame();
   const exit = useExit(12);
-  const phones = [
-    { src: "site/home-m.jpg", x: -520, delay: 8 },
-    { src: "site/search-answer-m.jpg", x: 0, delay: 0 },
-    { src: "site/sermons-m.jpg", x: 520, delay: 14 },
-  ];
+  const rise = (delay: number) => interpolate(frame, [delay + 10, delay + 50], [0, 1], { ...clamp, easing: ease });
+  const duoH = 800;
+  const duoW = duoH * (DUO_INNER.w / DUO_INNER.h);
+  const outerH = 640;
+  const outerW = outerH * (DUO_OUTER.w / DUO_OUTER.h);
+  const a = rise(10);
+  const b = rise(0);
+  const c = rise(18);
   return (
     <Dark>
       <Glow intensity={0.35} />
-      <AbsoluteFill style={{ alignItems: "center", paddingTop: 90, opacity: exit }}>
-        <Headline text="Beautiful on every screen." size={96} />
+      <AbsoluteFill style={{ alignItems: "center", paddingTop: 80, opacity: exit }}>
+        <Headline text="Beautiful on every screen. Even iPhone Duo." size={84} accent={["Duo"]} />
       </AbsoluteFill>
-      <AbsoluteFill style={{ opacity: exit }}>
-        {phones.map((p) => {
-          const e = interpolate(frame, [p.delay + 10, p.delay + 50], [0, 1], { ...clamp, easing: ease });
-          return (
-            <div key={p.src} style={{ position: "absolute", left: 960 + p.x - 224, top: 300 + (1 - e) * 500 + (p.x === 0 ? -20 : 40), opacity: e }}>
-              <AppScreen src={p.src} height={900} aspect={MOBILE} />
-            </div>
-          );
-        })}
+      <AbsoluteFill style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "center", gap: 70, paddingBottom: 40, opacity: exit }}>
+        <div style={{ opacity: a, translate: `0px ${(1 - a) * 400}px` }}>
+          <AppScreen src="site/home-m.jpg" height={700} aspect={MOBILE} />
+        </div>
+        <div style={{ opacity: b, translate: `0px ${(1 - b) * 400}px` }}>
+          <Foldable height={duoH}>
+            <ScreenImage src="site/duo-home.jpg" width={duoW} height={duoH} />
+          </Foldable>
+        </div>
+        <div style={{ opacity: c, translate: `0px ${(1 - c) * 400}px` }}>
+          <Foldable height={outerH} open={0}>
+            <ScreenImage src="site/duo-outer-home.jpg" width={outerW} height={outerH} />
+          </Foldable>
+        </div>
       </AbsoluteFill>
     </Dark>
   );

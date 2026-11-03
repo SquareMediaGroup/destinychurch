@@ -423,6 +423,73 @@ export const AppIcon: React.FC<{ size: number; style?: React.CSSProperties }> = 
   />
 );
 
+// iPhone Duo screens in points (Apple's specs at 3x): inner 1878x2670 px, outer 1398x2034 px.
+export const DUO_INNER = { w: 626, h: 890 };
+export const DUO_OUTER = { w: 466, h: 678 };
+
+/**
+ * A generic book-style foldable, open. `open` 0..1 widens it from the folded width to fully
+ * open while `folded` (the outer-screen content) cross-fades to `children` (the inner screen).
+ */
+export const Foldable: React.FC<{
+  height: number;
+  children: React.ReactNode;
+  folded?: React.ReactNode;
+  open?: number;
+  dark?: boolean;
+  style?: React.CSSProperties;
+}> = ({ height, children, folded, open = 1, dark, style }) => {
+  const fullW = height * (DUO_INNER.w / DUO_INNER.h);
+  const foldedW = height * (DUO_OUTER.w / DUO_OUTER.h);
+  const width = foldedW + (fullW - foldedW) * open;
+  const bezel = height * 0.016;
+  const crease = interpolate(open, [0.6, 1], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  // A short swap in the middle of the unfold, so the two screens don't sit on top of each other.
+  const swap = interpolate(open, [0.42, 0.58], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  return (
+    <div
+      style={{
+        width: width + bezel * 2,
+        height: height + bezel * 2,
+        padding: bezel,
+        borderRadius: height * 0.075,
+        background: "linear-gradient(145deg, #3a3a3e, #121214 60%, #2a2a2e)",
+        boxShadow: "0 50px 120px rgba(0,0,0,0.6), inset 0 0 0 2px rgba(255,255,255,0.12)",
+        ...style,
+      }}
+    >
+      <div style={{ position: "relative", width, height, borderRadius: height * 0.062, overflow: "hidden", background: dark ? "#1A110A" : "#fff" }}>
+        <div style={{ position: "absolute", inset: 0, opacity: folded ? swap : 1 }}>{children}</div>
+        {folded ? <div style={{ position: "absolute", inset: 0, opacity: 1 - swap }}>{folded}</div> : null}
+        {/* The hinge: a faint vertical crease down the middle of the inner screen. */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            left: "50%",
+            width: height * 0.03,
+            marginLeft: -(height * 0.015),
+            background: "linear-gradient(90deg, transparent, rgba(0,0,0,0.07) 45%, rgba(255,255,255,0.06) 55%, transparent)",
+            opacity: crease,
+          }}
+        />
+      </div>
+    </div>
+  );
+};
+
+/** A screenshot filling a device screen below a status bar. */
+export const ScreenImage: React.FC<{ src: string; width: number; height: number; dark?: boolean; statusBar?: boolean }> = ({ src, width, height, dark, statusBar = true }) => (
+  <>
+    <div style={{ position: "absolute", inset: 0, background: dark ? "#1A110A" : "#fff" }} />
+    <div style={{ position: "absolute", left: 0, right: 0, top: statusBar ? height * 0.05 : 0, bottom: 0, overflow: "hidden" }}>
+      <Img src={staticFile(src)} style={{ width, height: width * (height / width) }} />
+    </div>
+    {statusBar ? <StatusBar height={height * (852 / 890)} dark={dark} /> : null}
+  </>
+);
+
 export const Center: React.FC<{ children: React.ReactNode; style?: React.CSSProperties; gap?: number }> = ({ children, style, gap = 28 }) => (
   <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", flexDirection: "column", gap, padding: "100px 120px", ...style }}>
     {children}

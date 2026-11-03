@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, Easing, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
 import { C, dosis, roboto } from "../theme";
-import { AppIcon, AppScreen, Body, Center, Glow, Headline, Kicker, Logo, useExit, useProgress } from "../ui";
+import { AppIcon, AppScreen, Body, Center, DUO_INNER, DUO_OUTER, Foldable, Glow, Headline, Kicker, Logo, ScreenImage, useExit, useProgress } from "../ui";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const ease = Easing.bezier(0.16, 1, 0.3, 1);
@@ -128,6 +128,50 @@ export const AppearanceScene: React.FC = () => {
             </div>
           );
         })}
+      </AbsoluteFill>
+    </Dark>
+  );
+};
+
+// iPhone Duo: folded, it's a phone; open it and the chat list spreads across the inner screen.
+export const DuoScene: React.FC = () => {
+  const frame = useCurrentFrame();
+  const enter = useProgress(0, 36);
+  const open = interpolate(frame, [48, 92], [0, 1], { ...clamp, easing: Easing.bezier(0.65, 0, 0.35, 1) });
+  const exit = useExit(12);
+  const H = 860;
+  const innerW = H * (DUO_INNER.w / DUO_INNER.h);
+  const outerW = H * (DUO_OUTER.w / DUO_OUTER.h);
+  return (
+    <Dark>
+      <Glow colors={[C.orange, C.blue]} intensity={0.3} />
+      <AbsoluteFill style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 120, opacity: exit }}>
+        <div style={{ width: 700, display: "flex", flexDirection: "column", gap: 26 }}>
+          <Kicker>iPhone Duo</Kicker>
+          <Headline text="Open it up. Destiny One opens up with it." size={88} align="left" accent={["opens"]} />
+          <Body delay={26} align="left" size={42}>
+            Folded, it&apos;s the phone you know. Unfold it, and every chat gets room to breathe.
+          </Body>
+        </div>
+        <div style={{ width: innerW + 30, display: "flex", justifyContent: "center", opacity: enter, translate: `0px ${(1 - enter) * 200}px` }}>
+          <Foldable
+            height={H}
+            open={open}
+            folded={
+              <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "center" }}>
+                <div style={{ position: "relative", width: outerW, height: H }}>
+                  <ScreenImage src="app/d1-chats-duo-outer.jpg" width={outerW} height={H} />
+                </div>
+              </div>
+            }
+          >
+            <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "center" }}>
+              <div style={{ position: "relative", width: innerW, height: H, flexShrink: 0 }}>
+                <ScreenImage src="app/d1-chats-duo.jpg" width={innerW} height={H} />
+              </div>
+            </div>
+          </Foldable>
+        </div>
       </AbsoluteFill>
     </Dark>
   );

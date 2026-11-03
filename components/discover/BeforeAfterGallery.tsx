@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState } from "react";
 import BeforeAfterSlider from "@/components/discover/BeforeAfterSlider";
+import { MacBookFrame } from "@/components/devices/DeviceFrames";
 import { cn } from "@/lib/cn";
 
 export interface Comparison {
@@ -66,12 +67,16 @@ export default function BeforeAfterGallery({ items }: { items: Comparison[] }) {
         ))}
       </div>
       <div id={`${base}-panel`} role="tabpanel" aria-labelledby={`${base}-tab-${item.key}`}>
-        <BeforeAfterSlider
-          key={item.key}
-          label={item.label}
-          before={{ src: `/img/discover/${item.key}-before.webp`, alt: `The old ${item.label}` }}
-          after={{ src: `/img/discover/${item.key}-after.webp`, alt: `The new ${item.label}` }}
-        />
+        <MacBookFrame className="mx-auto w-full max-w-6xl">
+          <BeforeAfterSlider
+            key={item.key}
+            bare
+            label={item.label}
+            sizes="(min-width: 1280px) 940px, 80vw"
+            before={{ src: `/img/discover/${item.key}-before.webp`, alt: `The old ${item.label}` }}
+            after={{ src: `/img/discover/${item.key}-after.webp`, alt: `The new ${item.label}` }}
+          />
+        </MacBookFrame>
         <p className="mt-4 text-center text-sm leading-relaxed text-muted">{item.note}</p>
       </div>
     </div>

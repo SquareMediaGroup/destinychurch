@@ -25,6 +25,7 @@ export default function BeforeAfterSlider({
   aspect = "1512 / 982",
   sizes = "(min-width: 1280px) 1152px, 100vw",
   rounded = "rounded-2xl",
+  bare = false,
   className,
 }: {
   before: { src: string; alt: string };
@@ -35,6 +36,8 @@ export default function BeforeAfterSlider({
   aspect?: string;
   sizes?: string;
   rounded?: string;
+  /** Inside a device frame: fill the parent, no ring or rounding of its own. */
+  bare?: boolean;
   className?: string;
 }) {
   const [pos, setPos] = useState(50);
@@ -49,11 +52,14 @@ export default function BeforeAfterSlider({
   }, []);
 
   return (
-    <div className={className}>
+    <div className={cn(bare && "h-full", className)}>
       <div
         ref={box}
-        className={cn("group relative w-full touch-pan-y select-none overflow-hidden bg-[#f5f7fa] ring-1 ring-black/[0.08]", rounded)}
-        style={{ aspectRatio: aspect, cursor: "ew-resize" }}
+        className={cn(
+          "group relative w-full touch-pan-y select-none overflow-hidden bg-[#f5f7fa]",
+          bare ? "h-full" : cn("ring-1 ring-black/[0.08]", rounded),
+        )}
+        style={{ aspectRatio: bare ? undefined : aspect, cursor: "ew-resize" }}
         onPointerDown={(e) => {
           dragging.current = true;
           e.currentTarget.setPointerCapture(e.pointerId);

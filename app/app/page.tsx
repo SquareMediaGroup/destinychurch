@@ -174,8 +174,8 @@ export default function DestinyOnePage() {
         </AnimateIn>
         <AnimateIn delay={120} className="mx-auto mt-14 flex max-w-4xl items-start justify-center gap-4 sm:gap-8">
           <AppScreen src="/img/destiny-one/chats.webp" alt="Chats in the light theme" className="w-[31%] max-w-[280px]" sizes="(min-width: 1024px) 280px, 31vw" />
-          <AppScreen src="/img/destiny-one/appearance-dark.webp" alt="Appearance settings in the dark theme: a chat preview, theme choices and message colours" className="w-[31%] max-w-[280px] sm:-translate-y-6" sizes="(min-width: 1024px) 280px, 31vw" />
-          <AppScreen src="/img/destiny-one/chats-dark.webp" alt="Chats in the dark theme" className="w-[31%] max-w-[280px]" sizes="(min-width: 1024px) 280px, 31vw" />
+          <AppScreen src="/img/destiny-one/appearance-dark.webp" dark color="black" alt="Appearance settings in the dark theme: a chat preview, theme choices and message colours" className="w-[31%] max-w-[280px] sm:-translate-y-6" sizes="(min-width: 1024px) 280px, 31vw" />
+          <AppScreen src="/img/destiny-one/chats-dark.webp" dark color="black" alt="Chats in the dark theme" className="w-[31%] max-w-[280px]" sizes="(min-width: 1024px) 280px, 31vw" />
         </AnimateIn>
       </Section>
 

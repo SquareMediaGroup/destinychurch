@@ -9,6 +9,7 @@ import Icon from "@/components/ui/Icon";
 import BeforeAfterGallery, { type Comparison } from "@/components/discover/BeforeAfterGallery";
 import BeforeAfterSlider from "@/components/discover/BeforeAfterSlider";
 import { FONT_ROBOTO } from "@/components/blocks/tokens";
+import { IPhoneFrame, MacBookFrame } from "@/components/devices/DeviceFrames";
 
 export const metadata: Metadata = {
   title: "Behind the build",
@@ -111,15 +112,15 @@ export default function DiscoverPage() {
             title="Built for the phone first."
             lead="Most people visit on a phone, so every page was designed small first and grown up to the desktop, not squeezed down from it. Drag to compare the home page."
           />
-          <BeforeAfterSlider
-            label="home page on a phone"
-            aspect="402 / 812"
-            rounded="rounded-[13.7%/6.8%]"
-            sizes="320px"
-            className="mx-auto w-full max-w-[320px]"
-            before={{ src: "/img/discover/home-phone-before.webp", alt: "The old home page on a phone" }}
-            after={{ src: "/img/discover/home-phone-after.webp", alt: "The new home page on a phone" }}
-          />
+          <IPhoneFrame className="mx-auto w-full max-w-[320px]">
+            <BeforeAfterSlider
+              bare
+              label="home page on a phone"
+              sizes="300px"
+              before={{ src: "/img/discover/home-phone-before.webp", alt: "The old home page on a phone" }}
+              after={{ src: "/img/discover/home-phone-after.webp", alt: "The new home page on a phone" }}
+            />
+          </IPhoneFrame>
         </AnimateIn>
       </Section>
 
@@ -322,7 +323,7 @@ export default function DiscoverPage() {
             </ul>
           </AnimateIn>
           <AnimateIn delay={120}>
-            <div className="relative overflow-hidden rounded-2xl ring-1 ring-black/[0.08] shadow-[0_24px_60px_-20px_rgba(16,24,40,.28)]" style={{ aspectRatio: "1512 / 982" }}>
+            <MacBookFrame>
               <Image
                 src="/img/discover/smart-search.webp"
                 alt="Smart Search answering 'Is there something for my kids on Sunday?' with Destiny Kids times and groups"
@@ -330,7 +331,7 @@ export default function DiscoverPage() {
                 sizes="(min-width: 1024px) 680px, 100vw"
                 className="object-cover"
               />
-            </div>
+            </MacBookFrame>
           </AnimateIn>
         </div>
       </Section>

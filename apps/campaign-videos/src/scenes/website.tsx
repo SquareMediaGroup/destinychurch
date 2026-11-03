@@ -287,12 +287,13 @@ const ScrollScene: React.FC<{ kicker: string; title: string; body: string; src: 
 }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
-  // One move per stop, spread evenly, each 40 frames with a hold after it.
+  // One move per stop, spread evenly, each up to 40 frames with a hold after it.
   const span = (durationInFrames - 90) / stops.length;
+  const move = Math.min(40, span * 0.6); // always leaves a hold, so keyframes strictly increase
   const input: number[] = [50];
   const output: number[] = [0];
   stops.forEach((s, i) => {
-    input.push(50 + i * span + 40, 50 + (i + 1) * span);
+    input.push(50 + i * span + move, 50 + (i + 1) * span);
     output.push(s, s);
   });
   const scroll = kf(frame, input, output);

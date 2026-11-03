@@ -1,6 +1,7 @@
 import type { D1AppConfig } from "@destiny/shared";
 import { oneJson, oneRoute } from "@/lib/destinyOne/http";
 import { getSettings } from "@/lib/destinyOne/settings.server";
+import { ANDROID_STORE_URL, IOS_STORE_URL } from "@/lib/destinyOne/storeLinks";
 
 // GET /api/app/v1/one/config   (no sign-in needed)
 //
@@ -21,11 +22,8 @@ import { getSettings } from "@/lib/destinyOne/settings.server";
 
 export const dynamic = "force-dynamic";
 
-// iOS: TestFlight while in beta. Set D1_IOS_STORE_URL to the App Store link
-// (https://apps.apple.com/app/id<number>) once the app is published.
-const IOS_STORE_URL = process.env.D1_IOS_STORE_URL || "itms-beta://";
-const ANDROID_STORE_URL =
-  process.env.D1_ANDROID_STORE_URL || "https://play.google.com/store/apps/details?id=uk.destinytees.one";
+// Store links (D1_IOS_STORE_URL / D1_ANDROID_STORE_URL) are shared with the
+// /app page's pre-order buttons: lib/destinyOne/storeLinks.ts.
 
 export const GET = oneRoute(async () => {
   const s = await getSettings();

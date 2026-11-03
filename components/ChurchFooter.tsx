@@ -15,6 +15,7 @@ const connectLinks = [
   { label: "Baptism", href: "/baptism" },
   { label: "Child Dedication", href: "/child-dedication" },
   { label: "Destiny 12:2", href: "/twelvetwo" },
+  { label: "Destiny One app", href: "/app" },
 ];
 
 const legalLinks = [
@@ -24,6 +25,7 @@ const legalLinks = [
   { label: "Terms of Use", href: "/terms" },
   { label: "Privacy Policy", href: "/privacy" },
   { label: "Accessibility", href: "/accessibility" },
+  { label: "Behind the build", href: "/discover" },
   { label: "Contact Us", href: "/contact" },
 ];
 

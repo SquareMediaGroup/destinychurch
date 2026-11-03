@@ -46,6 +46,8 @@ export const PAGE_INTENTS: { href: string; cta: string; intent: string }[] = [
   { href: "/shop",            cta: "Browse Merch",            intent: "shop, store, merch, apparel, t-shirts, clothing, buy" },
   { href: "/safeguarding",    cta: "Safeguarding",            intent: "safeguarding, child protection, concerns" },
   { href: "/governance",      cta: "Governance & Registration", intent: "charity number, company number, registered charity, trustees, directors, accounts, income, finances, annual return, filings, how the church is governed" },
+  { href: "/app",             cta: "Meet Destiny One",        intent: "Destiny One, the church app, mobile app, iPhone, Android, App Store, Google Play, group chats, DestinyAI, coming 2027, pre-order, pre-register" },
+  { href: "/discover",        cta: "Behind the Build",        intent: "the new website, how the website was built, redesign, old vs new site, website speed, performance, technology" },
   { href: "/help",            cta: "Help Centre",             intent: "help, FAQ, questions, how do I" },
   { href: "/contact",         cta: "Contact Us",              intent: "contact, get in touch, phone, email, address, or anything we don't have info on" },
 ];

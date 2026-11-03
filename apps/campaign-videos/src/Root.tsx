@@ -1,5 +1,6 @@
 import { Composition, Folder } from "remotion";
 import { Campaign, CAMPAIGN_FRAMES } from "./Campaign";
+import { DestinyOneFilm, DESTINY_ONE_FILM_FRAMES } from "./DestinyOneFilm";
 import { BeforeAfter, ShopBeforeAfter } from "./scenes/website";
 
 export const RemotionRoot: React.FC = () => {
@@ -25,6 +26,8 @@ export const RemotionRoot: React.FC = () => {
           defaultProps={{ ending: "download-today" as const }}
         />
       </Folder>
+      {/* One minute on Destiny One alone, with music, for destinytees.uk/app. */}
+      <Composition id="DestinyOneFilm" component={DestinyOneFilm} durationInFrames={DESTINY_ONE_FILM_FRAMES} fps={30} width={1920} height={1080} />
       {/* Before/after scenes pinned fully before or after, for matching slider images (scripts/export-stills.mjs). */}
       <Folder name="Stills">
         <Composition

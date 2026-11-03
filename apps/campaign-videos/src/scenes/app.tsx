@@ -9,7 +9,7 @@ const Exit: React.FC<{ children: React.ReactNode; frames?: number }> = ({ childr
 };
 
 /** Text on one side; the phone rises in on the other. */
-const Split: React.FC<{
+export const Split: React.FC<{
   kicker: string;
   title: string;
   body: string;

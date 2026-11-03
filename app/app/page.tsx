@@ -10,6 +10,7 @@ import Icon from "@/components/ui/Icon";
 import AppScreen from "@/components/destiny-one-page/AppScreen";
 import FeatureRow from "@/components/destiny-one-page/FeatureRow";
 import StoreButtons from "@/components/destiny-one-page/StoreButtons";
+import VideoPlayer from "@/components/ui/VideoPlayer";
 import { FONT_ROBOTO } from "@/components/blocks/tokens";
 import { webStoreLinks } from "@/lib/destinyOne/storeLinks";
 
@@ -118,6 +119,36 @@ export default function DestinyOnePage() {
       </section>
 
       <Section tone="muted" padding="lg">
+        <AnimateIn>
+          <SectionHeading
+            align="center"
+            eyebrow="The film"
+            title="Destiny One in a minute."
+            lead="Chats, announcements, events, DestinyAI and the safeguarding rules behind it all."
+          />
+        </AnimateIn>
+        <AnimateIn delay={120} className="mt-12">
+          <VideoPlayer
+            src="/img/destiny-one/film.mp4"
+            poster="/img/destiny-one/film-poster.webp"
+            label="Destiny One in a minute, a film about the app"
+            className="mx-auto aspect-video w-full max-w-5xl rounded-3xl"
+          />
+          <p className="mt-4 text-center text-xs text-muted">
+            Music: &ldquo;Inspired&rdquo; by Kevin MacLeod (
+            <a href="https://incompetech.com" className="underline underline-offset-2 hover:text-destiny-grey">
+              incompetech.com
+            </a>
+            ), licensed under{" "}
+            <a href="https://creativecommons.org/licenses/by/4.0/" className="underline underline-offset-2 hover:text-destiny-grey">
+              CC BY 4.0
+            </a>
+            .
+          </p>
+        </AnimateIn>
+      </Section>
+
+      <Section tone="light" padding="lg">
         <FeatureRow
           eyebrow="Communities"
           title="Every team. Every group. One place."
@@ -132,7 +163,7 @@ export default function DestinyOnePage() {
         </FeatureRow>
       </Section>
 
-      <Section tone="light" padding="lg">
+      <Section tone="muted" padding="lg">
         <FeatureRow
           flip
           eyebrow="Chat"
@@ -149,7 +180,7 @@ export default function DestinyOnePage() {
         </FeatureRow>
       </Section>
 
-      <Section tone="muted" padding="lg">
+      <Section tone="light" padding="lg">
         <FeatureRow
           eyebrow="DestinyAI · Beta"
           title="Ask DestinyAI anything about Destiny."
@@ -163,7 +194,7 @@ export default function DestinyOnePage() {
         </FeatureRow>
       </Section>
 
-      <Section tone="light" padding="lg">
+      <Section tone="muted" padding="lg">
         <AnimateIn>
           <SectionHeading
             align="center"
@@ -179,7 +210,7 @@ export default function DestinyOnePage() {
         </AnimateIn>
       </Section>
 
-      <Section tone="muted" padding="lg">
+      <Section tone="light" padding="lg">
         <FeatureRow
           flip
           eyebrow="Safe by design"
@@ -204,7 +235,7 @@ export default function DestinyOnePage() {
         </AnimateIn>
       </Section>
 
-      <Section tone="light" padding="lg" width="prose">
+      <Section tone="muted" padding="lg" width="prose">
         <AnimateIn>
           <SectionHeading align="center" eyebrow="Questions" title="Good to know" />
         </AnimateIn>

@@ -450,6 +450,7 @@ destinychurch/
 │   └── workflows/                 # ci.yml (every PR), playwright.yml (manual e2e), AI content jobs, talent-buzzer-release.yml
 │
 ├── .claude/                       # Claude Code settings
+│   └── skills/                    # Project skills: vibe-security, remotion-* (Remotion video skills from remotion-dev/skills)
 ├── .vscode/                       # VS Code workspace settings
 ├── next.config.ts                 # Next.js configuration
 ├── playwright.config.ts           # E2E test configuration

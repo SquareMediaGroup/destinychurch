@@ -148,24 +148,29 @@ const Pill: React.FC<{ text: string; side: "left" | "right"; visible: number }> 
   </div>
 );
 
-export const BeforeAfter: React.FC<{ name: string; title: string; first?: boolean }> = ({ name, title, first }) => {
+/** `freeze` pins the wipe fully before or after, with no rise: for exporting matching stills for a slider. */
+type Freeze = "before" | "after";
+
+export const BeforeAfter: React.FC<{ name: string; title: string; first?: boolean; freeze?: Freeze }> = ({ name, title, first, freeze }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
   const W = 1140;
   const { w, h } = macScreen(W);
   const start = first ? 60 : 30;
-  const wipe = kf(frame, [start, start + 48], [0, 1]);
+  const wipe = freeze ? (freeze === "after" ? 1 : 0) : kf(frame, [start, start + 48], [0, 1]);
+  const showBefore = freeze ? (freeze === "before" ? 1 : 0) : 1 - kf(frame, [start + 30, start + 44], [0, 1]);
+  const showAfter = freeze ? (freeze === "after" ? 1 : 0) : kf(frame, [start + 34, start + 50], [0, 1]) * kf(frame, [durationInFrames - 30, durationInFrames - 20], [1, 0]);
   return (
     <Page>
       <Exit>
         <Title kicker={first ? "Before and after" : undefined} title={title} size={first ? 88 : 72} />
-        <Rise delay={0} distance={first ? 760 : 0} style={{ left: 960 - W / 2, top: 250 }}>
+        <Rise delay={0} distance={first && !freeze ? 760 : 0} style={{ left: 960 - W / 2, top: 250 }}>
           <MacBook src={`site/new-${name}.jpg`} width={W}>
             <div style={{ position: "absolute", inset: 0, clipPath: `inset(0 0 0 ${wipe * 100}%)` }}>
               <Img src={staticFile(`site/old-${name}.jpg`)} style={{ position: "absolute", width: w, height: h }} />
-              <Pill text="Before" side="right" visible={1 - kf(frame, [start + 30, start + 44], [0, 1])} />
+              <Pill text="Before" side="right" visible={showBefore} />
             </div>
-            <Pill text="After" side="left" visible={kf(frame, [start + 34, start + 50], [0, 1]) * kf(frame, [durationInFrames - 30, durationInFrames - 20], [1, 0])} />
+            <Pill text="After" side="left" visible={showAfter} />
             <div style={{ position: "absolute", top: 0, bottom: 0, left: `${wipe * 100}%`, width: 3, marginLeft: -1.5, background: C.white, opacity: wipe > 0.01 && wipe < 0.99 ? 1 : 0 }} />
           </MacBook>
         </Rise>
@@ -413,23 +418,23 @@ export const ShopMoveScene: React.FC = () => {
   );
 };
 
-export const ShopBeforeAfter: React.FC = () => {
+export const ShopBeforeAfter: React.FC<{ freeze?: Freeze }> = ({ freeze }) => {
   const frame = useCurrentFrame();
   const W = 1140;
   const { w, h } = macScreen(W);
-  const wipe = kf(frame, [36, 84], [0, 1]);
-  const scroll = kf(frame, [110, 160], [0, 0.42]);
+  const wipe = freeze ? (freeze === "after" ? 1 : 0) : kf(frame, [36, 84], [0, 1]);
+  const scroll = freeze ? 0 : kf(frame, [110, 160], [0, 0.42]);
   return (
     <Page>
       <Exit>
         <Title title="A much better shop." size={80} accent={["better"]} />
-        <Rise delay={0} style={{ left: 960 - W / 2, top: 240 }}>
+        <Rise delay={0} distance={freeze ? 0 : 760} style={{ left: 960 - W / 2, top: 240 }}>
           <MacBook src="site/shop-full.jpg" width={W} sourceAspect={aspect(6302)} scroll={scroll}>
             <div style={{ position: "absolute", inset: 0, clipPath: `inset(0 0 0 ${wipe * 100}%)` }}>
               <Img src={staticFile("site/old-shop.jpg")} style={{ position: "absolute", width: w, height: h }} />
-              <Pill text="Before" side="right" visible={1 - kf(frame, [66, 80], [0, 1])} />
+              <Pill text="Before" side="right" visible={freeze ? (freeze === "before" ? 1 : 0) : 1 - kf(frame, [66, 80], [0, 1])} />
             </div>
-            <Pill text="After" side="left" visible={kf(frame, [70, 86], [0, 1])} />
+            <Pill text="After" side="left" visible={freeze ? (freeze === "after" ? 1 : 0) : kf(frame, [70, 86], [0, 1])} />
           </MacBook>
         </Rise>
       </Exit>

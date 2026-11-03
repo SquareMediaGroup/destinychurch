@@ -21,6 +21,8 @@ npm run lint                     # eslint + tsc
 
 In a cloud container without Chrome, add `--browser-executable=/opt/pw-browsers/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell`.
 `node scripts/stills.mjs <id> <outDir> <everyNFrames>` renders sample frames for a quick check.
+`node scripts/export-stills.mjs` writes every screen as a 1920x1080 image to `stills/` (committed), with matching
+before/after pairs for sliders in `stills/before-after/`. See `stills/README.md`.
 
 ## What's in here
 

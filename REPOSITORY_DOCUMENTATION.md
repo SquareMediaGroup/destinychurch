@@ -413,6 +413,9 @@ destinychurch/
 │   ├── status/                    # status.destinytees.uk — public status of the website and Destiny One
 │   │                               # (Next.js, own npm project AND own Vercel project, no Supabase client,
 │   │                               # so it stays up when the site or Supabase is down). See "Status page" below.
+│   ├── campaign-videos/           # Remotion project: the two launch films (website, then Destiny One;
+│   │                               # "Coming in 2027" and "Download today" endings). Own npm project,
+│   │                               # excluded from the root tsconfig/eslint. See "Campaign videos" below.
 │   ├── talent-buzzer/             # Talent show judge buzzers — one app on both machines: hub (LED) / Avolites
 │   │                               # agent (Titan PC). Android tablets press -> Titan Web API cue +
 │   │                               # X / golden takeover + sound on the LED screen. LAN only, own
@@ -8155,6 +8158,13 @@ A small **Next.js app deployed as its own Vercel project** (root directory `apps
 - **Report a problem** (`src/app/ComponentRow.tsx`, `POST /api/report`, `src/lib/report.ts`): every component has a button that opens a short form (what's wrong, optional reply email) and emails the super admins straight through Resend's HTTP API, so reports arrive while the site is down. Recipients are everyone with `super_admin` in `admin_roles`, read at send time from Supabase's REST API with `STATUS_SUPABASE_SECRET_KEY`; if that read fails (Supabase down), the report goes to admin@destinytees.uk with a note saying so. Known component ids only, length caps, a honeypot field, and a soft per-instance limit of 5 reports per address per 10 minutes.
 - **Env** (`.env.example`): `STATUS_SITE_URL` (default `https://destinychurch.vercel.app`, the origin D1's API is served from; destinytees.uk is still the old nginx site that 404s `/api`), `STATUS_SUPABASE_URL`, `STATUS_SUPABASE_PUBLISHABLE_KEY`, and the two secrets `RESEND_API_KEY` and `STATUS_SUPABASE_SECRET_KEY`. Without the publishable key the sign-in check shows "Not checked"; without `RESEND_API_KEY` reports fail with a "Couldn't send that" message; without the secret key they all go to the fallback address.
 - No uptime history or alerting yet: that needs somewhere to store results that isn't Supabase.
+
+### Campaign videos — `apps/campaign-videos/`
+A **Remotion** project (React, rendered to MP4) holding the launch films for the refreshed website and Destiny One. Two compositions share one timeline (`src/Campaign.tsx`) and differ only in the ending: `ComingIn2027` and `DownloadToday` (official App Store and Google Play badges, unmodified). 1920x1080, 30 fps, 1:56.
+- **Structure**: the website comes first (Smart Search, sermons, What's On, plan your visit, ministries, then "the little things": accessibility, back-of-the-seat NFC, song requests, talent show voting, help, training, governance, links), ends on the logo, then "Oh, and one more thing" introduces Destiny One (communities, chat with polls/sermons/events, DestinyAI, events, appearance, safeguarding rules).
+- **Assets are real**: official logos from `public/img/brand`, the app icon from `apps/destiny-one/assets`, screenshots of destinychurch.vercel.app and of Destiny One's Expo web build. `capture/` holds the Playwright scripts that remake them; the Destiny One one feeds the web build sample data (`capture/destiny-one-sample-data.cjs`, made-up people, real events and sermons) by intercepting its API calls, so no account or backend is needed.
+- **Fonts** are local (`public/fonts`, Google Fonts' OFL variable files) so renders don't need fonts.gstatic.com. No music yet.
+- CI job `campaign-videos` runs `npm run lint` (eslint + tsc). Videos are rendered locally (`npx remotion render <id>`); `out/` is gitignored. Setup and caveats: `apps/campaign-videos/README.md`.
 
 - `apps/.gitkeep` keeps the `apps/` directory (for future standalone companion apps) tracked. See `apps/live-caption/README.md` for the full setup and operating guide.
 

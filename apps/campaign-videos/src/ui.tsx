@@ -344,4 +344,7 @@ export const PunchIn: React.FC<{ children: React.ReactNode; at: number; hold: nu
 };
 
 /** 0 → 1 → 0 over a punch in: in, hold, out. Text beside the device fades by this so the zoom never covers it. */
-export const usePunch = (at: number, hold: number) => kf(useCurrentFrame(), [at, at + 36, at + 36 + hold, at + 72 + hold], [0, 1, 1, 0]);
+export const usePunch = (at: number, hold: number) => {
+  const h = Math.max(1, hold); // keyframes must strictly increase
+  return kf(useCurrentFrame(), [at, at + 36, at + 36 + h, at + 72 + h], [0, 1, 1, 0]);
+};

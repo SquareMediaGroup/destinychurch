@@ -21,7 +21,8 @@ const Split: React.FC<{
   punch?: { at: number; hold: number };
 }> = ({ kicker, title, body, phone, flip, accent, children, punch }) => {
   const frame = useCurrentFrame();
-  const away = usePunch(punch?.at ?? 1e6, punch?.hold ?? 0);
+  // No punch in: a time past the end of any scene, so the text never steps aside.
+  const away = usePunch(punch?.at ?? 100000, punch?.hold ?? 1);
   const rise = kf(frame, [0, 46], [900, 0]);
   return (
     <Page>

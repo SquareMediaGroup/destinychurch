@@ -12,6 +12,7 @@ import {
 import { sendNewRequestAlert, sendRequestReceivedEmail } from "@/lib/designEmail";
 import { DESIGN_CATEGORY_LABELS, ticketRef, type DesignTicketCategory } from "@/lib/designTickets";
 import { recordNotification } from "@/lib/notify.server";
+import { PORTAL_OPEN, PORTAL_REOPENS } from "@/lib/portalStatus";
 
 export interface DesignRequestResult {
   success: boolean;
@@ -25,6 +26,12 @@ export interface DesignRequestResult {
 const CATEGORIES = Object.keys(DESIGN_CATEGORY_LABELS) as DesignTicketCategory[];
 
 export async function submitDesignRequest(formData: FormData): Promise<DesignRequestResult> {
+  // Server actions can be invoked by ID from any route, not just this page, so
+  // the /portal middleware redirect alone doesn't close this.
+  if (!PORTAL_OPEN) {
+    return { success: false, error: `Design requests reopen in ${PORTAL_REOPENS}.` };
+  }
+
   // The honeypot goes first and answers like a success. A bot that learns which
   // of its submissions were rejected learns how to stop being rejected.
   if (isHoneypotTripped(formData.get("website"))) {

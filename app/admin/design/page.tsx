@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { PORTAL_OPEN, PORTAL_REOPENS } from "@/lib/portalStatus";
 import {
   Badge,
   EmptyState,
@@ -128,10 +129,18 @@ function DesignQueue() {
         title="Design tickets"
         subtitle="Requests from the church, and what's happening to them."
         action={
-          <Link href="/portal/design/request" target="_blank" className={primaryBtn}>
-            <span className="material-symbols-rounded text-lg" aria-hidden="true">open_in_new</span>
-            Request form
-          </Link>
+          // The request form lives in the staff portal, closed until it
+          // relaunches (lib/portalStatus.ts).
+          PORTAL_OPEN ? (
+            <Link href="/portal/design/request" target="_blank" className={primaryBtn}>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">open_in_new</span>
+              Request form
+            </Link>
+          ) : (
+            <span className="inline-flex items-center rounded-xl bg-black/5 px-4 py-2 text-sm font-bold text-destiny-grey/60">
+              Request form coming {PORTAL_REOPENS}
+            </span>
+          )
         }
       />
 

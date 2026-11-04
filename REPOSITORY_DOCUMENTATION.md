@@ -281,6 +281,7 @@ destinychurch/
 │   ├── hrEmail.ts                 # HR notification emails (leave request/decision, review digest) via Resend
 │   ├── staffPortalAuth.ts         # /portal + /api/portal auth boundary (linked hr_staff row, not admin_roles)
 │   ├── twoFactor.ts / twoFactor.server.ts / backupCodes.ts  # Admin two-factor sign-in: aal2 check (middleware), backup codes, resets
+│   ├── portalStatus.ts            # PORTAL_OPEN switch — the portal is closed, "Coming Summer 2027"; lists every place that reads it
 │   ├── designTickets.ts           # Design queue vocabulary + the canTransition state machine (client-safe)
 │   ├── designTickets.server.ts    # applyTransition (the only writer of status), requester identity, requesterView
 │   ├── designEmail.ts             # Design ticket notifications via Resend
@@ -950,7 +951,7 @@ having a linked `hr_staff` row, not by an `admin_roles` flag.
 - HR admin to manage staff directory
 - `/admin/hr` dashboard
 - `/portal` + `/api/portal/*` — staff self-service, gated by the linked login
-  (`lib/staffPortalAuth.ts`)
+  (`lib/staffPortalAuth.ts`). Closed until Summer 2027 (`lib/portalStatus.ts`)
 
 ---
 
@@ -1891,6 +1892,11 @@ Both migrations are applied to production; `get_advisors` is clean on all of the
 The design request queue (`/portal/design/request` → `/admin/design`). Someone asks the design
 team for a poster, a designer claims it, works it, uploads the finished file, and the
 requester downloads it or asks for changes.
+
+**Intake is closed until Summer 2027** along with the rest of the staff portal
+(`lib/portalStatus.ts`): `submitDesignRequest` refuses every submission and the
+admin queue's "Request form" button reads "Request form coming Summer 2027". Tickets
+already in the queue, and requesters' `/design-request/[token]` tracking links, keep working.
 
 ```sql
 -- A uuid pk so tickets aren't enumerable, plus a separate sequence for the
@@ -2923,6 +2929,7 @@ Each section requires a specific access-level role (see
 | `/admin/hr/documents` | `app/admin/hr/documents/page.tsx` | Documents — upload/categorise staff and org-wide files surfaced in `/portal` (HR Admin) |
 | `/admin/hr/reviews` | `app/admin/hr/reviews/page.tsx` | Reviews — schedule and record staff performance/probation reviews (HR Admin) |
 | `/admin/hr/checklists` | `app/admin/hr/checklists/page.tsx` | Onboarding/offboarding checklist templates (HR Admin) |
+| `/portal` (closed) | `app/portal/layout.tsx` | **Closed, coming Summer 2027.** While `PORTAL_OPEN` in `lib/portalStatus.ts` is false, the layout shows a "Coming Summer 2027" panel to everyone (no sign-in needed), every other `/portal/*` path redirects to `/portal`, and `/api/portal/*` answers 404 before any auth. The pages below are kept intact for the relaunch: set the flag to `true` to reopen |
 | `/portal` | `app/portal/page.tsx` | Staff self-service dashboard — holiday balance, onboarding progress, next review, open design requests and document count as cards linking into each section. Separate auth boundary from `/admin`; see [Authorization Layers](#authorization-layers) |
 | `/portal/profile` | `app/portal/profile/page.tsx` | Own profile fields (department, employment, dates) plus account settings — profile picture, email, password |
 | `/portal/team` | `app/portal/team/page.tsx` | Directory of colleagues with a portal login — name, role, department, work email, picture. Searchable client-side; never shows phone or anything else from `hr_staff` |

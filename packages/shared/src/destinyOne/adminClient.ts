@@ -34,6 +34,12 @@ export class D1AdminApiError extends Error {
   constructor(
     message: string,
     readonly httpStatus: number,
+    /**
+     * A machine-readable reason, when the server gives one. The one in use:
+     * "two_factor_required" / "two_factor_setup_required" from middleware.ts,
+     * for an admin whose session hasn't passed two-factor sign-in.
+     */
+    readonly code?: string,
   ) {
     super(message);
     this.name = "D1AdminApiError";
@@ -87,7 +93,9 @@ export function createDestinyOneAdminClient({ baseUrl, getAccessToken, fetchImpl
     const json = (await res.json().catch(() => null)) as (T & { error?: unknown }) | null;
     if (!res.ok) {
       const message = json && typeof json.error === "string" ? json.error : "Something went wrong. Please try again.";
-      throw new D1AdminApiError(message, res.status);
+      const rawCode = (json as { code?: unknown } | null)?.code;
+      const code = typeof rawCode === "string" ? rawCode : undefined;
+      throw new D1AdminApiError(message, res.status, code);
     }
     return json as T;
   }

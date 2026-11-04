@@ -22,7 +22,7 @@ export default function SiteBanner() {
   const isAdmin =
     pathname.startsWith("/admin") ||
     pathname.startsWith("/portal") ||
-    pathname === "/login";
+    pathname.startsWith("/login");
   const isSitewideActive = Boolean(
     banner.active && banner.message && banner.type === "sitewide" && !isAdmin,
   );

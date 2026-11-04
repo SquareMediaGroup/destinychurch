@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition, useActionState } from "react";
+import { useEffect, useState, useTransition, useActionState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { adminSignIn, adminSignOut } from "./actions";
 import type { SystemAccess } from "@/lib/staffPortalAuth";
 
@@ -110,6 +111,17 @@ function SignInScreen({
       setSession({ email: state.email, access: state.access });
     }
   }
+
+  // A password on its own never opens the admin (lib/twoFactor.ts), so an
+  // admin goes straight on to their second step instead of to a chooser whose
+  // Admin card would only bounce them there. Someone who also has the staff
+  // portal comes back to the chooser afterwards.
+  const twoFactorNext =
+    state.success && state.access?.hasAdmin ? (state.access.hasPortal ? "/login" : "/admin") : null;
+  const router = useRouter();
+  useEffect(() => {
+    if (twoFactorNext) router.replace(`/login/2fa?next=${encodeURIComponent(twoFactorNext)}`);
+  }, [twoFactorNext, router]);
 
   const phase = session ? "choose" : "login";
 

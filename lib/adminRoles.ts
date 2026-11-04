@@ -183,6 +183,9 @@ const OPEN_PATHS = [
   // caller's own admin_roles row, keyed off their session, same as
   // /api/admin/me itself.
   /^\/api\/admin\/me\/avatar$/,
+  // Every admin's own two-factor status and "new backup codes" — only ever
+  // the caller's own, keyed off their session (app/api/admin/me/two-factor).
+  /^\/api\/admin\/me\/two-factor$/,
   /^\/api\/admin\/search$/,
   // The dashboard's summary numbers — the route only queries the sections the
   // caller's roles cover, same as search.

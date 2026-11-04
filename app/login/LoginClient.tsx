@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { adminSignIn, adminSignOut } from "./actions";
 import type { SystemAccess } from "@/lib/staffPortalAuth";
+import { PORTAL_OPEN, PORTAL_REOPENS } from "@/lib/portalStatus";
 
 const initialState = {
   success: false,
@@ -19,6 +20,8 @@ type SystemCard = {
   title: string;
   description: string;
   hasAccess: (access: SystemAccess) => boolean;
+  /** Set while the system is closed to everyone: the card shows this instead of a link. */
+  comingLabel?: string;
 };
 
 const SYSTEMS: SystemCard[] = [
@@ -35,6 +38,7 @@ const SYSTEMS: SystemCard[] = [
     title: "Portal",
     description: "Your staff self-service — profile, leave and documents.",
     hasAccess: (a) => a.hasPortal,
+    comingLabel: PORTAL_OPEN ? undefined : `Coming ${PORTAL_REOPENS}`,
   },
 ];
 
@@ -194,7 +198,7 @@ function ChoosePanel({
           const hasAccess = access ? sys.hasAccess(access) : false;
           const delay = { animationDelay: `${100 + i * 90}ms` };
 
-          if (!hasAccess) {
+          if (!hasAccess || sys.comingLabel) {
             return (
               <div
                 key={sys.href}
@@ -203,17 +207,21 @@ function ChoosePanel({
                 className="glass flex cursor-not-allowed items-center gap-4 rounded-3xl border border-white/10 p-5 opacity-50 animate-[fadeInUp_0.45s_ease-out_both]"
               >
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-on-dark-subtle">
-                  <span className="material-symbols-rounded text-[28px]" aria-hidden="true">lock</span>
+                  <span className="material-symbols-rounded text-[28px]" aria-hidden="true">
+                    {sys.comingLabel ? "schedule" : "lock"}
+                  </span>
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <h2 className="text-base font-bold text-on-dark-muted">{sys.title}</h2>
                     <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-on-dark-subtle">
-                      No access
+                      {sys.comingLabel ?? "No access"}
                     </span>
                   </div>
                   <p className="mt-1 text-sm leading-snug text-white/35">
-                    You don&apos;t have permission for this system.
+                    {sys.comingLabel
+                      ? "The staff portal is closed for now."
+                      : "You don’t have permission for this system."}
                   </p>
                 </div>
               </div>

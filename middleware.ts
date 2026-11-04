@@ -3,6 +3,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { ADMIN_ROLES, getRoles, hasAccess, type RoleFlags } from "@/lib/adminRoles";
 import { isLinkedToStaff } from "@/lib/staffPortalAuth";
 import { AUDIT_ACTOR_HEADERS } from "@/lib/audit";
+import { PORTAL_OPEN } from "@/lib/portalStatus";
 import type { User } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -135,6 +136,19 @@ export async function middleware(request: NextRequest) {
   if (!user && pathname.startsWith("/api/admin")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  // The staff portal is closed (lib/portalStatus.ts). Its API is refused
+  // outright, before any auth, and every portal page lands on /portal, where
+  // the layout shows "Coming Summer 2027" to anyone, signed in or not.
+  if (!PORTAL_OPEN && pathname.startsWith("/api/portal")) {
+    return NextResponse.json({ error: "The staff portal is closed." }, { status: 404 });
+  }
+  if (!PORTAL_OPEN && pathname.startsWith("/portal")) {
+    if (pathname !== "/portal" || request.method !== "GET") {
+      return NextResponse.redirect(new URL("/portal", request.url), { status: 303 });
+    }
+    return supabaseResponse;
+  }
+
   if (!user && pathname.startsWith("/api/portal")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

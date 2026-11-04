@@ -8,8 +8,9 @@ then "Oh, and one more thing" and Destiny One. They share everything except the 
 | `ComingIn2027` | Destiny One, "Coming in 2027", destinytees.uk/app | 3:30 |
 | `DownloadToday` | "Download today", App Store badge, destinytees.uk/app | 3:30 |
 | `DestinyOneFilm` | Destiny One alone, in more depth, with music; "Coming in 2027". Plays on /app | 1:03 |
+| `AdminWelcome` | Admin help series, video 1: "Welcome to Destiny Admin", every role in a line, test mode, the Help page. For YouTube and /admin/help | 1:21 |
 
-Finished renders are kept in `exports/` (the 4K `DownloadToday` and `Destiny-One-Film.mp4`) so they can be
+Finished renders are kept in `exports/` (the 4K `DownloadToday`, `Destiny-One-Film.mp4` and `Admin-Welcome.mp4`) so they can be
 downloaded from GitHub; `out/` stays ignored for working renders.
 
 ## Commands
@@ -21,6 +22,7 @@ npm run dev                      # Remotion Studio, to preview and tweak
 npx remotion render ComingIn2027 out/ComingIn2027.mp4
 npx remotion render DownloadToday out/DownloadToday.mp4
 npx remotion render DestinyOneFilm out/Destiny-One-Film.mp4
+npx remotion render AdminWelcome out/Admin-Welcome.mp4 --crf=18
 npm run lint                     # eslint + tsc
 ```
 
@@ -58,6 +60,12 @@ before/after pairs for sliders in `stills/before-after/`. See `stills/README.md`
 - **The web copy of the film** on /app is `public/img/destiny-one/film.mp4` (re-encoded, CRF 22, faststart)
   with `film-poster.webp`. After re-rendering:
   `ffmpeg -i out/Destiny-One-Film.mp4 -c:v libx264 -preset slow -crf 22 -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart ../../public/img/destiny-one/film.mp4`
+- **The admin screens** (`public/admin/`) are the real /admin with an invented admin (Sam Taylor) and made-up
+  numbers, no real account or data. `capture/admin-mock-supabase.cjs` stands in for Supabase just enough for
+  middleware to let a session through, and `capture/admin.cjs` answers the pages' `/api/admin/*` calls and
+  switches roles between shots (steps at the top of each file). `AdminWelcome` uses the same music and credit
+  as `DestinyOneFilm`; put the credit in the YouTube description. Its web copy is
+  `public/img/admin-help/welcome.mp4` (same ffmpeg command as above) with `welcome-poster.webp`.
 - The glass tab bar on Destiny One screens is drawn in the video, because the app's web build (used for the
   screenshots) shows its tabs differently. The status bar (9:41) is drawn too.
 - Look: light pages, no glows, and every move uses one aggressive ease in and out (`EASE` in

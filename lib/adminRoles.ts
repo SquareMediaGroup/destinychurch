@@ -176,6 +176,9 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
 const OPEN_PATHS = [
   /^\/admin$/,
   /^\/admin\/profile$/,
+  // The help videos — the series is the same for everyone; the page filters
+  // the role videos to the caller's roles itself.
+  /^\/admin\/help$/,
   /^\/api\/admin\/logout$/,
   /^\/api\/admin\/me$/,
   /^\/api\/admin\/me\/roles$/,

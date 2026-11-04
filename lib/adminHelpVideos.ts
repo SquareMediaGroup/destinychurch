@@ -1,0 +1,104 @@
+// The admin help video series, shown at /admin/help.
+//
+// Onboarding is moving to video: each access level gets a how-to video on
+// YouTube, and a new admin watches theirs, then practises in the tour's demo
+// mode (lib/demoMode.ts), where nothing is saved. This list is the series.
+//
+// To publish a video: upload it to YouTube, then set its `youtubeId` (the 11
+// characters after `v=`). Until then, `src` plays a copy from /public, and an
+// entry with neither shows as "Coming soon".
+
+import type { AdminRole } from "@/lib/adminRoles";
+
+export interface AdminHelpVideo {
+  id: string;
+  title: string;
+  description: string;
+  /** Who it's for. null = every admin. Super Admins see every video. */
+  role: AdminRole | null;
+  youtubeId?: string;
+  /** Self-hosted fallback, used only while there's no youtubeId. */
+  src?: string;
+  poster?: string;
+  /** Length, shown on the card ("1:45"). */
+  length?: string;
+}
+
+export const WELCOME_VIDEO: AdminHelpVideo = {
+  id: "welcome",
+  title: "Welcome to Destiny Admin",
+  description: "What the admin is, what each role looks after, and where to come back to when you get stuck.",
+  role: null,
+  src: "/img/admin-help/welcome.mp4",
+  poster: "/img/admin-help/welcome-poster.webp",
+  length: "1:21",
+};
+
+/** One video per access level, in sidebar order. Not filmed yet. */
+export const ROLE_VIDEOS: AdminHelpVideo[] = [
+  {
+    id: "destiny-one",
+    title: "Destiny One Admin",
+    description: "Access requests, invites, app members and communities.",
+    role: "destiny_one_admin",
+  },
+  {
+    id: "safeguarding",
+    title: "Safeguarding Admin",
+    description: "Reports, paused groups and reviewing a conversation.",
+    role: "safeguarding_admin",
+  },
+  {
+    id: "events",
+    title: "Event Admin",
+    description: "Courses, pop-ups, the featured event, links pages and the talent show.",
+    role: "event_admin",
+  },
+  {
+    id: "training",
+    title: "Training Admin",
+    description: "Building and updating training for the team.",
+    role: "training_admin",
+  },
+  {
+    id: "store",
+    title: "Store Admin",
+    description: "Products, stock and fulfilling orders.",
+    role: "store_admin",
+  },
+  {
+    id: "sermons",
+    title: "Sermon Admin",
+    description: "Uploading a sermon and publishing it to the podcast.",
+    role: "sermon_admin",
+  },
+  {
+    id: "design",
+    title: "Design Admin",
+    description: "Picking up design tickets and delivering the files.",
+    role: "design_admin",
+  },
+  {
+    id: "hr",
+    title: "HR Admin",
+    description: "Staff, leave requests and checklists.",
+    role: "hr_admin",
+  },
+  {
+    id: "site",
+    title: "Site Admin",
+    description: "Posts, pages and redirects across the website.",
+    role: "site_admin",
+  },
+  {
+    id: "super",
+    title: "Super Admin",
+    description: "Adding admins, choosing their roles, and the audit log.",
+    role: "super_admin",
+  },
+];
+
+/** Whether a video has anything to play yet. */
+export function isPublished(video: AdminHelpVideo): boolean {
+  return Boolean(video.youtubeId || video.src);
+}

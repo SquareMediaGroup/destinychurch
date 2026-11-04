@@ -59,6 +59,14 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         keywords: ["home", "overview", "start"],
         exact: true,
       },
+      {
+        href: "/admin/help",
+        label: "Help",
+        icon: "help",
+        role: null,
+        description: "Short videos on how the admin works, for every role.",
+        keywords: ["help", "videos", "tutorial", "how to", "stuck", "guide", "youtube", "onboarding"],
+      },
     ],
   },
   {

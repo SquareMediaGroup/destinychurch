@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { resetPassword, type ResetPasswordState } from "./actions";
 
@@ -111,7 +112,20 @@ export default function ResetPasswordPage() {
                   <span className="material-symbols-rounded text-base" aria-hidden="true">
                     error
                   </span>
-                  {state.error}
+                  <span>
+                    {state.error}
+                    {state.needsTwoFactor && (
+                      <>
+                        {" "}
+                        <Link
+                          href="/login/2fa?next=/admin/reset-password"
+                          className="font-bold text-destiny-orange underline"
+                        >
+                          Enter your code
+                        </Link>
+                      </>
+                    )}
+                  </span>
                 </div>
               )}
 

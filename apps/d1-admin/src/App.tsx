@@ -21,6 +21,7 @@ import { People } from "@/features/admin/People";
 import { Reports } from "@/features/admin/Reports";
 import { Requests } from "@/features/admin/Requests";
 import { Locked } from "@/features/auth/Locked";
+import { TwoFactor } from "@/features/auth/TwoFactor";
 import { NotAllowed } from "@/features/auth/NotAllowed";
 import { SignIn } from "@/features/auth/SignIn";
 import { Conversation, NoChat } from "@/features/chat/Conversation";
@@ -85,6 +86,8 @@ export function App() {
       return <SignIn />;
     case "locked":
       return <Locked />;
+    case "twoFactor":
+      return <TwoFactor />;
     case "notAllowed":
       return <NotAllowed message={state.message} />;
     case "unreachable":

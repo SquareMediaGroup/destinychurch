@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAdminSession, clearAdminSessionCache } from "@/lib/useAdminSession";
 import { PageHeader, PageLoading } from "@/components/admin/AdminUI";
 import { useToast } from "@/components/ToastProvider";
+import TwoFactorSettings from "@/components/admin/TwoFactorSettings";
 
 const FIELD =
   "w-full rounded-2xl border border-black/10 bg-[#f5f7fa] px-4 py-3 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/20 dark:bg-destiny-grey-800 dark:text-white";
@@ -172,6 +173,8 @@ export default function AdminProfilePage() {
           </button>
         </form>
       </section>
+
+      <TwoFactorSettings email={session.email} />
     </div>
   );
 }

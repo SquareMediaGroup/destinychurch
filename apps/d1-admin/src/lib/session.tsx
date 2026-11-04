@@ -8,9 +8,15 @@
 //
 // Touch ID: with "Require Touch ID" on (the default) a saved session opens
 // on the lock screen, not straight into reports.
+//
+// Two-factor: website admins need a code from their authenticator app as well
+// as a password or email code (middleware.ts refuses /api/admin otherwise).
+// An admin who has set one up gets the "twoFactor" step after signing in; one
+// who hasn't is told to set it up on the website first, since setting it up
+// (QR code, backup codes) only happens there.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { D1ApiError, isLeaderRole, type AdminWhoami, type D1Me } from "@destiny/shared";
+import { D1AdminApiError, D1ApiError, isLeaderRole, type AdminWhoami, type D1Me } from "@destiny/shared";
 import { admin, api } from "@/lib/api";
 import { authenticate } from "@/lib/native";
 import { getPrefs } from "@/lib/prefs";
@@ -23,6 +29,7 @@ export type SessionState =
   | { status: "loading" }
   | { status: "signedOut" }
   | { status: "locked" }
+  | { status: "twoFactor" }
   | { status: "notAllowed"; me: D1Me | null; message: string }
   | { status: "unreachable"; message: string }
   | { status: "ready"; me: D1Me; roles: AdminWhoami; leader: boolean };
@@ -32,6 +39,7 @@ interface SessionApi {
   requestCode: (email: string) => Promise<void>;
   verifyCode: (email: string, code: string) => Promise<void>;
   signInWithPassword: (email: string, password: string) => Promise<void>;
+  verifyTwoFactor: (code: string) => Promise<void>;
   unlock: () => Promise<void>;
   signOut: () => Promise<void>;
   refreshMe: () => Promise<void>;
@@ -45,6 +53,8 @@ const RELOCK_AFTER_MS = 2 * 60 * 1000;
 const RETRY_UNREACHABLE_MS = 15 * 1000;
 
 const SIGN_IN_FAILED = "That email and password don't match an account that can sign in here.";
+const TWO_FACTOR_SETUP =
+  "Your admin account needs two-factor sign-in. Sign in on the website (destinytees.uk/login) once to set up your authenticator app, then come back and try again.";
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<SessionState>({ status: "loading" });
@@ -54,6 +64,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (loading.current) return;
     loading.current = true;
     try {
+      // Has an authenticator app but this session hasn't used it yet.
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal?.currentLevel === "aal1" && aal.nextLevel === "aal2") {
+        setState({ status: "twoFactor" });
+        return;
+      }
       // One 401 can be a token that was just rolling over, so refresh and ask
       // again before treating the session as gone.
       const me = await api.me().catch(async (err: unknown) => {
@@ -62,7 +78,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (error) throw err;
         return api.me();
       });
-      const roles = await admin.whoami().catch(() => NO_ADMIN);
+      let twoFactor: string | undefined;
+      const roles = await admin.whoami().catch((err: unknown) => {
+        if (err instanceof D1AdminApiError) twoFactor = err.code;
+        return NO_ADMIN;
+      });
+      if (twoFactor === "two_factor_required") {
+        setState({ status: "twoFactor" });
+        return;
+      }
+      if (twoFactor === "two_factor_setup_required") {
+        setState({ status: "notAllowed", me, message: TWO_FACTOR_SETUP });
+        return;
+      }
       const anyAdmin = roles.destinyOneAdmin || roles.safeguardingAdmin;
       const leader = isLeaderRole(me.roles);
       if (me.onboarding !== "active") {
@@ -158,6 +186,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
         if (error) throw new Error(SIGN_IN_FAILED);
         await api.link();
+        await load();
+      },
+      verifyTwoFactor: async (code) => {
+        const { data, error: listError } = await supabase.auth.mfa.listFactors();
+        const factor = data?.totp[0];
+        if (listError || !factor) throw new Error("No authenticator app is set up on this account. Set one up on the website.");
+        const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code: code.trim() });
+        if (error) throw new Error("That code didn't work. Check the time on your phone is right, and use the newest code.");
         await load();
       },
       unlock: async () => {

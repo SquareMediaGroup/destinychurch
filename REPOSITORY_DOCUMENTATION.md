@@ -87,7 +87,7 @@ Responses: JSON, Server-Side HTML, Redirects, Cached Assets
 
 - **Public Pages:** No auth required; cached at edge
 - **Member Features:** Supabase Auth (email/password); tokens in secure cookies
-- **Admin Dashboard:** Supabase Auth required; additional role checks via proxy
+- **Admin Dashboard:** Supabase Auth required, **plus two-factor sign-in** (a code from an authenticator app; the session must be `aal2`) for every account with an admin role; additional role checks via proxy. See [Two-factor sign-in](#two-factor-sign-in-admins)
 - **API Endpoints:** Service role key (server-to-database); user tokens (client-to-server)
 
 ---
@@ -212,6 +212,7 @@ destinychurch/
 │   │   │   │                      #   hr/ includes checklists/ + checklist-templates/
 │   │   │   └── ...
 │   │   ├── portal/                # Staff self-service API — me/, reviews/, checklists/, team/, leave/, documents/, design/ (linked hr_staff)
+│   │   ├── auth/mfa/              # Two-factor sign-in: enroll/, verify/, recover/ (signed-in admin, before aal2)
 │   │   ├── design-request/        # Public, share-token-scoped: [token]/ + deliverable downloads/confirm
 │   │   ├── cron/                  # Vercel Cron — hr-review-reminders/, design-deliverables-purge/, … (Bearer CRON_SECRET)
 │   │   ├── chat/                  # POST /api/chat — Smart Search tool-calling chat
@@ -279,6 +280,7 @@ destinychurch/
 │   ├── hr.ts                      # HR staff operations, types, leave/review label maps
 │   ├── hrEmail.ts                 # HR notification emails (leave request/decision, review digest) via Resend
 │   ├── staffPortalAuth.ts         # /portal + /api/portal auth boundary (linked hr_staff row, not admin_roles)
+│   ├── twoFactor.ts / twoFactor.server.ts / backupCodes.ts  # Admin two-factor sign-in: aal2 check (middleware), backup codes, resets
 │   ├── portalStatus.ts            # PORTAL_OPEN switch — the portal is closed, "Coming Summer 2027"; lists every place that reads it
 │   ├── designTickets.ts           # Design queue vocabulary + the canTransition state machine (client-safe)
 │   ├── designTickets.server.ts    # applyTransition (the only writer of status), requester identity, requesterView
@@ -1030,6 +1032,35 @@ and `lib/adminRoles.ts` for the enforcement logic.
   15s to take effect
 - `app/api/admin/search` — cross-section record search for the ⌘K palette. Open to any signed-in
   admin, but it re-reads the caller's roles and only queries the sections that role can open
+
+---
+
+#### 10d. **admin_mfa_recovery_codes / admin_mfa_lockouts**
+**Purpose:** Backup codes for admin two-factor sign-in, and the wrong-guess counter that locks them (migration `20261104_01_admin_two_factor.sql`). The authenticator app itself is a Supabase Auth TOTP factor, stored by Supabase, not here.
+
+```sql
+CREATE TABLE admin_mfa_recovery_codes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  auth_user_id uuid NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
+  code_hash text NOT NULL UNIQUE,   -- SHA-256 of the normalised code; the code itself is never stored
+  used_at timestamptz,              -- set once, by an update that only matches an unused code
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE admin_mfa_lockouts (
+  auth_user_id uuid PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
+  failed_count integer NOT NULL DEFAULT 0,
+  window_started_at timestamptz NOT NULL DEFAULT now(),
+  locked_until timestamptz          -- 5 wrong backup codes in 15 minutes locks them for 15 minutes
+);
+
+-- admin_mfa_record_failure(p_user uuid) → timestamptz: counts one wrong code in
+-- a single statement and returns locked_until (null while not locked).
+```
+
+**Access:** service role only. RLS on with no policies, every grant revoked from `anon` and `authenticated`, and the function's `EXECUTE` revoked too, so the publishable key in the browser can't read a hash or reset a lockout. Tested by `tests/sql/admin-two-factor.sql` (`scripts/test-sql.sh admin-two-factor`).
+
+**Used by:** `lib/twoFactor.server.ts` (issue, spend, count, remove) through `app/api/auth/mfa/*`, `app/api/admin/me/two-factor` and `app/api/admin/users/[id]/two-factor`.
 
 ---
 
@@ -2863,6 +2894,7 @@ Each section requires a specific access-level role (see
 | Route | File | Purpose |
 |-------|------|---------|
 | `/login` | `app/login/page.tsx` | Staff sign-in. On success (or on revisiting while already signed in), shows a "choose a system" screen — Admin (`/admin`) and Portal (`/portal`) cards, greyed out for whichever the account can't open (`getSystemAccess` in `lib/staffPortalAuth.ts`) |
+| `/login/2fa` | `app/login/2fa/page.tsx` | Two-factor sign-in, the second step for every account with an admin role (middleware sends them here until the session is `aal2`). First time: set up an authenticator app (QR code or typed key), confirm a code, then the 8 backup codes are shown once and must be ticked as saved. After that: a 6-digit code each sign-in, or "Use a backup code". `?next=` goes through `safeNextPath()` (only `/admin…` or `/login`). Signed-out or non-admin visitors go to `/login` |
 | `/admin/forgot-password` | `app/admin/forgot-password/page.tsx` | Password reset request |
 | `/admin/reset-password` | `app/admin/reset-password/page.tsx` | Password reset form. A password Supabase refuses (found in a data breach, or too weak) gets an explanation panel from `passwordRejection()` instead of a raw error |
 | `/admin` | `app/admin/page.tsx` | Admin dashboard home |
@@ -3311,6 +3343,12 @@ through the site's normal nav and the "New Here?" page/link, which were never pa
 - **Seeding:** The root layout passes `getLiveStatus()` straight in, so the first paint is already correct — polling only ever corrects it afterwards
 - **Polling:** `/api/youtube/live` every 30s, plus an immediate poll on mount and on `visibilitychange` / `focus` / `online`. The mount poll matters: the server render can be a minute stale, and "we went live 40 seconds ago" is exactly when someone opens the page.
 - **Grace period:** `live` does not drop to false until **two consecutive** negative polls (`OFFLINE_GRACE`), so one flaky request doesn't pull a running service off someone's screen. The streak is counted per poll — an earlier version counted it in an effect keyed on `live`, which only re-runs when the boolean flips, so it could never reach two.
+
+#### `components/admin/TwoFactorSettings.tsx`
+The "Two-factor sign-in" card on `/admin/profile`: unused backup code count (with
+a warning at two or fewer) and "Make new backup codes", which confirms first,
+cancels the old codes and shows the new 8 once (copy / download). Calls
+`/api/admin/me/two-factor`.
 
 ### Page-Specific Components
 
@@ -4100,6 +4138,37 @@ row) to `/portal`; admin roles take priority, so someone who is both lands on
 ---
 
 ### Admin API Routes
+
+#### Two-factor sign-in (`/api/auth/mfa/*`, `/api/admin/me/two-factor`, `/api/admin/users/[id]/two-factor`)
+```typescript
+// POST /api/auth/mfa/enroll   → { factorId, qrCode, secret }
+//   Start setting up an authenticator app. Refused (409) once one is confirmed:
+//   replacing it needs a backup code or a Super Admin reset, never a password alone.
+//   Throws away any half-finished set-up first.
+// POST /api/auth/mfa/verify   { factorId, code } → { ok, backupCodes? }
+//   challengeAndVerify on the caller's own cookie session, which Supabase
+//   upgrades to aal2. When the factor wasn't confirmed yet (read from Supabase,
+//   not the request) this finishes set-up and returns the 8 backup codes, once.
+//   Rate-limited per user and per IP on top of Supabase's own limit.
+// POST /api/auth/mfa/recover  { code } → { ok }
+//   Spend a backup code. Removes the authenticator and all backup codes so the
+//   person sets up a new app straight away; emails them; audits success and
+//   failure. 5 wrong codes in 15 minutes → 429 for 15 minutes (admin_mfa_lockouts).
+//
+// AUTHORIZATION: these three sit outside /api/admin on purpose (middleware would
+// refuse a password-only session, and this is how that session does its second
+// step). Each starts from signedInAdmin() in lib/twoFactor.server.ts: signed in
+// AND holds an admin role, else 401. tests/unit/two-factor.spec.ts guards that.
+//
+// GET  /api/admin/me/two-factor → { enabled, backupCodesRemaining }
+// POST /api/admin/me/two-factor → { backupCodes }   (replaces every old code)
+//   OPEN_PATHS (any admin, own account only). POST re-checks aal2 itself.
+// DELETE /api/admin/users/[id]/two-factor
+//   Super Admin only (fail-closed default for /api/admin/users). Removes the
+//   person's authenticator and backup codes; audited; they're emailed. For
+//   someone who has lost both phone and codes.
+```
+
 
 #### `POST /api/admin/sermons/upload`
 ```typescript
@@ -6212,6 +6281,23 @@ export async function executeTool(name: string, rawArgs: string, ctx: ToolContex
 - `extract_page` — Tavily `/extract`, `extract_depth: "advanced"`. **Only** opens a URL already present in `ctx.seenUrls` for that request — this is the sole guard against the model being prompted (by a visitor or by web content) into fetching an arbitrary URL. Content truncated to `EXTRACT_CHARS` (8000 chars).
 - Deliberately does **not** request Tavily's own `include_answer` summary: it was observed conflating Destiny Church Tees Valley with an unrelated Scottish charity of a similar name and reporting a wrong income figure. The model instead reads raw snippets/page content and is told (via `lib/siteKnowledge.ts`) to cross-check the charity/company number before quoting any figure.
 
+### `lib/twoFactor.ts` / `lib/twoFactor.server.ts` / `lib/backupCodes.ts` — admin two-factor sign-in
+
+- `lib/twoFactor.ts` (edge-safe; middleware imports it): `assuranceLevelOf(token)`
+  decodes `aal` from an already-accepted access token (anything unclear reads as
+  null, which middleware refuses); `hasAuthenticator(user)` (a *verified* TOTP
+  factor); `safeNextPath()` for `/login/2fa?next=`; `TWO_FACTOR_CODES`;
+  `backupCodesFile()` for the download.
+- `lib/backupCodes.ts` (node:crypto, unit tested): generate, normalise, hash and
+  sanity-check backup codes.
+- `lib/twoFactor.server.ts` (server-only): `signedInAdmin()` (the caller's own
+  cookie session, keeping their "keep me signed in" choice, plus roles and
+  current level), `issueBackupCodes`, `spendBackupCode` (atomic single-use, DB
+  lockout), `unusedBackupCodeCount`, `removeTwoFactor` (all factors + codes, via
+  the admin API), and the "backup code used" / "two-factor reset" emails.
+
+See [Two-factor sign-in](#two-factor-sign-in-admins) for the rules.
+
 ### `lib/rateLimit.ts`
 
 Per-IP sliding-window rate limiter with escalating cooldowns, **in-memory** (a
@@ -6931,6 +7017,43 @@ role enforcement both happen centrally in `middleware.ts`, not in
 `app/admin/layout.tsx` (which is a client component purely responsible for the
 sidebar/header shell; it does not check auth or roles itself).
 
+<a id="two-factor-sign-in-admins"></a>
+**Two-factor sign-in (admins).** A password alone opens nothing in the admin.
+For any account holding at least one admin role, `middleware.ts` requires the
+session's JWT to be `aal2`, which Supabase only issues after a code from the
+account's authenticator app (a Supabase Auth TOTP factor) has been verified.
+It runs after the role lookup and *before* `hasAccess`, so a password-only
+session learns nothing about what it could open:
+
+- `/admin/**` pages redirect to `/login/2fa?next=<path>`.
+- `/api/admin/**` returns 401 with `code: "two_factor_required"` (has an app) or
+  `"two_factor_setup_required"` (hasn't set one up). The D1 Admin desktop app
+  reads these: it asks for the code itself, or tells the person to set up on the
+  website first (setting up and backup codes only happen on the website).
+- The bearer path (D1 Admin desktop, `/api/admin/destiny-one/**`) is checked
+  the same way, against the token `getUser()` just accepted.
+- Accounts with no admin role (Destiny One leaders asking `whoami`) are not asked.
+- `/api/admin/logout`, `/admin/forgot-password` and `/admin/reset-password` stay
+  reachable. Supabase won't change a password from a password-level session once
+  two-factor is on, so `/admin/reset-password` answers `insufficient_aal` with a
+  link to `/login/2fa?next=/admin/reset-password`.
+
+Backup codes: 8 per admin, `XXXX-XXXX-XXXX-XXXX` from a 31-letter alphabet (no
+0/O/1/I/L), about 79 bits each, stored only as SHA-256 hashes
+(`admin_mfa_recovery_codes`). Each works once; using one removes the
+authenticator so a new one is set up on the spot (the usual reason is a lost
+phone), emails the person and writes the audit log. Admins can make new codes on
+`/admin/profile`; a Super Admin can reset someone's two-factor from `/admin/users`.
+Code: `lib/twoFactor.ts` (edge-safe, used by middleware), `lib/twoFactor.server.ts`,
+`lib/backupCodes.ts`.
+
+Supabase has built-in recovery codes behind an experimental client flag
+(`auth.mfa.recoveryCodes`); this uses its own table instead so it doesn't depend
+on a feature that can change. Worth revisiting once that is stable.
+
+The project must have **App Authenticator (TOTP)** enabled under Supabase
+Authentication → Multi-Factor (it is on by default for hosted projects).
+
 **Route → role mapping** (`ROUTE_RULES` in `lib/adminRoles.ts`; `super_admin`
 always passes and isn't repeated per rule; anything under `/admin` or
 `/api/admin` that isn't listed is Super Admin only — fail closed):
@@ -6947,7 +7070,8 @@ always passes and isn't repeated per rule; anything under `/admin` or
 
 **`OPEN_PATHS`** — reachable by any authenticated admin regardless of role:
 `/admin` (the dashboard), `/api/admin/logout`, `/api/admin/me`,
-`/api/admin/me/roles` and `/api/admin/search`.
+`/api/admin/me/roles`, `/api/admin/me/two-factor` (the caller's own backup codes)
+and `/api/admin/search`.
 
 The first four are trivially safe: a signed-in admin's own identity and roles
 tell them nothing they don't already have. **`/api/admin/search` is the one that

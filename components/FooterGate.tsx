@@ -15,7 +15,7 @@ export default function FooterGate({ children }: { children: ReactNode }) {
     // /portal is the staff self-service area — its own minimal shell.
     pathname.startsWith("/portal") ||
     // /login is the staff/admin sign-in page — deliberately chrome-free.
-    pathname === "/login"
+    pathname.startsWith("/login")
   )
     return null;
   return <>{children}</>;

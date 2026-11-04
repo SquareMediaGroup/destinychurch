@@ -13,7 +13,7 @@ export default function LiveBanner() {
   if (!live) return null;
   if (pathname.startsWith("/admin")) return null;
   if (pathname.startsWith("/portal")) return null;
-  if (pathname === "/login") return null;
+  if (pathname.startsWith("/login")) return null;
   if (isLinksPagePath(pathname) || isSongRequestsPath(pathname) || isTalentShowPath(pathname)) return null;
   if (isLegalPagePath(pathname)) return null;
 

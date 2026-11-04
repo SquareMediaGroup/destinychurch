@@ -3,6 +3,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { ADMIN_ROLES, getRoles, hasAccess, type RoleFlags } from "@/lib/adminRoles";
 import { isLinkedToStaff } from "@/lib/staffPortalAuth";
 import { AUDIT_ACTOR_HEADERS } from "@/lib/audit";
+import { assuranceLevelOf, hasAuthenticator, TWO_FACTOR_CODES, TWO_FACTOR_PATH } from "@/lib/twoFactor";
 import { PORTAL_OPEN } from "@/lib/portalStatus";
 import type { User } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
@@ -107,11 +108,13 @@ export async function middleware(request: NextRequest) {
   // `Authorization: Bearer …` stands in for the cookie session. Every check
   // below (roles, ROUTE_RULES, actor headers for the audit log) runs exactly
   // as it does for a cookie. Every other /api/admin path stays cookie-only.
+  let bearerToken: string | null = null;
   if (!user && isDestinyOneAdminApi(pathname)) {
     const token = bearerFrom(request);
     if (token) {
       const { data } = await createServiceClient().auth.getUser(token);
       user = data.user ?? null;
+      if (user) bearerToken = token;
     }
   }
 
@@ -194,6 +197,37 @@ export async function middleware(request: NextRequest) {
   // Access levels — each admin section requires a specific role (or
   // super_admin); see lib/adminRoles.ts for the route → role mapping.
   const roles = await getRolesCached(user.id);
+
+  // Two-factor sign-in (lib/twoFactor.ts). A password alone gets no admin
+  // into the admin: the session has to be aal2, i.e. it has also passed a code
+  // from an authenticator app. Applies to the cookie session and to the D1
+  // Admin desktop app's bearer token alike — the token checked is whichever
+  // one getUser() just accepted, so the decoded level is trustworthy.
+  //
+  // Only for accounts that hold an admin role. A Destiny One leader with no
+  // role still asks /api/admin/destiny-one/whoami what they can see (the
+  // answer is "nothing"), and that mustn't need an authenticator. Checked
+  // before hasAccess, so a 403 never tells a half-signed-in caller anything.
+  const accessToken =
+    bearerToken ?? (await session.supabase.auth.getSession()).data.session?.access_token ?? null;
+  if (ADMIN_ROLES.some((role) => roles[role]) && assuranceLevelOf(accessToken) !== "aal2") {
+    const enrolled = hasAuthenticator(user);
+    if (pathname.startsWith("/api/admin")) {
+      return NextResponse.json(
+        {
+          error: enrolled
+            ? "Enter the code from your authenticator app to continue."
+            : "Set up two-factor sign-in on the website before using the admin.",
+          code: enrolled ? TWO_FACTOR_CODES.required : TWO_FACTOR_CODES.setupRequired,
+        },
+        { status: 401 },
+      );
+    }
+    const url = new URL(TWO_FACTOR_PATH, request.url);
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+
   if (!hasAccess(roles, pathname)) {
     if (pathname.startsWith("/api/admin")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

@@ -9,7 +9,7 @@ then "Oh, and one more thing" and Destiny One. They share everything except the 
 | `DownloadToday` | "Download today", App Store badge, destinytees.uk/app | 3:30 |
 | `DestinyOneFilm` | Destiny One alone, in more depth, with music; "Coming in 2027". Plays on /app | 1:03 |
 | `AdminWelcome` | Admin help series, video 1: "Welcome to Destiny Admin", every role in a line, test mode, the Help page. For YouTube and /admin/help | 1:21 |
-| `ShopTutorial` | Admin help series, video 2: everything a Store Admin can do, filmed on the real /admin against a pretend shop. For YouTube and /admin/help | ~5:00 |
+| `ShopTutorial` | Admin help series, video 2: everything a Store Admin can do, filmed on the real /admin against a pretend shop. For YouTube and /admin/help | 7:25 |
 
 Finished renders are kept in `exports/` (the 4K `DownloadToday`, `Destiny-One-Film.mp4` and `Admin-Welcome.mp4`) so they can be
 downloaded from GitHub; `out/` stays ignored for working renders.

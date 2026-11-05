@@ -18,7 +18,10 @@ const dashboard = {
   posts: { total: 36, drafts: 3 },
   shop: { totalProducts: 18, drafts: 2, totalStock: 214, lowStock: [], soldThisYearPennies: 482500, pendingOrders: 1, paidUnfulfilled: 3 },
 };
-const session = { access_token: 'tok', refresh_token: 'r', expires_in: 86400, expires_at: Math.floor(Date.now() / 1000) + 86400, token_type: 'bearer', user: { id: 'u-admin', email: 'sam.taylor@example.com', aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {} } };
+// The stand-in session says it has passed two-factor sign-in (aal2), which is all middleware reads.
+const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
+const jwt = `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ sub: 'u-admin', exp: Math.floor(Date.now() / 1000) + 86400, aal: 'aal2', role: 'authenticated' })}.sig`;
+const session = { access_token: jwt, refresh_token: 'r', expires_in: 86400, expires_at: Math.floor(Date.now() / 1000) + 86400, token_type: 'bearer', user: { id: 'u-admin', email: 'sam.taylor@example.com', aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {} } };
 
 async function shoot(b, { name, roles, path, onboarding, before, w = 1512, h = 982 }) {
   if (ROLES_FILE) {

@@ -68,7 +68,7 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
     role: "store_admin",
     src: "/img/admin-help/shop.mp4",
     poster: "/img/admin-help/shop-poster.webp",
-    length: "5:00",
+    length: "7:25",
   },
   {
     id: "sermons",

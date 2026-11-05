@@ -33,18 +33,24 @@ export const WELCOME_VIDEO: AdminHelpVideo = {
   length: "1:21",
 };
 
-/** One video per access level, in sidebar order. Not filmed yet. */
+/** One video per access level, in sidebar order. Each plays once its youtubeId is set. */
 export const ROLE_VIDEOS: AdminHelpVideo[] = [
   {
     id: "destiny-one",
-    title: "Destiny One Admin",
-    description: "Access requests, invites, app members and communities.",
+    title: "Destiny One Admin: looking after the members' app",
+    description:
+      "Approving access requests, invites, app members and leader roles, communities and groups and the 3-people, 2-adults rule, feedback and app settings.",
     role: "destiny_one_admin",
+    poster: "/img/admin-help/destiny-one-poster.webp",
+    length: "4:53",
   },
   {
     id: "safeguarding",
-    title: "Safeguarding Admin",
-    description: "Reports, paused groups and reviewing a conversation.",
+    title: "Safeguarding Admin: keeping Destiny One safe",
+    description:
+      "The queue, reported messages, reviewing a conversation (recorded in the audit log), removing a message, pausing a group and blocks.",
+    poster: "/img/admin-help/safeguarding-poster.webp",
+    length: "3:10",
     role: "safeguarding_admin",
   },
   {

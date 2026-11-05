@@ -83,6 +83,13 @@ before/after pairs for sliders in `stills/before-after/`. See `stills/README.md`
   `capture/tutorial-kit.cjs` (setup steps are at its top), add a seed for the pretend data if the pages need any,
   then a two-line `src/<Name>Tutorial.tsx` with `defineTutorial()` from `src/Tutorial.tsx`, and register it in
   `src/Root.tsx`.
+- **Every role has one**: shop, events, site, training, hr, design, sermons, super, d1 (Destiny One Admin) and
+  safeguarding, each `capture/<id>-tutorial.cjs` with its `<id>-seed.cjs`. The Destiny One and Safeguarding
+  tutorials don't rebuild Destiny One's database functions: `capture/d1-fake-api.cjs` answers
+  `/api/admin/destiny-one/*` in the browser from invented people and an invented conversation, so the real
+  pages are filmed and no real message is ever opened. Run them with `SEED=capture/d1-seed.cjs`.
+- The filming browser can't show date boxes in UK order (its headless build has only US date formats), so
+  date fields read mm/dd/yyyy in the videos. Dates written by the site itself are UK-style.
 - The glass tab bar on Destiny One screens is drawn in the video, because the app's web build (used for the
   screenshots) shows its tabs differently. The status bar (9:41) is drawn too.
 - Look: light pages, no glows, and every move uses one aggressive ease in and out (`EASE` in

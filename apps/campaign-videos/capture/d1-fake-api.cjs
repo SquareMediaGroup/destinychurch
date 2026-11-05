@@ -77,7 +77,34 @@ function makeState() {
     maintenanceMessage: null, latestVersion: '1.4.0', latestVersionNotes: 'Reply to a message\nPolls in groups', retentionDays: 365,
     churchSuiteConfigured: false,
   };
-  return { members, communities, cm, groups, invites, feedback, settings };
+  // Safeguarding: one reported message, the paused group, a block, and the Welcome Team conversation
+  // a reviewer can open. A made-up but typical concern: an adult asking a young person to move the
+  // chat somewhere private.
+  const welcome = groups.find((g) => g.name === 'Welcome Team');
+  const media = groups.find((g) => g.name === 'Media Team');
+  const said = (n, body, d, h, o = {}) => ({ id: 0, body, content: null, created_at: iso(d, h), edited_at: null, deleted_at: null, forwarded_from: null, sender: { id: byName(n).id, display_name: n }, attachment: null, edits: [], ...o });
+  const messages = [
+    said('Grace Wilson', 'Morning all! Doors at 10, coffee from 9:45. Thank you for serving.', -3, 8),
+    said('Leo Martins', 'I can do the side door this week', -3, 9),
+    said('Daniel Osei', 'Nice one Leo. Grace, shall I bring the new lanyards?', -3, 9, {
+      edited_at: iso(-3, 9), edits: [{ body: 'Nice one Leo. Grace shall I bring lanyards', replacedAt: iso(-3, 9) }],
+    }),
+    said('Grace Wilson', 'Yes please, they’re in the office.', -3, 10),
+    said('Daniel Osei', 'Leo add me on Snapchat, easier to chat there than in here', -2, 21),
+    said('Grace Wilson', 'Let’s keep team chat in the group please, so everyone’s in the loop.', -2, 21),
+  ].map((x, i) => ({ ...x, id: 4100 + i }));
+  const flagged = messages[4];
+  const reports = [{
+    id: 12, reason: 'An adult asked a young person to move the chat to Snapchat.', status: 'open', created_at: iso(-2, 21),
+    reporter: { id: byName('Grace Wilson').id, display_name: 'Grace Wilson' }, group: { id: welcome.id, name: welcome.name },
+    message: { id: flagged.id, body: flagged.body, content: null, created_at: flagged.created_at, deleted_at: null, deleted_by_admin: null, sender: flagged.sender },
+  }];
+  const events = [
+    { id: 301, kind: 'report', detail: 'Grace Wilson reported a message', adult_count: 2, member_count: 3, resolved_at: null, created_at: iso(-2, 21), group: { id: welcome.id, name: welcome.name, state: 'active' } },
+    { id: 300, kind: 'frozen', detail: 'Down to 2 people, 1 adult', adult_count: 1, member_count: 2, resolved_at: null, created_at: iso(-5, 12), group: { id: media.id, name: media.name, state: 'frozen' } },
+    { id: 299, kind: 'block', detail: 'Maya Clarke blocked Tom Reid', adult_count: null, member_count: null, resolved_at: null, created_at: iso(-9, 18), group: null },
+  ];
+  return { members, communities, cm, groups, invites, feedback, settings, messages, reports, events };
 }
 
 function install(ctx) {
@@ -242,6 +269,55 @@ function install(ctx) {
           groups: s.groups.filter((g) => g.communityId === c.id).map(toGroup),
           members: people(s.cm[c.id] ?? []),
         });
+      }
+      case 'safeguarding': {
+        const [, what, sid, action] = p;
+        if (what === 'events') {
+          if (sid && method === 'PATCH') {
+            s.events.find((e) => e.id === Number(sid)).resolved_at = new Date().toISOString();
+            return json({ ok: true });
+          }
+          const kind = url.searchParams.get('kind');
+          const open = url.searchParams.get('open');
+          return json({ events: s.events.filter((e) => (kind ? e.kind === kind : e.kind !== 'block') && (!open || !e.resolved_at)) });
+        }
+        if (what === 'reports') {
+          if (sid && method === 'PATCH') {
+            Object.assign(s.reports.find((r) => r.id === Number(sid)), { status: body.status, resolution: body.resolution });
+            return json({ ok: true });
+          }
+          return json({ reports: s.reports.filter((r) => r.status === (url.searchParams.get('status') ?? 'open')) });
+        }
+        if (what === 'messages' && action === 'remove') {
+          const msg = s.messages.find((x) => x.id === Number(sid));
+          msg.deleted_at = new Date().toISOString();
+          for (const r of s.reports) if (r.message?.id === msg.id) Object.assign(r.message, { deleted_at: msg.deleted_at, deleted_by_admin: 'u-admin' });
+          return json({ ok: true });
+        }
+        if (what === 'members' && action === 'suspend') {
+          m(sid).status = body.suspended ? 'suspended' : 'active';
+          s.groups.forEach(settle);
+          return json({ ok: true });
+        }
+        if (what === 'groups') {
+          const g = sid && s.groups.find((x) => x.id === sid);
+          if (action === 'freeze') {
+            if (body.frozen) Object.assign(g, { state: 'frozen', freezeKind: 'manual', frozenReason: body.reason });
+            else { Object.assign(g, { state: 'active', freezeKind: null, frozenReason: null }); settle(g); }
+            return json({ ok: true });
+          }
+          if (action === 'transcript') {
+            const msgs = g.name === 'Welcome Team' ? s.messages : [];
+            return json({
+              group: { id: g.id, name: g.name, kind: g.kind, department: g.department, state: g.state, frozen_reason: g.frozenReason },
+              window: { from: url.searchParams.get('from'), to: url.searchParams.get('to') },
+              members: g.members.map((x) => ({ id: x.memberId, displayName: m(x.memberId).displayName, isAdult: m(x.memberId).isAdult, status: m(x.memberId).status, role: x.role, joinedAt: x.joinedAt, leftAt: null })),
+              messages: msgs,
+            });
+          }
+          return json(s.groups.map((x) => ({ ...toGroup(x), communityName: s.communities.find((c) => c.id === x.communityId).name })));
+        }
+        break;
       }
       case 'groups': {
         const g = s.groups.find((x) => x.id === p[1]);

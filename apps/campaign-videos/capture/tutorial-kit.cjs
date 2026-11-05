@@ -41,7 +41,7 @@ async function openAdmin({ scale = DSF } = {}) {
   const session = { access_token: jwt, refresh_token: 'r', expires_in: 86400, expires_at: exp, token_type: 'bearer', user: { id: 'u-admin', email: 'sam.taylor@example.com' } };
 
   const b = await chromium.launch();
-  const ctx = await b.newContext({ viewport: { width: VW, height: VH }, deviceScaleFactor: scale, acceptDownloads: true });
+  const ctx = await b.newContext({ viewport: { width: VW, height: VH }, deviceScaleFactor: scale, acceptDownloads: true, locale: 'en-GB', timezoneId: 'Europe/London' });
   await ctx.addCookies([{ name: 'sb-localhost-auth-token', value: 'base64-' + Buffer.from(JSON.stringify(session)).toString('base64url'), url: BASE }]);
   await ctx.addInitScript(() => {
     localStorage.setItem('destiny-cookie-consent', JSON.stringify({ essential: true, media: true, analytics: false, updatedAt: Date.now() }));

@@ -195,7 +195,7 @@ film({ id: 'events', roles: 'event_admin' }, async (t) => {
 
   // ── DestinyAI ────────────────────────────────────────────────────────────
   await part('DestinyAI', async () => {
-    await step('DestinyAI does admin jobs for you in plain English.', sidebar().getByRole('link', { name: 'DestinyAI', exact: true }), (l) => l.click(), { hold: 2.8 });
+    await step('DestinyAI does admin jobs for you in plain English.', sidebar().getByRole('link', { name: /DestinyAI/ }).first(), (l) => l.click(), { hold: 2.8 });
     await look('Ask for something like a banner for tomorrow, or to feature the next event. It suggests a plan, and nothing changes until you confirm it.', main().getByPlaceholder('Ask DestinyAI to do something'), { zoom: 1.3, hold: 4.6 });
   });
 });

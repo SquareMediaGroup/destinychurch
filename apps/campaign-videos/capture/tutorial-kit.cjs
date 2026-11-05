@@ -175,7 +175,8 @@ async function film({ id, roles }, script) {
     fs.writeFileSync(MANIFEST, JSON.stringify({ viewport: { w: VW, h: VH, dsf: DSF }, steps }, null, 1));
     console.log(`\n${steps.length} steps, ${n} frames → ${OUT}`);
   } catch (e) {
-    // Keep the last good step list; a failed run only leaves its frames behind.
+    // Keep the last good step list; a failed run leaves its frames and a partial list beside them.
+    fs.writeFileSync(path.join(OUT, 'steps.partial.json'), JSON.stringify({ viewport: { w: VW, h: VH, dsf: DSF }, steps }, null, 1));
     console.log(`\nFAILED after ${steps.length} steps: ${e.message.split('\n')[0]}`);
     process.exitCode = 1;
   } finally {

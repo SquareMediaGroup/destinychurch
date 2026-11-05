@@ -1,4 +1,5 @@
 import { Composition, Folder } from "remotion";
+import { ThumbnailStills } from "./Thumbnails";
 import { Campaign, CAMPAIGN_FRAMES } from "./Campaign";
 import { AdminWelcome, ADMIN_WELCOME_FRAMES } from "./AdminWelcome";
 import { DestinyOneFilm, DESTINY_ONE_FILM_FRAMES } from "./DestinyOneFilm";
@@ -73,6 +74,7 @@ export const RemotionRoot: React.FC = () => {
           defaultProps={{ freeze: "after" as const }}
         />
       </Folder>
+      <ThumbnailStills />
     </>
   );
 };

@@ -90,6 +90,9 @@ before/after pairs for sliders in `stills/before-after/`. See `stills/README.md`
   pages are filmed and no real message is ever opened. Run them with `SEED=capture/d1-seed.cjs`.
 - The filming browser can't show date boxes in UK order (its headless build has only US date formats), so
   date fields read mm/dd/yyyy in the videos. Dates written by the site itself are UK-style.
+- **YouTube thumbnails** (`src/Thumbnails.tsx`, 1280×720, one `Thumb-<id>` still per video): `npm run thumbnails`
+  → `out/thumbnails/<id>.jpg`. Each uses one frame from its tutorial, copied to `public/thumbnails/` (committed),
+  so they render without re-filming. Set `REMOTION_BROWSER` to a Chrome path if Remotion can't download its own.
 - The glass tab bar on Destiny One screens is drawn in the video, because the app's web build (used for the
   screenshots) shows its tabs differently. The status bar (9:41) is drawn too.
 - Look: light pages, no glows, and every move uses one aggressive ease in and out (`EASE` in

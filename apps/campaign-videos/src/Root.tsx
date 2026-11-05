@@ -5,6 +5,7 @@ import { DestinyOneFilm, DESTINY_ONE_FILM_FRAMES } from "./DestinyOneFilm";
 import { DesignTutorial, DESIGN_TUTORIAL_FRAMES } from "./DesignTutorial";
 import { EventsTutorial, EVENTS_TUTORIAL_FRAMES } from "./EventsTutorial";
 import { HrTutorial, HR_TUTORIAL_FRAMES } from "./HrTutorial";
+import { SermonsTutorial, SERMONS_TUTORIAL_FRAMES } from "./SermonsTutorial";
 import { ShopTutorial, SHOP_TUTORIAL_FRAMES } from "./ShopTutorial";
 import { SiteTutorial, SITE_TUTORIAL_FRAMES } from "./SiteTutorial";
 import { TrainingTutorial, TRAINING_TUTORIAL_FRAMES } from "./TrainingTutorial";
@@ -43,6 +44,7 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="TrainingTutorial" component={TrainingTutorial} durationInFrames={TRAINING_TUTORIAL_FRAMES} fps={30} width={1920} height={1080} />
       <Composition id="HrTutorial" component={HrTutorial} durationInFrames={HR_TUTORIAL_FRAMES} fps={30} width={1920} height={1080} />
       <Composition id="DesignTutorial" component={DesignTutorial} durationInFrames={DESIGN_TUTORIAL_FRAMES} fps={30} width={1920} height={1080} />
+      <Composition id="SermonsTutorial" component={SermonsTutorial} durationInFrames={SERMONS_TUTORIAL_FRAMES} fps={30} width={1920} height={1080} />
       <Composition id="ShopTutorial" component={ShopTutorial} durationInFrames={SHOP_TUTORIAL_FRAMES} fps={30} width={1920} height={1080} />
       {/* Before/after scenes pinned fully before or after, for matching slider images (scripts/export-stills.mjs). */}
       <Folder name="Stills">

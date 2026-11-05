@@ -9,6 +9,7 @@ then "Oh, and one more thing" and Destiny One. They share everything except the 
 | `DownloadToday` | "Download today", App Store badge, destinytees.uk/app | 3:30 |
 | `DestinyOneFilm` | Destiny One alone, in more depth, with music; "Coming in 2027". Plays on /app | 1:03 |
 | `AdminWelcome` | Admin help series, video 1: "Welcome to Destiny Admin", every role in a line, test mode, the Help page. For YouTube and /admin/help | 1:21 |
+| `ShopTutorial` | Admin help series, video 2: everything a Store Admin can do, filmed on the real /admin against a pretend shop. For YouTube and /admin/help | ~5:00 |
 
 Finished renders are kept in `exports/` (the 4K `DownloadToday`, `Destiny-One-Film.mp4` and `Admin-Welcome.mp4`) so they can be
 downloaded from GitHub; `out/` stays ignored for working renders.
@@ -23,6 +24,7 @@ npx remotion render ComingIn2027 out/ComingIn2027.mp4
 npx remotion render DownloadToday out/DownloadToday.mp4
 npx remotion render DestinyOneFilm out/Destiny-One-Film.mp4
 npx remotion render AdminWelcome out/Admin-Welcome.mp4 --crf=18
+npx remotion render ShopTutorial out/Shop-Tutorial.mp4 --crf=18   # needs a capture run first, see below
 npm run lint                     # eslint + tsc
 ```
 
@@ -66,6 +68,16 @@ before/after pairs for sliders in `stills/before-after/`. See `stills/README.md`
   switches roles between shots (steps at the top of each file). `AdminWelcome` uses the same music and credit
   as `DestinyOneFilm`; put the credit in the YouTube description. Its web copy is
   `public/img/admin-help/welcome.mp4` (same ffmpeg command as above) with `welcome-poster.webp`.
+- **The Store Admin tutorial** (`ShopTutorial`) is filmed, not drawn. `capture/shop-tutorial.cjs` drives the real
+  store pages through every action (search and filters, a new product with photos, colours, sizes and stock,
+  publishing, a book with a custom format, bulk actions, orders from paid to fulfilled, the shop hero) and saves
+  a screenshot before and after each one, plus where the cursor goes. The site's own API routes run as normal;
+  only the database is pretend: `capture/admin-mock-supabase.cjs` keeps tables and uploaded files in memory,
+  seeded by `capture/shop-seed.cjs` (the shop's real products and photos from `capture/shop-photos/`, invented
+  customers and orders). Steps are at the top of `shop-tutorial.cjs`. The frames land in `public/tutorial/shop/`
+  (gitignored, about 170 JPEGs) and the step list in `src/tutorials/shop-steps.json` (committed), so re-run the
+  capture before rendering on a fresh checkout. Restart the mock before each run: a run changes the shop.
+  Web copy: `public/img/admin-help/shop.mp4` with `shop-poster.webp`.
 - The glass tab bar on Destiny One screens is drawn in the video, because the app's web build (used for the
   screenshots) shows its tabs differently. The status bar (9:41) is drawn too.
 - Look: light pages, no glows, and every move uses one aggressive ease in and out (`EASE` in

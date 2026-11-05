@@ -2,6 +2,7 @@ import { Composition, Folder } from "remotion";
 import { Campaign, CAMPAIGN_FRAMES } from "./Campaign";
 import { AdminWelcome, ADMIN_WELCOME_FRAMES } from "./AdminWelcome";
 import { DestinyOneFilm, DESTINY_ONE_FILM_FRAMES } from "./DestinyOneFilm";
+import { ShopTutorial, SHOP_TUTORIAL_FRAMES } from "./ShopTutorial";
 import { BeforeAfter, ShopBeforeAfter } from "./scenes/website";
 
 export const RemotionRoot: React.FC = () => {
@@ -31,6 +32,8 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="DestinyOneFilm" component={DestinyOneFilm} durationInFrames={DESTINY_ONE_FILM_FRAMES} fps={30} width={1920} height={1080} />
       {/* Admin help series, video 1, for /admin/help and YouTube. */}
       <Composition id="AdminWelcome" component={AdminWelcome} durationInFrames={ADMIN_WELCOME_FRAMES} fps={30} width={1920} height={1080} />
+      {/* Admin help series, video 2: everything a Store Admin can do. Frames from capture/shop-tutorial.cjs. */}
+      <Composition id="ShopTutorial" component={ShopTutorial} durationInFrames={SHOP_TUTORIAL_FRAMES} fps={30} width={1920} height={1080} />
       {/* Before/after scenes pinned fully before or after, for matching slider images (scripts/export-stills.mjs). */}
       <Folder name="Stills">
         <Composition

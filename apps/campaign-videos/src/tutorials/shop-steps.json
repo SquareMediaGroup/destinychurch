@@ -1,0 +1,1384 @@
+{
+ "viewport": {
+  "w": 1600,
+  "h": 900,
+  "dsf": 1.6
+ },
+ "steps": [
+  {
+   "chapter": "Finding your way",
+   "caption": "Signed in as a Store Admin, the dashboard shows the shop at a glance.",
+   "target": null,
+   "kind": "none",
+   "before": "s001.jpg",
+   "frames": [],
+   "after": "s001.jpg",
+   "zoom": 1,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Finding your way",
+   "caption": "Paid orders waiting to be handed over are listed first, so nothing gets missed.",
+   "target": {
+    "x": 0.270625,
+    "y": 0.29444444444444445,
+    "w": 0.581953125,
+    "h": 0.022222222222222223
+   },
+   "kind": "point",
+   "before": "s002.jpg",
+   "frames": [],
+   "after": "s002.jpg",
+   "zoom": 1.5,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Finding your way",
+   "caption": "Everything for the shop lives under Store in the sidebar.",
+   "target": {
+    "x": 0.037509765625,
+    "y": 0.26,
+    "w": 0.06435546875,
+    "h": 0.022222222222222223
+   },
+   "kind": "point",
+   "before": "s003.jpg",
+   "frames": [],
+   "after": "s003.jpg",
+   "zoom": 1.6,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Finding your way",
+   "caption": "Open Store to see Products, Orders and Store Hero.",
+   "target": {
+    "x": 0.037509765625,
+    "y": 0.26,
+    "w": 0.06435546875,
+    "h": 0.022222222222222223
+   },
+   "kind": "click",
+   "before": "s004.jpg",
+   "frames": [],
+   "after": "s005.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Your products",
+   "caption": "Products lists everything in the shop.",
+   "target": {
+    "x": 0.03,
+    "y": 0.29777777777777775,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s006.jpg",
+   "frames": [],
+   "after": "s007.jpg",
+   "zoom": 1,
+   "hold": 2.2,
+   "nav": true
+  },
+  {
+   "chapter": "Your products",
+   "caption": "Each row shows the price, how many variants, the stock left and the category.",
+   "target": {
+    "x": 0.27,
+    "y": 0.34444444444444444,
+    "w": 0.6,
+    "h": 0.10222222222222223
+   },
+   "kind": "point",
+   "before": "s008.jpg",
+   "frames": [],
+   "after": "s008.jpg",
+   "zoom": 1.5,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Your products",
+   "caption": "Badges tell you what’s live. Draft products are hidden from the shop.",
+   "target": {
+    "x": 0.75958984375,
+    "y": 0.7168923611111111,
+    "w": 0.035810546875,
+    "h": 0.023993055555555556
+   },
+   "kind": "point",
+   "before": "s009.jpg",
+   "frames": [],
+   "after": "s009.jpg",
+   "zoom": 1.7,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Your products",
+   "caption": "Low means three or fewer left. Red stock means sold out.",
+   "target": {
+    "x": 0.7055078125,
+    "y": 0.60578125,
+    "w": 0.02779296875,
+    "h": 0.023993055555555556
+   },
+   "kind": "point",
+   "before": "s010.jpg",
+   "frames": [],
+   "after": "s010.jpg",
+   "zoom": 1.7,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Your products",
+   "caption": "Search by name, category or SKU.",
+   "target": {
+    "x": 0.27,
+    "y": 0.25333333333333335,
+    "w": 0.2,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s011.jpg",
+   "frames": [
+    "s012.jpg",
+    "s013.jpg",
+    "s014.jpg"
+   ],
+   "after": "s015.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Your products",
+   "caption": "Clear the search to see everything again.",
+   "target": {
+    "x": 0.27,
+    "y": 0.25333333333333335,
+    "w": 0.2,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s016.jpg",
+   "frames": [],
+   "after": "s017.jpg",
+   "zoom": 1.6,
+   "hold": 1.4,
+   "nav": false
+  },
+  {
+   "chapter": "Your products",
+   "caption": "Filter to what needs attention. Low stock…",
+   "target": {
+    "x": 0.641337890625,
+    "y": 0.26,
+    "w": 0.065205078125,
+    "h": 0.03333333333333333
+   },
+   "kind": "click",
+   "before": "s018.jpg",
+   "frames": [],
+   "after": "s019.jpg",
+   "zoom": 1.4,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Your products",
+   "caption": "…or Sold out, so you know what to reorder.",
+   "target": {
+    "x": 0.70904296875,
+    "y": 0.26,
+    "w": 0.058994140625,
+    "h": 0.03333333333333333
+   },
+   "kind": "click",
+   "before": "s020.jpg",
+   "frames": [],
+   "after": "s021.jpg",
+   "zoom": 1.4,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Your products",
+   "caption": "Drafts shows products that aren’t on the shop yet.",
+   "target": {
+    "x": 0.588505859375,
+    "y": 0.26,
+    "w": 0.04783203125,
+    "h": 0.03333333333333333
+   },
+   "kind": "click",
+   "before": "s022.jpg",
+   "frames": [],
+   "after": "s023.jpg",
+   "zoom": 1.4,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Your products",
+   "caption": "All brings the full list back.",
+   "target": {
+    "x": 0.4775,
+    "y": 0.26,
+    "w": 0.040107421875,
+    "h": 0.03333333333333333
+   },
+   "kind": "click",
+   "before": "s024.jpg",
+   "frames": [],
+   "after": "s025.jpg",
+   "zoom": 1.4,
+   "hold": 1.6,
+   "nav": false
+  },
+  {
+   "chapter": "Add a product",
+   "caption": "To add something new, choose New product.",
+   "target": {
+    "x": 0.781455078125,
+    "y": 0.16777777777777778,
+    "w": 0.088544921875,
+    "h": 0.04888888888888889
+   },
+   "kind": "click",
+   "before": "s026.jpg",
+   "frames": [],
+   "after": "s027.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": true
+  },
+  {
+   "chapter": "Add a product",
+   "caption": "Give it a name to start.",
+   "target": {
+    "x": 0.43,
+    "y": 0.2822222222222222,
+    "w": 0.28,
+    "h": 0.051111111111111114
+   },
+   "kind": "type",
+   "before": "s028.jpg",
+   "frames": [
+    "s029.jpg",
+    "s030.jpg",
+    "s031.jpg"
+   ],
+   "after": "s032.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Add a product",
+   "caption": "Create & continue opens the full editor.",
+   "target": {
+    "x": 0.43,
+    "y": 0.3511111111111111,
+    "w": 0.1202734375,
+    "h": 0.05333333333333334
+   },
+   "kind": "click",
+   "before": "s033.jpg",
+   "frames": [],
+   "after": "s034.jpg",
+   "zoom": 1.5,
+   "hold": 2.6,
+   "nav": true
+  },
+  {
+   "chapter": "Add a product",
+   "caption": "The editor has three parts: Details, Photos and Variants.",
+   "target": null,
+   "kind": "none",
+   "before": "s035.jpg",
+   "frames": [],
+   "after": "s035.jpg",
+   "zoom": 1,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Add a product",
+   "caption": "The slug is made from the name. It’s the product’s web address: /shop/transformation-hoodie.",
+   "target": {
+    "x": 0.363125,
+    "y": 0.4211111111111111,
+    "w": 0.41375,
+    "h": 0.017777777777777778
+   },
+   "kind": "point",
+   "before": "s036.jpg",
+   "frames": [],
+   "after": "s036.jpg",
+   "zoom": 1.6,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Add a product",
+   "caption": "Category groups products on the shop. Use one that already exists, like Jumper.",
+   "target": {
+    "x": 0.363125,
+    "y": 0.4855555555555556,
+    "w": 0.41375,
+    "h": 0.051111111111111114
+   },
+   "kind": "type",
+   "before": "s037.jpg",
+   "frames": [
+    "s038.jpg",
+    "s039.jpg",
+    "s040.jpg"
+   ],
+   "after": "s041.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Add a product",
+   "caption": "Write the description. The toolbar does bold, lists and links.",
+   "target": {
+    "x": 0.36375,
+    "y": 0.6455555555555555,
+    "w": 0.4125,
+    "h": 0.24444444444444444
+   },
+   "kind": "type",
+   "before": "s042.jpg",
+   "frames": [
+    "s043.jpg",
+    "s044.jpg",
+    "s045.jpg"
+   ],
+   "after": "s046.jpg",
+   "zoom": 1.4,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Add a product",
+   "caption": "Set the base price in pounds. Every variant uses it.",
+   "target": {
+    "x": 0.363125,
+    "y": 0.9377777777777778,
+    "w": 0.203125,
+    "h": 0.051111111111111114
+   },
+   "kind": "type",
+   "before": "s047.jpg",
+   "frames": [
+    "s048.jpg",
+    "s049.jpg",
+    "s050.jpg"
+   ],
+   "after": "s051.jpg",
+   "zoom": 1.7,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Add a product",
+   "caption": "Sort order sets where it sits on the shop. Lower numbers come first.",
+   "target": {
+    "x": 0.57375,
+    "y": 0.9377777777777778,
+    "w": 0.203125,
+    "h": 0.051111111111111114
+   },
+   "kind": "type",
+   "before": "s052.jpg",
+   "frames": [
+    "s053.jpg",
+    "s054.jpg",
+    "s055.jpg"
+   ],
+   "after": "s056.jpg",
+   "zoom": 1.7,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Photos",
+   "caption": "Add photos. Pick one or several at once. They’re turned into small, fast WebP files for you.",
+   "target": {
+    "x": 0.363125,
+    "y": 0.43777777777777777,
+    "w": 0.07,
+    "h": 0.12444444444444444
+   },
+   "kind": "click",
+   "before": "s057.jpg",
+   "frames": [],
+   "after": "s058.jpg",
+   "zoom": 1.4,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Photos",
+   "caption": "The first photo is the main one, shown on the shop and in the product list.",
+   "target": {
+    "x": 0.36375,
+    "y": 0.4388888888888889,
+    "w": 0.06875,
+    "h": 0.12222222222222222
+   },
+   "kind": "point",
+   "before": "s059.jpg",
+   "frames": [],
+   "after": "s059.jpg",
+   "zoom": 1.6,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Photos",
+   "caption": "Wrong photo? Hover it and press the cross to remove it.",
+   "target": {
+    "x": 0.4925,
+    "y": 0.44333333333333336,
+    "w": 0.015,
+    "h": 0.02666666666666667
+   },
+   "kind": "click",
+   "before": "s060.jpg",
+   "frames": [],
+   "after": "s061.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Variants and stock",
+   "caption": "Variants are the versions people choose between: colours and sizes, or formats for books.",
+   "target": {
+    "x": 0.363125,
+    "y": 0.7155555555555555,
+    "w": 0.41375,
+    "h": 0.017777777777777778
+   },
+   "kind": "point",
+   "before": "s062.jpg",
+   "frames": [],
+   "after": "s062.jpg",
+   "zoom": 1.3,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Variants and stock",
+   "caption": "Who is it for? Kids switches to age-based sizes…",
+   "target": {
+    "x": 0.5170703125,
+    "y": 0.89,
+    "w": 0.0373046875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s063.jpg",
+   "frames": [],
+   "after": "s064.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Variants and stock",
+   "caption": "…this one is Unisex, adult sizes XS to 3XL.",
+   "target": {
+    "x": 0.46791015625,
+    "y": 0.89,
+    "w": 0.04666015625,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s065.jpg",
+   "frames": [],
+   "after": "s066.jpg",
+   "zoom": 1.5,
+   "hold": 1.6,
+   "nav": false
+  },
+  {
+   "chapter": "Variants and stock",
+   "caption": "Add colours with one click from Quick add…",
+   "target": {
+    "x": 0.402587890625,
+    "y": 0.5522222222222222,
+    "w": 0.042451171875,
+    "h": 0.028888888888888888
+   },
+   "kind": "click",
+   "before": "s067.jpg",
+   "frames": [],
+   "after": "s068.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Variants and stock",
+   "caption": "…or make your own: pick the shade, name it, and press Add.",
+   "target": {
+    "x": 0.398125,
+    "y": 0.4911111111111111,
+    "w": 0.3205078125,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s069.jpg",
+   "frames": [],
+   "after": "s070.jpg",
+   "zoom": 1.5,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "Variants and stock",
+   "caption": "Pick the sizes you stock. They apply to every colour.",
+   "target": {
+    "x": 0.400322265625,
+    "y": 0.6511111111111111,
+    "w": 0.03,
+    "h": 0.042222222222222223
+   },
+   "kind": "click",
+   "before": "s071.jpg",
+   "frames": [],
+   "after": "s072.jpg",
+   "zoom": 1.4,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "Variants and stock",
+   "caption": "That builds the stock grid: one box per colour and size.",
+   "target": {
+    "x": 0.363125,
+    "y": 0.6822222222222222,
+    "w": 0.41375,
+    "h": 0.13333333333333333
+   },
+   "kind": "point",
+   "before": "s073.jpg",
+   "frames": [],
+   "after": "s073.jpg",
+   "zoom": 1.4,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Variants and stock",
+   "caption": "Set a number and press Apply to all to fill every box at once.",
+   "target": {
+    "x": 0.65060546875,
+    "y": 0.6288888888888889,
+    "w": 0.05,
+    "h": 0.03777777777777778
+   },
+   "kind": "type",
+   "before": "s074.jpg",
+   "frames": [],
+   "after": "s075.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Variants and stock",
+   "caption": "Then fine-tune any box. We have 20 black mediums.",
+   "target": {
+    "x": 0.486123046875,
+    "y": 0.7177777777777777,
+    "w": 0.070185546875,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s076.jpg",
+   "frames": [],
+   "after": "s077.jpg",
+   "zoom": 1.8,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Variants and stock",
+   "caption": "0 turns a box red: sold out, but still listed so people can see it.",
+   "target": {
+    "x": 0.7041796875,
+    "y": 0.7666666666666667,
+    "w": 0.0701953125,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s078.jpg",
+   "frames": [],
+   "after": "s079.jpg",
+   "zoom": 1.8,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Variants and stock",
+   "caption": "Not making one at all, like Stone in small? Hover the box and press the cross.",
+   "target": null,
+   "kind": "click",
+   "before": "s080.jpg",
+   "frames": [],
+   "after": "s081.jpg",
+   "zoom": 1.8,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Variants and stock",
+   "caption": "The badge counts the variants this product will sell.",
+   "target": {
+    "x": 0.728603515625,
+    "y": 0.4866666666666667,
+    "w": 0.048271484375,
+    "h": 0.02666666666666667
+   },
+   "kind": "point",
+   "before": "s082.jpg",
+   "frames": [],
+   "after": "s082.jpg",
+   "zoom": 1.8,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Publish and save",
+   "caption": "Turn on Published to put it on the shop.",
+   "target": {
+    "x": 0.363125,
+    "y": 0.10888888888888888,
+    "w": 0.071640625,
+    "h": 0.02666666666666667
+   },
+   "kind": "click",
+   "before": "s083.jpg",
+   "frames": [],
+   "after": "s084.jpg",
+   "zoom": 1.8,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Publish and save",
+   "caption": "Featured puts it in the spotlight at the top of the shop.",
+   "target": {
+    "x": 0.444765625,
+    "y": 0.10888888888888888,
+    "w": 0.067265625,
+    "h": 0.02666666666666667
+   },
+   "kind": "click",
+   "before": "s085.jpg",
+   "frames": [],
+   "after": "s086.jpg",
+   "zoom": 1.8,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Publish and save",
+   "caption": "Nothing is kept until you press Save.",
+   "target": {
+    "x": 0.745888671875,
+    "y": 0.10777777777777778,
+    "w": 0.044111328125,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s087.jpg",
+   "frames": [],
+   "after": "s088.jpg",
+   "zoom": 1.6,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Publish and save",
+   "caption": "View opens the product on the live shop.",
+   "target": {
+    "x": 0.681689453125,
+    "y": 0.10666666666666667,
+    "w": 0.05919921875,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s089.jpg",
+   "frames": [],
+   "after": "s090.jpg",
+   "zoom": 1.6,
+   "hold": 1.2,
+   "nav": true
+  },
+  {
+   "chapter": "Publish and save",
+   "caption": "There it is, with its photos, sizes and price, ready to buy.",
+   "target": null,
+   "kind": "none",
+   "before": "s091.jpg",
+   "frames": [],
+   "after": "s091.jpg",
+   "zoom": 1,
+   "hold": 3.4,
+   "nav": false
+  },
+  {
+   "chapter": "Publish and save",
+   "caption": "Sizes that are sold out, or that you don’t make, are crossed out, so nobody can order them.",
+   "target": {
+    "x": 0.54625,
+    "y": 0.38755208333333335,
+    "w": 0.0225,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s092.jpg",
+   "frames": [],
+   "after": "s093.jpg",
+   "zoom": 1.7,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Books and other products",
+   "caption": "Books work the same way, with formats instead of sizes.",
+   "target": {
+    "x": 0.29125,
+    "y": 0.8588888888888889,
+    "w": 0.575625,
+    "h": 0.09111111111111111
+   },
+   "kind": "click",
+   "before": "s094.jpg",
+   "frames": [],
+   "after": "s095.jpg",
+   "zoom": 1.4,
+   "hold": 2.2,
+   "nav": true
+  },
+  {
+   "chapter": "Books and other products",
+   "caption": "Pick the formats you sell: paperback, hardcover, eBook and more.",
+   "target": {
+    "x": 0.363125,
+    "y": 0.47444444444444445,
+    "w": 0.41375,
+    "h": 0.017777777777777778
+   },
+   "kind": "point",
+   "before": "s096.jpg",
+   "frames": [],
+   "after": "s096.jpg",
+   "zoom": 1.4,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Books and other products",
+   "caption": "Something else? Type your own format and press Add.",
+   "target": {
+    "x": 0.363125,
+    "y": 0.5555555555555556,
+    "w": 0.3555078125,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s097.jpg",
+   "frames": [],
+   "after": "s098.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Books and other products",
+   "caption": "Then give it some stock, and save.",
+   "target": {
+    "x": 0.6624609375,
+    "y": 0.7666666666666667,
+    "w": 0.1119140625,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s099.jpg",
+   "frames": [],
+   "after": "s100.jpg",
+   "zoom": 1.7,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "Books and other products",
+   "caption": "Other is for anything else, like a bundle or a ticket, with variants you name yourself.",
+   "target": {
+    "x": 0.468330078125,
+    "y": 0.48,
+    "w": 0.041826171875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s101.jpg",
+   "frames": [],
+   "after": "s102.jpg",
+   "zoom": 1.4,
+   "hold": 2.8,
+   "nav": false
+  },
+  {
+   "chapter": "Many products at once",
+   "caption": "Tick products to work on several at once.",
+   "target": {
+    "x": 0.278125,
+    "y": 0.8327777777777777,
+    "w": 0.008125,
+    "h": 0.014444444444444444
+   },
+   "kind": "click",
+   "before": "s103.jpg",
+   "frames": [],
+   "after": "s104.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Many products at once",
+   "caption": "Publish or unpublish them together, export them as a spreadsheet, or delete them.",
+   "target": {
+    "x": 0.280625,
+    "y": 0.33,
+    "w": 0.07310546875,
+    "h": 0.022222222222222223
+   },
+   "kind": "point",
+   "before": "s105.jpg",
+   "frames": [],
+   "after": "s105.jpg",
+   "zoom": 1.4,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Many products at once",
+   "caption": "Publish puts this draft on the shop.",
+   "target": {
+    "x": 0.36123046875,
+    "y": 0.32555555555555554,
+    "w": 0.040283203125,
+    "h": 0.03111111111111111
+   },
+   "kind": "click",
+   "before": "s106.jpg",
+   "frames": [],
+   "after": "s107.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Many products at once",
+   "caption": "Deleting asks first, and it can’t be undone. Unpublish instead if you might bring it back.",
+   "target": {
+    "x": 0.278125,
+    "y": 0.8327777777777777,
+    "w": 0.008125,
+    "h": 0.014444444444444444
+   },
+   "kind": "click",
+   "before": "s108.jpg",
+   "frames": [],
+   "after": "s109.jpg",
+   "zoom": 1.4,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Many products at once",
+   "caption": "Here we’ll keep it. Cancel.",
+   "target": {
+    "x": 0.524814453125,
+    "y": 0.5352777777777777,
+    "w": 0.0481640625,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s110.jpg",
+   "frames": [],
+   "after": "s111.jpg",
+   "zoom": 1.4,
+   "hold": 1.6,
+   "nav": false
+  },
+  {
+   "chapter": "Orders",
+   "caption": "Orders is where purchases arrive.",
+   "target": {
+    "x": 0.03,
+    "y": 0.34,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s112.jpg",
+   "frames": [],
+   "after": "s113.jpg",
+   "zoom": 1,
+   "hold": 2.2,
+   "nav": true
+  },
+  {
+   "chapter": "Orders",
+   "caption": "Each order shows its number, the customer, the date, the total and its status.",
+   "target": {
+    "x": 0.27,
+    "y": 0.38,
+    "w": 0.6,
+    "h": 0.09954861111111112
+   },
+   "kind": "point",
+   "before": "s114.jpg",
+   "frames": [],
+   "after": "s114.jpg",
+   "zoom": 1.4,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Orders",
+   "caption": "Paid means the money has arrived and it’s waiting for collection at church.",
+   "target": {
+    "x": 0.801220703125,
+    "y": 0.7417534722222222,
+    "w": 0.03001953125,
+    "h": 0.02666666666666667
+   },
+   "kind": "point",
+   "before": "s115.jpg",
+   "frames": [],
+   "after": "s115.jpg",
+   "zoom": 1.6,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Orders",
+   "caption": "Find an order by its number, the customer’s name or their email.",
+   "target": {
+    "x": 0.27,
+    "y": 0.25333333333333335,
+    "w": 0.2,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s116.jpg",
+   "frames": [
+    "s117.jpg",
+    "s118.jpg",
+    "s119.jpg"
+   ],
+   "after": "s120.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Orders",
+   "caption": "Open it to see everything about it.",
+   "target": {
+    "x": 0.29125,
+    "y": 0.38555555555555554,
+    "w": 0.575625,
+    "h": 0.0884375
+   },
+   "kind": "click",
+   "before": "s121.jpg",
+   "frames": [],
+   "after": "s122.jpg",
+   "zoom": 1.3,
+   "hold": 2.2,
+   "nav": true
+  },
+  {
+   "chapter": "Orders",
+   "caption": "Who ordered, how to reach them, and any note they left.",
+   "target": {
+    "x": 0.393125,
+    "y": 0.2722222222222222,
+    "w": 0.35375,
+    "h": 0.017777777777777778
+   },
+   "kind": "point",
+   "before": "s123.jpg",
+   "frames": [],
+   "after": "s123.jpg",
+   "zoom": 1.5,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Orders",
+   "caption": "What they bought, in which colour and size, and the total.",
+   "target": {
+    "x": 0.393125,
+    "y": 0.49399305555555556,
+    "w": 0.35375,
+    "h": 0.017777777777777778
+   },
+   "kind": "point",
+   "before": "s124.jpg",
+   "frames": [],
+   "after": "s124.jpg",
+   "zoom": 1.5,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Orders",
+   "caption": "When they collect it, press Mark fulfilled.",
+   "target": {
+    "x": 0.38,
+    "y": 0.6713194444444445,
+    "w": 0.092373046875,
+    "h": 0.051111111111111114
+   },
+   "kind": "click",
+   "before": "s125.jpg",
+   "frames": [],
+   "after": "s126.jpg",
+   "zoom": 1.6,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Orders",
+   "caption": "Cancel order and Mark refunded change the status only. Give the money back in Stripe, and add any stock back on the product.",
+   "target": {
+    "x": 0.47501953125,
+    "y": 0.6713194444444445,
+    "w": 0.0977734375,
+    "h": 0.051111111111111114
+   },
+   "kind": "point",
+   "before": "s127.jpg",
+   "frames": [],
+   "after": "s127.jpg",
+   "zoom": 1.5,
+   "hold": 4.4,
+   "nav": false
+  },
+  {
+   "chapter": "Orders",
+   "caption": "Back to all orders.",
+   "target": {
+    "x": 0.38,
+    "y": 0.10666666666666667,
+    "w": 0.0440234375,
+    "h": 0.02666666666666667
+   },
+   "kind": "click",
+   "before": "s128.jpg",
+   "frames": [],
+   "after": "s129.jpg",
+   "zoom": 1.4,
+   "hold": 1.4,
+   "nav": true
+  },
+  {
+   "chapter": "Orders",
+   "caption": "Filter by status. Paid shows everything still to hand over.",
+   "target": {
+    "x": 0.5826953125,
+    "y": 0.26,
+    "w": 0.04611328125,
+    "h": 0.03333333333333333
+   },
+   "kind": "click",
+   "before": "s130.jpg",
+   "frames": [],
+   "after": "s131.jpg",
+   "zoom": 1.4,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Orders",
+   "caption": "The total of paid and fulfilled orders in view is shown above the list.",
+   "target": {
+    "x": 0.27,
+    "y": 0.31777777777777777,
+    "w": 0.6,
+    "h": 0.017777777777777778
+   },
+   "kind": "point",
+   "before": "s132.jpg",
+   "frames": [],
+   "after": "s132.jpg",
+   "zoom": 1.6,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Orders",
+   "caption": "Tick several to fulfil them together after a Sunday.",
+   "target": {
+    "x": 0.27,
+    "y": 0.355,
+    "w": 0.008125,
+    "h": 0.014444444444444444
+   },
+   "kind": "click",
+   "before": "s133.jpg",
+   "frames": [],
+   "after": "s134.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Orders",
+   "caption": "Mark fulfilled, all at once. They leave the Paid list.",
+   "target": {
+    "x": 0.3563671875,
+    "y": 0.32555555555555554,
+    "w": 0.0598828125,
+    "h": 0.03111111111111111
+   },
+   "kind": "click",
+   "before": "s135.jpg",
+   "frames": [],
+   "after": "s136.jpg",
+   "zoom": 1.5,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "Orders",
+   "caption": "Export all downloads the orders in view as a spreadsheet, for the finance team.",
+   "target": {
+    "x": 0.792880859375,
+    "y": 0.16666666666666666,
+    "w": 0.077119140625,
+    "h": 0.051111111111111114
+   },
+   "kind": "click",
+   "before": "s137.jpg",
+   "frames": [],
+   "after": "s138.jpg",
+   "zoom": 1.5,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Store Hero",
+   "caption": "Store Hero is the big banner at the top of the shop.",
+   "target": {
+    "x": 0.03,
+    "y": 0.38222222222222224,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s139.jpg",
+   "frames": [],
+   "after": "s140.jpg",
+   "zoom": 1,
+   "hold": 2.6,
+   "nav": true
+  },
+  {
+   "chapter": "Store Hero",
+   "caption": "Two or more active slides rotate on their own.",
+   "target": {
+    "x": 0.305,
+    "y": 0.15555555555555556,
+    "w": 0.43830078125,
+    "h": 0.044444444444444446
+   },
+   "kind": "point",
+   "before": "s141.jpg",
+   "frames": [],
+   "after": "s141.jpg",
+   "zoom": 1.5,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Store Hero",
+   "caption": "Add slide makes a new one at the bottom.",
+   "target": {
+    "x": 0.75330078125,
+    "y": 0.11555555555555555,
+    "w": 0.08169921875,
+    "h": 0.04888888888888889
+   },
+   "kind": "click",
+   "before": "s142.jpg",
+   "frames": [],
+   "after": "s143.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Store Hero",
+   "caption": "Upload a wide image for the background.",
+   "target": {
+    "x": 0.540791015625,
+    "y": 0.48859375,
+    "w": 0.05841796875,
+    "h": 0.022222222222222223
+   },
+   "kind": "click",
+   "before": "s144.jpg",
+   "frames": [],
+   "after": "s145.jpg",
+   "zoom": 1.3,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "Store Hero",
+   "caption": "Add a heading…",
+   "target": {
+    "x": 0.320625,
+    "y": 0.6309722222222223,
+    "w": 0.49875,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s146.jpg",
+   "frames": [
+    "s147.jpg",
+    "s148.jpg",
+    "s149.jpg"
+   ],
+   "after": "s150.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Store Hero",
+   "caption": "…a line underneath…",
+   "target": {
+    "x": 0.320625,
+    "y": 0.7198611111111111,
+    "w": 0.49875,
+    "h": 0.06888888888888889
+   },
+   "kind": "type",
+   "before": "s151.jpg",
+   "frames": [
+    "s152.jpg",
+    "s153.jpg",
+    "s154.jpg"
+   ],
+   "after": "s155.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Store Hero",
+   "caption": "…and a button, with the page it goes to.",
+   "target": {
+    "x": 0.320625,
+    "y": 0.8394097222222222,
+    "w": 0.244375,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s156.jpg",
+   "frames": [
+    "s157.jpg",
+    "s158.jpg",
+    "s159.jpg"
+   ],
+   "after": "s160.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Store Hero",
+   "caption": "Save slide.",
+   "target": {
+    "x": 0.74931640625,
+    "y": 0.9082986111111111,
+    "w": 0.07005859375,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s161.jpg",
+   "frames": [],
+   "after": "s162.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Store Hero",
+   "caption": "Move it up to show it first.",
+   "target": {
+    "x": 0.754375,
+    "y": 0.12081597222222222,
+    "w": 0.02,
+    "h": 0.035555555555555556
+   },
+   "kind": "click",
+   "before": "s163.jpg",
+   "frames": [],
+   "after": "s164.jpg",
+   "zoom": 1.7,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Store Hero",
+   "caption": "The switch hides a slide without deleting it. The bin deletes it for good.",
+   "target": {
+    "x": 0.799375,
+    "y": 0.2544444444444444,
+    "w": 0.02,
+    "h": 0.035555555555555556
+   },
+   "kind": "point",
+   "before": "s165.jpg",
+   "frames": [],
+   "after": "s165.jpg",
+   "zoom": 1.7,
+   "hold": 3.4,
+   "nav": false
+  },
+  {
+   "chapter": "Store Hero",
+   "caption": "And it’s live on the shop.",
+   "target": null,
+   "kind": "click",
+   "before": "s166.jpg",
+   "frames": [],
+   "after": "s167.jpg",
+   "zoom": 1,
+   "hold": 3.6,
+   "nav": true
+  }
+ ]
+}

@@ -62,9 +62,13 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
   },
   {
     id: "store",
-    title: "Store Admin",
-    description: "Products, stock and fulfilling orders.",
+    title: "Store Admin: running the shop",
+    description:
+      "Adding products, photos, sizes and stock, publishing, orders from paid to collected, and the shop's hero slides.",
     role: "store_admin",
+    src: "/img/admin-help/shop.mp4",
+    poster: "/img/admin-help/shop-poster.webp",
+    length: "5:00",
   },
   {
     id: "sermons",

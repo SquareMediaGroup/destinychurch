@@ -110,9 +110,12 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
   },
   {
     id: "super",
-    title: "Super Admin",
-    description: "Adding admins, choosing their roles, and the audit log.",
+    title: "Super Admin: running the whole admin",
+    description:
+      "Adding admins and choosing their roles, two-factor resets, the audit log, the sitewide banner, clearing the cache and previewing other roles.",
     role: "super_admin",
+    poster: "/img/admin-help/super-poster.webp",
+    length: "3:20",
   },
 ];
 

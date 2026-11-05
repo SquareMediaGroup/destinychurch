@@ -393,7 +393,7 @@
   },
   {
    "chapter": "The sitewide banner",
-   "caption": "Choose the kind: an announcement, a notice or an alert.",
+   "caption": "Choose the kind: an announcement, a quieter notice, or a site-wide block that shows a maintenance screen to everyone.",
    "target": {
     "x": 0.25125,
     "y": 0.4022222222222222,

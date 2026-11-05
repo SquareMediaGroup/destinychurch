@@ -54,7 +54,7 @@ film({ id: 'super', roles: 'super_admin' }, async (t) => {
       await settle(400);
     }
     await step('Banner is the strip across the top of every page. Only a Super Admin can change it.', sidebar().getByRole('link', { name: /^Banner/ }).first(), (l) => l.click(), { hold: 2.8 });
-    await look('Choose the kind: an announcement, a notice or an alert.', page.locator('input[type="radio"]').first(), { zoom: 1.4, hold: 3 });
+    await look('Choose the kind: an announcement, a quieter notice, or a site-wide block that shows a maintenance screen to everyone.', page.locator('input[type="radio"]').first(), { zoom: 1.4, hold: 4.2 });
     await step('Write the message…', page.getByPlaceholder('Service times are changing this Sunday…'), null, { zoom: 1.5, typing: { text: 'Christmas services: 20 December at 10:30am and 6pm' } });
     await step('…add a link…', page.getByPlaceholder('/whats-on'), async () => { await page.getByPlaceholder('Find out more').fill('See the times'); }, { zoom: 1.5, typing: { text: '/christmas' } });
     await step('…and, if you like, when it shows and hides on its own.', field('Hide after (optional)'), (l) => l.fill('2026-12-26T00:00'), { zoom: 1.5, hold: 2.6 });

@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { BannerType } from "@/contexts/BannerContext";
 import { clearPromoteFromUrl, readPromote } from "@/lib/promote";
+import ScheduleFields from "@/components/admin/ScheduleFields";
+import { windowState } from "@/lib/schedule";
+import { describeWindow } from "@/lib/adminAgent/time";
 
 interface Banner {
   active: boolean;
@@ -11,6 +14,8 @@ interface Banner {
   type: BannerType;
   link: string;
   link_text: string;
+  starts_at: string | null;
+  ends_at: string | null;
 }
 
 const TYPES: {
@@ -53,7 +58,12 @@ export default function AdminBannerPage() {
     type: "announcement",
     link: "",
     link_text: "",
+    starts_at: null,
+    ends_at: null,
   });
+  // Whether the database has the window columns yet (the migration may lag a
+  // deploy). Until it does, saves leave them out so they don't fail.
+  const [scheduling, setScheduling] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -76,7 +86,10 @@ export default function AdminBannerPage() {
           type: t,
           link: b.link ?? "",
           link_text: b.link_text ?? "",
+          starts_at: b.starts_at ?? null,
+          ends_at: b.ends_at ?? null,
         };
+        setScheduling("starts_at" in b);
         // "Promote" from a post's Share panel: its title and link over the
         // saved settings, unsaved until Save. Never over a site-wide block.
         const promo = readPromote(window.location.search);
@@ -108,7 +121,11 @@ export default function AdminBannerPage() {
     const res = await fetch("/api/admin/banner", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(banner),
+      body: JSON.stringify(
+        scheduling || banner.starts_at || banner.ends_at
+          ? banner
+          : { ...banner, starts_at: undefined, ends_at: undefined },
+      ),
     });
     if (res.ok) {
       setSaved(true);
@@ -326,6 +343,28 @@ export default function AdminBannerPage() {
                     className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey dark:text-white placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
                   />
                 </div>
+              </div>
+
+              <div className="h-px bg-black/5" />
+
+              {/* Schedule */}
+              <div>
+                <ScheduleFields
+                  noun="the banner"
+                  startsAt={banner.starts_at}
+                  endsAt={banner.ends_at}
+                  onChange={(w) => setBanner((b) => ({ ...b, ...w }))}
+                />
+                {banner.active && (banner.starts_at || banner.ends_at) && (
+                  <p className="mt-2 text-xs font-medium text-destiny-grey/60 dark:text-white/60">
+                    {windowState(banner) === "scheduled"
+                      ? "Scheduled: shows "
+                      : windowState(banner) === "ended"
+                        ? "Ended: was shown "
+                        : "Live: shows "}
+                    {describeWindow(banner.starts_at, banner.ends_at)} (UK time).
+                  </p>
+                )}
               </div>
             </div>
 

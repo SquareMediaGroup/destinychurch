@@ -23,6 +23,12 @@ export interface AdminNavItem {
   icon: string;
   /** Role needed to see it; null = every authenticated admin. */
   role: AdminRole | null;
+  /**
+   * With `role: null`: only list it for admins holding at least one of these.
+   * For a page every admin may open but only some have a use for yet
+   * (DestinyAI, whose tools cover announcements and posts so far).
+   */
+  shownTo?: AdminRole[];
   /** One line for the dashboard card and the palette's second row. */
   description: string;
   /**
@@ -58,6 +64,15 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         description: "Overview of your site, content and tools.",
         keywords: ["home", "overview", "start"],
         exact: true,
+      },
+      {
+        href: "/admin/assistant",
+        label: "DestinyAI",
+        icon: "auto_awesome",
+        role: null,
+        shownTo: ["event_admin", "site_admin"],
+        description: "Ask for admin jobs in plain English: banners, popups, posts, the featured event.",
+        keywords: ["ai", "assistant", "chat", "agent", "ask", "help", "schedule", "automate"],
       },
     ],
   },
@@ -624,7 +639,10 @@ export function visibleGroups(
   return ADMIN_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter(
-      (item) => (includeUnlisted || !item.unlisted) && canSee(roles, item.role),
+      (item) =>
+        (includeUnlisted || !item.unlisted) &&
+        canSee(roles, item.role) &&
+        (!item.shownTo || roles.super_admin || item.shownTo.some((r) => roles[r])),
     ),
   })).filter((group) => group.items.length > 0);
 }

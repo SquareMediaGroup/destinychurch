@@ -1,1 +1,1016 @@
-{ "viewport": { "w": 1600, "h": 900, "dsf": 1.6 }, "steps": [] }
+{
+ "viewport": {
+  "w": 1600,
+  "h": 900,
+  "dsf": 1.6
+ },
+ "steps": [
+  {
+   "chapter": "Finding your way",
+   "caption": "Signed in as a Site Admin, the dashboard shows your pages and redirects, and any drafts waiting.",
+   "target": null,
+   "kind": "none",
+   "before": "s001.jpg",
+   "frames": [],
+   "after": "s001.jpg",
+   "zoom": 1,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Finding your way",
+   "caption": "Posts is your own section. Redirects, the status page and analytics are under Site.",
+   "target": {
+    "x": 0,
+    "y": 0,
+    "w": 0.14,
+    "h": 1.3187152777777778
+   },
+   "kind": "point",
+   "before": "s002.jpg",
+   "frames": [],
+   "after": "s002.jpg",
+   "zoom": 1.3,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Posts and pages",
+   "caption": "Posts are the website’s standalone pages: campaigns, one-off events, anything temporary.",
+   "target": {
+    "x": 0.0075,
+    "y": 0.3,
+    "w": 0.124375,
+    "h": 0.04888888888888889
+   },
+   "kind": "click",
+   "before": "s003.jpg",
+   "frames": [],
+   "after": "s004.jpg",
+   "zoom": 1,
+   "hold": 3.2,
+   "nav": true
+  },
+  {
+   "chapter": "Posts and pages",
+   "caption": "Each shows its address, whether it’s live, its visits in the last 30 days and when it was last edited.",
+   "target": {
+    "x": 0.223125,
+    "y": 0.43277777777777776,
+    "w": 0.69375,
+    "h": 0.07666666666666666
+   },
+   "kind": "point",
+   "before": "s005.jpg",
+   "frames": [],
+   "after": "s005.jpg",
+   "zoom": 1.3,
+   "hold": 3.4,
+   "nav": false
+  },
+  {
+   "chapter": "Posts and pages",
+   "caption": "Filter by status: live, scheduled, ended or draft…",
+   "target": {
+    "x": 0.43986328125,
+    "y": 0.31777777777777777,
+    "w": 0.04783203125,
+    "h": 0.03333333333333333
+   },
+   "kind": "click",
+   "before": "s006.jpg",
+   "frames": [],
+   "after": "s007.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Posts and pages",
+   "caption": "…or by tag.",
+   "target": {
+    "x": 0.599970703125,
+    "y": 0.31777777777777777,
+    "w": 0.0646875,
+    "h": 0.03333333333333333
+   },
+   "kind": "click",
+   "before": "s008.jpg",
+   "frames": [],
+   "after": "s009.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Posts and pages",
+   "caption": "Clear the filter, and search by title or address.",
+   "target": {
+    "x": 0.2225,
+    "y": 0.25333333333333335,
+    "w": 0.2,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s010.jpg",
+   "frames": [
+    "s011.jpg",
+    "s012.jpg",
+    "s013.jpg"
+   ],
+   "after": "s014.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Write a page",
+   "caption": "New post starts a page.",
+   "target": {
+    "x": 0.841923828125,
+    "y": 0.1688888888888889,
+    "w": 0.075576171875,
+    "h": 0.04888888888888889
+   },
+   "kind": "click",
+   "before": "s015.jpg",
+   "frames": [],
+   "after": "s016.jpg",
+   "zoom": 1.5,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Write a page",
+   "caption": "Pick a starting point: a blank page, or a ready-made layout for an event, a campaign, a landing page or an FAQ.",
+   "target": {
+    "x": 0.355625,
+    "y": 0.1388888888888889,
+    "w": 0.28875,
+    "h": 0.022222222222222223
+   },
+   "kind": "point",
+   "before": "s017.jpg",
+   "frames": [],
+   "after": "s017.jpg",
+   "zoom": 1.3,
+   "hold": 3.6,
+   "nav": false
+  },
+  {
+   "chapter": "Write a page",
+   "caption": "An event page comes with a photo header, key details, an FAQ and a sign-up button.",
+   "target": {
+    "x": 0.536884765625,
+    "y": 0.2284375,
+    "w": 0.096865234375,
+    "h": 0.035555555555555556
+   },
+   "kind": "click",
+   "before": "s018.jpg",
+   "frames": [],
+   "after": "s019.jpg",
+   "zoom": 1.4,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Write a page",
+   "caption": "Blocks on the left, the page in the middle, its settings on the right.",
+   "target": null,
+   "kind": "none",
+   "before": "s020.jpg",
+   "frames": [],
+   "after": "s020.jpg",
+   "zoom": 1,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Write a page",
+   "caption": "Give it a title…",
+   "target": {
+    "x": 0.0425,
+    "y": 0.021111111111111112,
+    "w": 0.685810546875,
+    "h": 0.03111111111111111
+   },
+   "kind": "type",
+   "before": "s021.jpg",
+   "frames": [
+    "s022.jpg",
+    "s023.jpg",
+    "s024.jpg"
+   ],
+   "after": "s025.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Write a page",
+   "caption": "…and write over the layout’s placeholder text. The toolbar does headings, bold, lists, links and pictures.",
+   "target": {
+    "x": 0.245625,
+    "y": 0.20333333333333334,
+    "w": 0.45875,
+    "h": 0.022222222222222223
+   },
+   "kind": "type",
+   "before": "s026.jpg",
+   "frames": [
+    "s027.jpg",
+    "s028.jpg",
+    "s029.jpg"
+   ],
+   "after": "s030.jpg",
+   "zoom": 1.3,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Write a page",
+   "caption": "Blocks add the rest: FAQs, callouts, card grids, videos, photo galleries and buttons. Click one to drop it in where you are.",
+   "target": {
+    "x": 0.040625,
+    "y": 0.34399305555555554,
+    "w": 0.094375,
+    "h": 0.022222222222222223
+   },
+   "kind": "click",
+   "before": "s031.jpg",
+   "frames": [],
+   "after": "s032.jpg",
+   "zoom": 1.3,
+   "hold": 3.4,
+   "nav": false
+  },
+  {
+   "chapter": "Write a page",
+   "caption": "The Block tab on the right edits whichever block you’re in.",
+   "target": {
+    "x": 0.869580078125,
+    "y": 0.08333333333333333,
+    "w": 0.06146484375,
+    "h": 0.03111111111111111
+   },
+   "kind": "point",
+   "before": "s033.jpg",
+   "frames": [],
+   "after": "s033.jpg",
+   "zoom": 1.5,
+   "hold": 2.8,
+   "nav": false
+  },
+  {
+   "chapter": "Write a page",
+   "caption": "Page: the address…",
+   "target": {
+    "x": 0.805625,
+    "y": 0.08333333333333333,
+    "w": 0.061455078125,
+    "h": 0.03111111111111111
+   },
+   "kind": "click",
+   "before": "s034.jpg",
+   "frames": [],
+   "after": "s035.jpg",
+   "zoom": 1.4,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Write a page",
+   "caption": "…set it to something short.",
+   "target": {
+    "x": 0.817626953125,
+    "y": 0.43555555555555553,
+    "w": 0.172373046875,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s036.jpg",
+   "frames": [
+    "s037.jpg",
+    "s038.jpg",
+    "s039.jpg"
+   ],
+   "after": "s040.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Write a page",
+   "caption": "Schedule sets when it goes live and comes down, all on its own.",
+   "target": {
+    "x": 0.810625,
+    "y": 0.5677777777777778,
+    "w": 0.05,
+    "h": 0.017777777777777778
+   },
+   "kind": "point",
+   "before": "s041.jpg",
+   "frames": [],
+   "after": "s041.jpg",
+   "zoom": 1.5,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Write a page",
+   "caption": "Page header picks the style at the top: plain, with an image, or a coloured banner.",
+   "target": {
+    "x": 0.810625,
+    "y": 0.7277777777777777,
+    "w": 0.179375,
+    "h": 0.017777777777777778
+   },
+   "kind": "point",
+   "before": "s042.jpg",
+   "frames": [],
+   "after": "s042.jpg",
+   "zoom": 1.4,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Write a page",
+   "caption": "Save draft keeps your work without putting it live.",
+   "target": {
+    "x": 0.839208984375,
+    "y": 0.013333333333333334,
+    "w": 0.061298828125,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s043.jpg",
+   "frames": [],
+   "after": "s044.jpg",
+   "zoom": 1.5,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "Write a page",
+   "caption": "If something’s missing it tells you. This layout’s image header needs a picture: add one under Header image, or pick another header.",
+   "target": {
+    "x": 0.796875,
+    "y": 0.8938541666666666,
+    "w": 0.16,
+    "h": 0.0628125
+   },
+   "kind": "point",
+   "before": "s045.jpg",
+   "frames": [],
+   "after": "s045.jpg",
+   "zoom": 1.6,
+   "hold": 3.8,
+   "nav": false
+  },
+  {
+   "chapter": "Write a page",
+   "caption": "We’ll keep it plain…",
+   "target": {
+    "x": 0.81125,
+    "y": 0.8055555555555556,
+    "w": 0.055205078125,
+    "h": 0.029548611111111112
+   },
+   "kind": "click",
+   "before": "s046.jpg",
+   "frames": [],
+   "after": "s047.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Write a page",
+   "caption": "…and Save draft again.",
+   "target": {
+    "x": 0.839208984375,
+    "y": 0.013333333333333334,
+    "w": 0.061298828125,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s048.jpg",
+   "frames": [],
+   "after": "s049.jpg",
+   "zoom": 1.5,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "Write a page",
+   "caption": "Preview shows it on a phone, a tablet or a computer before anyone else sees it.",
+   "target": {
+    "x": 0.77912109375,
+    "y": 0.013333333333333334,
+    "w": 0.052587890625,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s050.jpg",
+   "frames": [],
+   "after": "s051.jpg",
+   "zoom": 1.2,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Write a page",
+   "caption": "Publish when it’s ready.",
+   "target": {
+    "x": 0.9080078125,
+    "y": 0.014444444444444444,
+    "w": 0.0494921875,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s052.jpg",
+   "frames": [],
+   "after": "s053.jpg",
+   "zoom": 1.5,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Write a page",
+   "caption": "It checks first, and lists anything that would make the page look unfinished. Cancel to fix them, or Publish anyway.",
+   "target": {
+    "x": 0.54326171875,
+    "y": 0.5605555555555556,
+    "w": 0.08111328125,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s054.jpg",
+   "frames": [],
+   "after": "s055.jpg",
+   "zoom": 1.4,
+   "hold": 3.6,
+   "nav": false
+  },
+  {
+   "chapter": "Editing and history",
+   "caption": "Open a live page to change it.",
+   "target": {
+    "x": 0.844345703125,
+    "y": 0.6083333333333333,
+    "w": 0.015009765625,
+    "h": 0.03222222222222222
+   },
+   "kind": "click",
+   "before": "s056.jpg",
+   "frames": [],
+   "after": "s057.jpg",
+   "zoom": 1.4,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "Editing and history",
+   "caption": "Changes to a live page stay a draft until you press Publish changes, so you can take your time.",
+   "target": {
+    "x": 0.872568359375,
+    "y": 0.014444444444444444,
+    "w": 0.084931640625,
+    "h": 0.044444444444444446
+   },
+   "kind": "point",
+   "before": "s058.jpg",
+   "frames": [],
+   "after": "s058.jpg",
+   "zoom": 1.5,
+   "hold": 3.4,
+   "nav": false
+  },
+  {
+   "chapter": "Editing and history",
+   "caption": "Before you publish lists anything missing, like a picture for when it’s shared.",
+   "target": {
+    "x": 0.818125,
+    "y": 0.15333333333333332,
+    "w": 0.164375,
+    "h": 0.02666666666666667
+   },
+   "kind": "point",
+   "before": "s059.jpg",
+   "frames": [],
+   "after": "s059.jpg",
+   "zoom": 1.5,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Editing and history",
+   "caption": "Check links tests every link on the page.",
+   "target": {
+    "x": 0.929150390625,
+    "y": 0.2677777777777778,
+    "w": 0.052724609375,
+    "h": 0.028888888888888888
+   },
+   "kind": "click",
+   "before": "s060.jpg",
+   "frames": [],
+   "after": "s061.jpg",
+   "zoom": 1.5,
+   "hold": 2.8,
+   "nav": false
+  },
+  {
+   "chapter": "Editing and history",
+   "caption": "History has every saved version. Open one to see it, or put it back.",
+   "target": {
+    "x": 0.933544921875,
+    "y": 0.08333333333333333,
+    "w": 0.061455078125,
+    "h": 0.03111111111111111
+   },
+   "kind": "click",
+   "before": "s062.jpg",
+   "frames": [],
+   "after": "s063.jpg",
+   "zoom": 1.4,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Editing and history",
+   "caption": "Duplicate copies a page, ready to change: handy for this year’s version of last year’s.",
+   "target": {
+    "x": 0.86685546875,
+    "y": 0.685,
+    "w": 0.015009765625,
+    "h": 0.03222222222222222
+   },
+   "kind": "click",
+   "before": "s064.jpg",
+   "frames": [],
+   "after": "s065.jpg",
+   "zoom": 1.6,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Editing and history",
+   "caption": "The bin moves a page to the Bin.",
+   "target": {
+    "x": 0.889365234375,
+    "y": 0.7616666666666667,
+    "w": 0.015009765625,
+    "h": 0.03222222222222222
+   },
+   "kind": "click",
+   "before": "s066.jpg",
+   "frames": [],
+   "after": "s067.jpg",
+   "zoom": 1.6,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "Editing and history",
+   "caption": "Pages in the Bin can be put back, or deleted for good.",
+   "target": {
+    "x": 0.7783203125,
+    "y": 0.31333333333333335,
+    "w": 0.057412109375,
+    "h": 0.042222222222222223
+   },
+   "kind": "click",
+   "before": "s068.jpg",
+   "frames": [],
+   "after": "s069.jpg",
+   "zoom": 1.4,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Redirects",
+   "caption": "Redirects are short addresses like destinytees.uk/give, for flyers, posters and socials.",
+   "target": {
+    "x": 0.03,
+    "y": 0.40444444444444444,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s070.jpg",
+   "frames": [],
+   "after": "s071.jpg",
+   "zoom": 1,
+   "hold": 3.2,
+   "nav": true
+  },
+  {
+   "chapter": "Redirects",
+   "caption": "New redirect.",
+   "target": {
+    "x": 0.786279296875,
+    "y": 0.1688888888888889,
+    "w": 0.088720703125,
+    "h": 0.04888888888888889
+   },
+   "kind": "click",
+   "before": "s072.jpg",
+   "frames": [],
+   "after": "s073.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Redirects",
+   "caption": "A label, to remember what it’s for…",
+   "target": {
+    "x": 0.280625,
+    "y": 0.34555555555555556,
+    "w": 0.284375,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s074.jpg",
+   "frames": [
+    "s075.jpg",
+    "s076.jpg",
+    "s077.jpg"
+   ],
+   "after": "s078.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Redirects",
+   "caption": "…the short address…",
+   "target": {
+    "x": 0.642587890625,
+    "y": 0.3466666666666667,
+    "w": 0.216162109375,
+    "h": 0.044444444444444446
+   },
+   "kind": "type",
+   "before": "s079.jpg",
+   "frames": [
+    "s080.jpg",
+    "s081.jpg",
+    "s082.jpg"
+   ],
+   "after": "s083.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Redirects",
+   "caption": "…and where it goes. It can be anywhere: a page, a ChurchSuite form, a video.",
+   "target": {
+    "x": 0.280625,
+    "y": 0.43444444444444447,
+    "w": 0.57875,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s084.jpg",
+   "frames": [
+    "s085.jpg",
+    "s086.jpg",
+    "s087.jpg"
+   ],
+   "after": "s088.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Redirects",
+   "caption": "Create redirect.",
+   "target": {
+    "x": 0.780791015625,
+    "y": 0.4988888888888889,
+    "w": 0.078583984375,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s089.jpg",
+   "frames": [],
+   "after": "s090.jpg",
+   "zoom": 1.5,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "Redirects",
+   "caption": "Print it once, then change where it goes as often as you like.",
+   "target": {
+    "x": 0.278125,
+    "y": 0.33666666666666667,
+    "w": 0.02732421875,
+    "h": 0.022222222222222223
+   },
+   "kind": "point",
+   "before": "s091.jpg",
+   "frames": [],
+   "after": "s091.jpg",
+   "zoom": 1.5,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Redirects",
+   "caption": "Get a QR code for it, ready for a poster.",
+   "target": {
+    "x": 0.794375,
+    "y": 0.34,
+    "w": 0.02,
+    "h": 0.035555555555555556
+   },
+   "kind": "click",
+   "before": "s092.jpg",
+   "frames": [],
+   "after": "s093.jpg",
+   "zoom": 1.4,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Redirects",
+   "caption": "The switch turns one off for a while. The bin deletes it.",
+   "target": {
+    "x": 0.816875,
+    "y": 0.44421875,
+    "w": 0.0225,
+    "h": 0.022222222222222223
+   },
+   "kind": "click",
+   "before": "s094.jpg",
+   "frames": [],
+   "after": "s095.jpg",
+   "zoom": 1.6,
+   "hold": 2.8,
+   "nav": false
+  },
+  {
+   "chapter": "The status page",
+   "caption": "The status page at status.destinytees.uk tells everyone when something isn’t working.",
+   "target": {
+    "x": 0.03,
+    "y": 0.44666666666666666,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s096.jpg",
+   "frames": [],
+   "after": "s097.jpg",
+   "zoom": 1,
+   "hold": 3.2,
+   "nav": true
+  },
+  {
+   "chapter": "The status page",
+   "caption": "New incident.",
+   "target": {
+    "x": 0.745126953125,
+    "y": 0.1688888888888889,
+    "w": 0.089873046875,
+    "h": 0.04888888888888889
+   },
+   "kind": "click",
+   "before": "s098.jpg",
+   "frames": [],
+   "after": "s099.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The status page",
+   "caption": "Choose the type: an outage, an amber alert when something’s slow, or planned maintenance.",
+   "target": {
+    "x": 0.37517578125,
+    "y": 0.34555555555555556,
+    "w": 0.067705078125,
+    "h": 0.03777777777777778
+   },
+   "kind": "click",
+   "before": "s100.jpg",
+   "frames": [],
+   "after": "s101.jpg",
+   "zoom": 1.6,
+   "hold": 2.8,
+   "nav": false
+  },
+  {
+   "chapter": "The status page",
+   "caption": "Say what’s wrong…",
+   "target": {
+    "x": 0.320625,
+    "y": 0.45666666666666667,
+    "w": 0.49875,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s102.jpg",
+   "frames": [
+    "s103.jpg",
+    "s104.jpg",
+    "s105.jpg"
+   ],
+   "after": "s106.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The status page",
+   "caption": "…tick what’s affected…",
+   "target": {
+    "x": 0.320625,
+    "y": 0.6094444444444445,
+    "w": 0.008125,
+    "h": 0.014444444444444444
+   },
+   "kind": "click",
+   "before": "s107.jpg",
+   "frames": [],
+   "after": "s108.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The status page",
+   "caption": "…and what people will notice, and what you’re doing about it.",
+   "target": {
+    "x": 0.320625,
+    "y": 0.8188888888888889,
+    "w": 0.49875,
+    "h": 0.09111111111111111
+   },
+   "kind": "type",
+   "before": "s109.jpg",
+   "frames": [
+    "s110.jpg",
+    "s111.jpg",
+    "s112.jpg"
+   ],
+   "after": "s113.jpg",
+   "zoom": 1.4,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The status page",
+   "caption": "Post to status page.",
+   "target": {
+    "x": 0.72326171875,
+    "y": 0.9406597222222223,
+    "w": 0.09611328125,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s114.jpg",
+   "frames": [],
+   "after": "s115.jpg",
+   "zoom": 1.5,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "The status page",
+   "caption": "Add updates as the fix goes, and resolve it when it’s working again.",
+   "target": {
+    "x": 0.320625,
+    "y": 0.3095486111111111,
+    "w": 0.18005859375,
+    "h": 0.03111111111111111
+   },
+   "kind": "point",
+   "before": "s116.jpg",
+   "frames": [],
+   "after": "s116.jpg",
+   "zoom": 1.3,
+   "hold": 3.4,
+   "nav": false
+  },
+  {
+   "chapter": "Analytics",
+   "caption": "Analytics shows which short links, QR codes and tiles people actually use.",
+   "target": {
+    "x": 0.03,
+    "y": 0.4888888888888889,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s117.jpg",
+   "frames": [],
+   "after": "s118.jpg",
+   "zoom": 1,
+   "hold": 3.4,
+   "nav": true
+  },
+  {
+   "chapter": "Analytics",
+   "caption": "Clicks over time, the most-used links, and where people came from.",
+   "target": null,
+   "kind": "none",
+   "before": "s119.jpg",
+   "frames": [],
+   "after": "s119.jpg",
+   "zoom": 1,
+   "hold": 3.4,
+   "nav": false
+  },
+  {
+   "chapter": "Analytics",
+   "caption": "In person counts taps on the NFC tiles and visits to the links pages.",
+   "target": {
+    "x": 0.798828125,
+    "y": 0.17666666666666667,
+    "w": 0.0543359375,
+    "h": 0.035555555555555556
+   },
+   "kind": "click",
+   "before": "s120.jpg",
+   "frames": [],
+   "after": "s121.jpg",
+   "zoom": 1.4,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Analytics",
+   "caption": "Choose the time range: today, a week, a month, three months or all time.",
+   "target": {
+    "x": 0.352216796875,
+    "y": 0.25333333333333335,
+    "w": 0.042529296875,
+    "h": 0.03333333333333333
+   },
+   "kind": "click",
+   "before": "s122.jpg",
+   "frames": [],
+   "after": "s123.jpg",
+   "zoom": 1.5,
+   "hold": 2.8,
+   "nav": false
+  },
+  {
+   "chapter": "Analytics",
+   "caption": "Whole site shows visits to the entire website.",
+   "target": {
+    "x": 0.8531640625,
+    "y": 0.17666666666666667,
+    "w": 0.0587109375,
+    "h": 0.035555555555555556
+   },
+   "kind": "point",
+   "before": "s124.jpg",
+   "frames": [],
+   "after": "s124.jpg",
+   "zoom": 1.6,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "DestinyAI",
+   "caption": "DestinyAI can write pages and set things up for you in plain English.",
+   "target": {
+    "x": 0.0075,
+    "y": 0.19333333333333333,
+    "w": 0.124375,
+    "h": 0.04888888888888889
+   },
+   "kind": "click",
+   "before": "s125.jpg",
+   "frames": [],
+   "after": "s126.jpg",
+   "zoom": 1,
+   "hold": 2.8,
+   "nav": true
+  },
+  {
+   "chapter": "DestinyAI",
+   "caption": "Ask for a draft post, a banner or a redirect. It suggests a plan, and nothing changes until you confirm it.",
+   "target": {
+    "x": 0.365625,
+    "y": 0.9233333333333333,
+    "w": 0.37875,
+    "h": 0.044444444444444446
+   },
+   "kind": "point",
+   "before": "s127.jpg",
+   "frames": [],
+   "after": "s127.jpg",
+   "zoom": 1.3,
+   "hold": 4.4,
+   "nav": false
+  }
+ ]
+}

@@ -76,9 +76,11 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
   },
   {
     id: "sermons",
-    title: "Sermon Admin",
-    description: "Uploading a sermon and publishing it to the podcast.",
+    title: "Sermon Admin: sermons on the podcast",
+    description: "Publishing sermon audio to the podcast, linking it to YouTube, series and speakers.",
     role: "sermon_admin",
+    poster: "/img/admin-help/sermons-poster.webp",
+    length: "1:36",
   },
   {
     id: "design",

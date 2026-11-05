@@ -88,7 +88,9 @@ function matcher(params) {
       t = (r) => list.some((x) => eq(r[k], x));
     } else if (op === 'is') t = (r) => eq(r[k], parseValue(val));
     else if (op === 'like' || op === 'ilike') {
-      const re = new RegExp('^' + val.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/%/g, '.*') + '$', op === 'ilike' ? 'i' : '');
+      // PostgREST lets a value be "quoted", with \ escaping; the routes quote search terms.
+      const plain = val.replace(/^"(.*)"$/s, '$1').replace(/\\(.)/g, '$1');
+      const re = new RegExp('^' + plain.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/%/g, '.*') + '$', op === 'ilike' ? 'i' : '');
       t = (r) => re.test(String(r[k] ?? ''));
     } else {
       const v = parseValue(val);

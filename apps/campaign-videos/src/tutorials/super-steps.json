@@ -1,0 +1,573 @@
+{
+ "viewport": {
+  "w": 1600,
+  "h": 900,
+  "dsf": 1.6
+ },
+ "steps": [
+  {
+   "chapter": "Finding your way",
+   "caption": "A Super Admin can open every section. The other videos in Help cover each one.",
+   "target": {
+    "x": 0,
+    "y": 0,
+    "w": 0.14,
+    "h": 3.8430555555555554
+   },
+   "kind": "point",
+   "before": "s001.jpg",
+   "frames": [],
+   "after": "s001.jpg",
+   "zoom": 1.2,
+   "hold": 3.6,
+   "nav": false
+  },
+  {
+   "chapter": "Finding your way",
+   "caption": "HR and Destiny One are hidden until you ask for them, so private details aren’t on screen by accident.",
+   "target": {
+    "x": 0.101865234375,
+    "y": 0.7266666666666667,
+    "w": 0.030009765625,
+    "h": 0.04888888888888889
+   },
+   "kind": "point",
+   "before": "s002.jpg",
+   "frames": [],
+   "after": "s002.jpg",
+   "zoom": 1.6,
+   "hold": 3.6,
+   "nav": false
+  },
+  {
+   "chapter": "Finding your way",
+   "caption": "Show HR pages puts them in the sidebar while you need them.",
+   "target": {
+    "x": 0.101865234375,
+    "y": 0.7266666666666667,
+    "w": 0.030009765625,
+    "h": 0.04888888888888889
+   },
+   "kind": "click",
+   "before": "s003.jpg",
+   "frames": [],
+   "after": "s004.jpg",
+   "zoom": 1.6,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Users and roles",
+   "caption": "Users is who can sign in to the admin, and what each person can reach.",
+   "target": {
+    "x": 0.03,
+    "y": 0.7377777777777778,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s005.jpg",
+   "frames": [],
+   "after": "s006.jpg",
+   "zoom": 1,
+   "hold": 3,
+   "nav": true
+  },
+  {
+   "chapter": "Users and roles",
+   "caption": "Each person shows their roles. Filter by a role to see who has it.",
+   "target": {
+    "x": 0.77048828125,
+    "y": 0.24222222222222223,
+    "w": 0.081259765625,
+    "h": 0.03333333333333333
+   },
+   "kind": "point",
+   "before": "s007.jpg",
+   "frames": [],
+   "after": "s007.jpg",
+   "zoom": 1.4,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Users and roles",
+   "caption": "Add user.",
+   "target": {
+    "x": 0.801005859375,
+    "y": 0.09777777777777778,
+    "w": 0.073994140625,
+    "h": 0.04888888888888889
+   },
+   "kind": "click",
+   "before": "s008.jpg",
+   "frames": [],
+   "after": "s009.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Users and roles",
+   "caption": "Their email…",
+   "target": {
+    "x": 0.355625,
+    "y": 0.16333333333333333,
+    "w": 0.28875,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s010.jpg",
+   "frames": [
+    "s011.jpg",
+    "s012.jpg",
+    "s013.jpg"
+   ],
+   "after": "s014.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Users and roles",
+   "caption": "…a first password they’ll change when they sign in…",
+   "target": {
+    "x": 0.355625,
+    "y": 0.25222222222222224,
+    "w": 0.28875,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s015.jpg",
+   "frames": [
+    "s016.jpg",
+    "s017.jpg",
+    "s018.jpg"
+   ],
+   "after": "s019.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Users and roles",
+   "caption": "…and tick what they look after. Give people only what they need.",
+   "target": {
+    "x": 0.36375,
+    "y": 0.7711111111111111,
+    "w": 0.008125,
+    "h": 0.014444444444444444
+   },
+   "kind": "click",
+   "before": "s020.jpg",
+   "frames": [],
+   "after": "s021.jpg",
+   "zoom": 1.4,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Users and roles",
+   "caption": "Safeguarding Admin is the only role that can read Destiny One messages, and every read is recorded.",
+   "target": {
+    "x": 0.379375,
+    "y": 0.9466666666666667,
+    "w": 0.256875,
+    "h": 0.035555555555555556
+   },
+   "kind": "point",
+   "before": "s022.jpg",
+   "frames": [],
+   "after": "s022.jpg",
+   "zoom": 1.5,
+   "hold": 3.8,
+   "nav": false
+  },
+  {
+   "chapter": "Users and roles",
+   "caption": "Add them. They set up two-factor sign-in the first time they log in.",
+   "target": {
+    "x": 0.605263671875,
+    "y": 0.8722222222222222,
+    "w": 0.039111328125,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s023.jpg",
+   "frames": [],
+   "after": "s024.jpg",
+   "zoom": 1.4,
+   "hold": 2.8,
+   "nav": false
+  },
+  {
+   "chapter": "Users and roles",
+   "caption": "Edit changes someone’s roles.",
+   "target": {
+    "x": 0.801845703125,
+    "y": 0.4311111111111111,
+    "w": 0.015009765625,
+    "h": 0.03222222222222222
+   },
+   "kind": "click",
+   "before": "s025.jpg",
+   "frames": [],
+   "after": "s026.jpg",
+   "zoom": 1.6,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Users and roles",
+   "caption": "Reset two-factor sign-in is for someone who’s lost their phone and their backup codes. They set it up again next time.",
+   "target": {
+    "x": 0.82435546875,
+    "y": 0.4311111111111111,
+    "w": 0.015009765625,
+    "h": 0.03222222222222222
+   },
+   "kind": "point",
+   "before": "s027.jpg",
+   "frames": [],
+   "after": "s027.jpg",
+   "zoom": 1.7,
+   "hold": 4,
+   "nav": false
+  },
+  {
+   "chapter": "Users and roles",
+   "caption": "Remove takes away their access to the admin.",
+   "target": {
+    "x": 0.846865234375,
+    "y": 0.4311111111111111,
+    "w": 0.015009765625,
+    "h": 0.03222222222222222
+   },
+   "kind": "point",
+   "before": "s028.jpg",
+   "frames": [],
+   "after": "s028.jpg",
+   "zoom": 1.7,
+   "hold": 2.8,
+   "nav": false
+  },
+  {
+   "chapter": "The audit log",
+   "caption": "The audit log records everything anyone does in the admin.",
+   "target": {
+    "x": 0.03,
+    "y": 0.7922222222222223,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s029.jpg",
+   "frames": [],
+   "after": "s030.jpg",
+   "zoom": 1,
+   "hold": 3,
+   "nav": true
+  },
+  {
+   "chapter": "The audit log",
+   "caption": "Who did what, and when, newest first. Open any entry for the detail.",
+   "target": {
+    "x": 0.250625,
+    "y": 0.6777777777777778,
+    "w": 0.596357421875,
+    "h": 0.022222222222222223
+   },
+   "kind": "point",
+   "before": "s031.jpg",
+   "frames": [],
+   "after": "s031.jpg",
+   "zoom": 1.3,
+   "hold": 3.4,
+   "nav": false
+  },
+  {
+   "chapter": "The audit log",
+   "caption": "Narrow it down by time…",
+   "target": {
+    "x": 0.472705078125,
+    "y": 0.39555555555555555,
+    "w": 0.038232421875,
+    "h": 0.03333333333333333
+   },
+   "kind": "click",
+   "before": "s032.jpg",
+   "frames": [],
+   "after": "s033.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The audit log",
+   "caption": "…by area…",
+   "target": {
+    "x": 0.36314453125,
+    "y": 0.4488888888888889,
+    "w": 0.044287109375,
+    "h": 0.03333333333333333
+   },
+   "kind": "click",
+   "before": "s034.jpg",
+   "frames": [],
+   "after": "s035.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The audit log",
+   "caption": "…or search for something.",
+   "target": {
+    "x": 0.225,
+    "y": 0.3888888888888889,
+    "w": 0.2,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s036.jpg",
+   "frames": [
+    "s037.jpg",
+    "s038.jpg",
+    "s039.jpg"
+   ],
+   "after": "s040.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The audit log",
+   "caption": "The Ask tab answers questions about the log in plain English, like who added the last product.",
+   "target": {
+    "x": 0.866826171875,
+    "y": 0.24555555555555555,
+    "w": 0.035048828125,
+    "h": 0.04666666666666667
+   },
+   "kind": "point",
+   "before": "s041.jpg",
+   "frames": [],
+   "after": "s041.jpg",
+   "zoom": 1.6,
+   "hold": 3.6,
+   "nav": false
+  },
+  {
+   "chapter": "The audit log",
+   "caption": "Weekly reports sums up each week.",
+   "target": {
+    "x": 0.835244140625,
+    "y": 0.10555555555555556,
+    "w": 0.076630859375,
+    "h": 0.035555555555555556
+   },
+   "kind": "click",
+   "before": "s042.jpg",
+   "frames": [],
+   "after": "s043.jpg",
+   "zoom": 1.4,
+   "hold": 2.8,
+   "nav": false
+  },
+  {
+   "chapter": "The sitewide banner",
+   "caption": "Banner is the strip across the top of every page. Only a Super Admin can change it.",
+   "target": {
+    "x": 0.03,
+    "y": 0.3333333333333333,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s044.jpg",
+   "frames": [],
+   "after": "s045.jpg",
+   "zoom": 1,
+   "hold": 2.8,
+   "nav": true
+  },
+  {
+   "chapter": "The sitewide banner",
+   "caption": "Choose the kind: an announcement, a notice or an alert.",
+   "target": {
+    "x": 0.25125,
+    "y": 0.4022222222222222,
+    "w": 0.008125,
+    "h": 0.014444444444444444
+   },
+   "kind": "point",
+   "before": "s046.jpg",
+   "frames": [],
+   "after": "s046.jpg",
+   "zoom": 1.4,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "The sitewide banner",
+   "caption": "Write the message…",
+   "target": {
+    "x": 0.240625,
+    "y": 0.7138888888888889,
+    "w": 0.38875,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s047.jpg",
+   "frames": [
+    "s048.jpg",
+    "s049.jpg",
+    "s050.jpg"
+   ],
+   "after": "s051.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The sitewide banner",
+   "caption": "…add a link…",
+   "target": {
+    "x": 0.240625,
+    "y": 0.8072222222222222,
+    "w": 0.189375,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s052.jpg",
+   "frames": [
+    "s053.jpg",
+    "s054.jpg",
+    "s055.jpg"
+   ],
+   "after": "s056.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The sitewide banner",
+   "caption": "…and, if you like, when it shows and hides on its own.",
+   "target": {
+    "x": 0.44,
+    "y": 0.9238888888888889,
+    "w": 0.189375,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s057.jpg",
+   "frames": [],
+   "after": "s058.jpg",
+   "zoom": 1.5,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "The sitewide banner",
+   "caption": "Save changes.",
+   "target": {
+    "x": 0.56044921875,
+    "y": 0.4772222222222222,
+    "w": 0.08455078125,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s059.jpg",
+   "frames": [],
+   "after": "s060.jpg",
+   "zoom": 1.6,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "Cache and previews",
+   "caption": "Clear Cache: if new events or changes aren’t showing on the website yet, this rebuilds those pages now.",
+   "target": {
+    "x": 0.03,
+    "y": 0.93,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s061.jpg",
+   "frames": [],
+   "after": "s062.jpg",
+   "zoom": 1,
+   "hold": 3.4,
+   "nav": true
+  },
+  {
+   "chapter": "Cache and previews",
+   "caption": "Clear Cache.",
+   "target": {
+    "x": 0.240625,
+    "y": 0.3788888888888889,
+    "w": 0.097431640625,
+    "h": 0.04888888888888889
+   },
+   "kind": "click",
+   "before": "s063.jpg",
+   "frames": [],
+   "after": "s064.jpg",
+   "zoom": 1.6,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "Cache and previews",
+   "caption": "Onboarding shows the admin as each role sees it.",
+   "target": {
+    "x": 0.03,
+    "y": 0.7077777777777777,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s065.jpg",
+   "frames": [],
+   "after": "s066.jpg",
+   "zoom": 1,
+   "hold": 2.8,
+   "nav": true
+  },
+  {
+   "chapter": "Cache and previews",
+   "caption": "Preview as a role to see exactly what they see.",
+   "target": {
+    "x": 0.68470703125,
+    "y": 0.5033333333333333,
+    "w": 0.1058984375,
+    "h": 0.051111111111111114
+   },
+   "kind": "click",
+   "before": "s067.jpg",
+   "frames": [],
+   "after": "s068.jpg",
+   "zoom": 1.5,
+   "hold": 3,
+   "nav": true
+  },
+  {
+   "chapter": "Cache and previews",
+   "caption": "The sidebar narrows to that role. It’s only a preview: you’re still a Super Admin.",
+   "target": {
+    "x": 0,
+    "y": -0.07111111111111111,
+    "w": 0.14,
+    "h": 1.244548611111111
+   },
+   "kind": "point",
+   "before": "s069.jpg",
+   "frames": [],
+   "after": "s069.jpg",
+   "zoom": 1.2,
+   "hold": 3.6,
+   "nav": false
+  }
+ ]
+}

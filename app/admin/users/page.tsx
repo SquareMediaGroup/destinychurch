@@ -106,6 +106,26 @@ export default function AdminUsersPage() {
     }
   }
 
+  // For someone who has lost both their phone and their backup codes. They set
+  // two-factor up again the next time they open the admin, and are emailed.
+  async function handleResetTwoFactor(u: AdminUser) {
+    if (
+      !(await confirm({
+        title: "Reset two-factor sign-in",
+        message: `Reset two-factor sign-in for ${u.email}? Their authenticator app and backup codes stop working, and they set up new ones the next time they sign in. Only do this once you're sure it's really them asking.`,
+        confirmLabel: "Reset two-factor",
+        tone: "danger",
+      }))
+    )
+      return;
+    setError("");
+    const res = await fetch(`/api/admin/users/${u.auth_user_id}/two-factor`, { method: "DELETE" });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setError(d.error ?? "Something went wrong");
+    }
+  }
+
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
       <PageHeader
@@ -211,6 +231,14 @@ export default function AdminUsersPage() {
                             aria-label={`Edit ${u.email}`}
                           >
                             <span className="material-symbols-rounded text-xl" aria-hidden="true">edit</span>
+                          </button>
+                          <button
+                            onClick={() => handleResetTwoFactor(u)}
+                            className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
+                            aria-label={`Reset two-factor sign-in for ${u.email}`}
+                            title="Reset two-factor sign-in"
+                          >
+                            <span className="material-symbols-rounded text-xl" aria-hidden="true">lock_reset</span>
                           </button>
                           <button
                             onClick={() => handleDelete(u)}

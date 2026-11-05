@@ -255,7 +255,7 @@ export default function ChurchHeader() {
     pathname.startsWith("/nfc") ||
     isLinksPagePath(pathname) || isSongRequestsPath(pathname) || isTalentShowPath(pathname) ||
     pathname.startsWith("/portal") ||
-    pathname === "/login"
+    pathname.startsWith("/login")
   )
     return null;
 

@@ -19,6 +19,7 @@ export default function FloatingSmartSearch({
   // /portal is the staff self-service area: its own minimal shell, no site nav.
   if (
     pathname.startsWith("/admin") ||
+    pathname.startsWith("/login") ||
     pathname.startsWith("/training") ||
     pathname.startsWith("/nfc") ||
     isLinksPagePath(pathname) || isSongRequestsPath(pathname) || isTalentShowPath(pathname) ||

@@ -88,9 +88,12 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
   },
   {
     id: "hr",
-    title: "HR Admin",
-    description: "Staff, leave requests and checklists.",
+    title: "HR Admin: looking after the team",
+    description:
+      "The staff directory and portal logins, approving leave, reviews, documents, joining and leaving checklists, jobs and applications.",
     role: "hr_admin",
+    poster: "/img/admin-help/hr-poster.webp",
+    length: "4:15",
   },
   {
     id: "site",

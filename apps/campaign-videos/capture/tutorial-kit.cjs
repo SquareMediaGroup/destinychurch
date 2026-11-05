@@ -12,7 +12,8 @@
 //    commit that), on port 80:
 //    NEXT_PUBLIC_SUPABASE_URL=http://localhost:54399 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=demo
 //    SUPABASE_SECRET_KEY=demo npx next dev -p 80
-//    Leave every other key unset: with no Stripe, email, Buzzsprout or Playbook keys, nothing can
+//    RESEND_API_KEY=re_filming RESEND_BASE_URL=http://localhost:54399/resend (emails stop at the mock)
+//    Leave every other key unset: with no Stripe, Buzzsprout or Playbook keys, nothing can
 //    reach a real outside service. Where a step needs one, the script answers that request in the
 //    browser instead (t.ctx.route).
 // 3. ROLES_FILE=<same file> node capture/<id>-tutorial.cjs

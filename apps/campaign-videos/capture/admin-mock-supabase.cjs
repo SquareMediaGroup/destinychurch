@@ -178,6 +178,8 @@ http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') return send(204);
   const body = await readBody(req);
 
+  // Email: the filming copy's RESEND_BASE_URL points here, so a "sent" email stops at this server.
+  if (url.pathname.startsWith('/resend/')) return send(200, { id: crypto.randomUUID() });
   if (url.pathname === '/auth/v1/user') return send(200, user);
   // Sign-in accounts (HR checks which staff have a portal login): just the invented admin.
   if (url.pathname === '/auth/v1/admin/users' && req.method === 'GET') return send(200, { users: [user], aud: 'authenticated' });

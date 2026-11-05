@@ -91,9 +91,12 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
   },
   {
     id: "site",
-    title: "Site Admin",
-    description: "Posts, pages and redirects across the website.",
+    title: "Site Admin: pages, links and the status page",
+    description:
+      "Writing, scheduling and publishing pages, history and the Bin, short links and QR codes, the status page and analytics.",
     role: "site_admin",
+    poster: "/img/admin-help/site-poster.webp",
+    length: "5:49",
   },
   {
     id: "super",

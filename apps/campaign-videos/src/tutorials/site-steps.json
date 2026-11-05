@@ -104,14 +104,14 @@
   },
   {
    "chapter": "Posts and pages",
-   "caption": "Clear the filter, and search by title or address.",
+   "caption": "Or search by title or address.",
    "target": {
     "x": 0.2225,
     "y": 0.25333333333333335,
     "w": 0.2,
     "h": 0.04666666666666667
    },
-   "kind": "click",
+   "kind": "type",
    "before": "s010.jpg",
    "frames": [
     "s011.jpg",

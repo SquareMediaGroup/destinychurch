@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { clearPromoteFromUrl, readPromote } from "@/lib/promote";
+import ScheduleFields from "@/components/admin/ScheduleFields";
 
 interface Popup {
   active: boolean;
@@ -13,6 +14,8 @@ interface Popup {
   image_url: string | null;
   image_path: string | null;
   show_once: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
 }
 
 const EMPTY: Popup = {
@@ -24,6 +27,8 @@ const EMPTY: Popup = {
   image_url: null,
   image_path: null,
   show_once: true,
+  starts_at: null,
+  ends_at: null,
 };
 
 const MAX_BYTES = 50 * 1024 * 1024;
@@ -36,6 +41,8 @@ export default function AdminPopupPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [promotedFrom, setPromotedFrom] = useState<string | null>(null);
+  // Whether the database has the window columns yet; see the banner page.
+  const [scheduling, setScheduling] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -53,7 +60,10 @@ export default function AdminPopupPage() {
           image_url: p.image_url ?? null,
           image_path: p.image_path ?? null,
           show_once: p.show_once ?? true,
+          starts_at: p.starts_at ?? null,
+          ends_at: p.ends_at ?? null,
         };
+        setScheduling("starts_at" in p);
         // "Promote" from a post's Share panel: its details over the saved
         // settings, unsaved until Save.
         const promo = readPromote(window.location.search);
@@ -125,7 +135,11 @@ export default function AdminPopupPage() {
     const res = await fetch("/api/admin/popup", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(popup),
+      body: JSON.stringify(
+        scheduling || popup.starts_at || popup.ends_at
+          ? popup
+          : { ...popup, starts_at: undefined, ends_at: undefined },
+      ),
     });
     if (res.ok) {
       setSaved(true);
@@ -259,6 +273,15 @@ export default function AdminPopupPage() {
                   />
                 </button>
               </div>
+
+              <div className="h-px bg-black/5" />
+
+              <ScheduleFields
+                noun="the popup"
+                startsAt={popup.starts_at}
+                endsAt={popup.ends_at}
+                onChange={(w) => setPopup((p) => ({ ...p, ...w }))}
+              />
 
               <div className="h-px bg-black/5" />
 

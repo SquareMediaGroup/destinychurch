@@ -7,6 +7,7 @@ import {
   isCourseEventType,
 } from "@/lib/courseEvents";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
+import { parseWindow } from "@/lib/schedule";
 
 /**
  * Event Admins reach this route for the course pages' banner toggles
@@ -89,6 +90,10 @@ export async function PUT(request: Request) {
   const resolvedType = type ?? "announcement";
   if (!(await canEditBannerType(resolvedType))) return FORBIDDEN();
   const isAlphaType = isCourseEventType(resolvedType);
+  // Optional show-from / show-until. Only sent keys are written, so a save
+  // from a page that doesn't send them leaves an existing window alone.
+  const schedule = parseWindow(body);
+  if (!schedule.ok) return NextResponse.json({ error: schedule.error }, { status: 400 });
 
   const supabase = createServiceClient();
 
@@ -109,6 +114,7 @@ export async function PUT(request: Request) {
     type: resolvedType,
     link: link || null,
     link_text: link_text || null,
+    ...schedule.fields,
   };
 
   let error;

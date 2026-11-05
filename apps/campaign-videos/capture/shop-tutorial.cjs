@@ -2,123 +2,15 @@
 // Admin can do, against the pretend shop in capture/admin-mock-supabase.cjs, and writes a
 // screenshot before and after every action plus where the cursor goes.
 //
-// 1. SEED=capture/shop-seed.cjs ROLES_FILE=<file> node capture/admin-mock-supabase.cjs
-//    (restart it before each run: the run creates products, so a second run starts from a
-//    different shop)
-// 2. In a website checkout, with next.config.ts images allowing http://localhost:54399 and
-//    `dangerouslyAllowLocalIP: true` (local-only, never commit that):
-//    NEXT_PUBLIC_SUPABASE_URL=http://localhost:54399 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=demo
-//    SUPABASE_SECRET_KEY=demo npx next dev -p 3100
-// 3. ROLES_FILE=<same file> node capture/shop-tutorial.cjs
-//    → public/tutorial/shop/*.jpg (gitignored) and src/tutorials/shop-steps.json (committed)
-//
-// The admin is "Sam Taylor", a Store Admin. The session is a stand-in that says it has passed
-// two-factor sign-in (aal2), which is all middleware reads from the token.
-const { chromium } = require('playwright');
-const fs = require('fs');
+// Seed: capture/shop-seed.cjs. How to run it: the top of capture/tutorial-kit.cjs.
 const path = require('path');
+const { film, PHOTOS } = require('./tutorial-kit.cjs');
 
-const BASE = process.env.BASE || 'http://localhost:3100';
-const OUT = path.join(__dirname, '..', 'public', 'tutorial', 'shop');
-const MANIFEST = path.join(__dirname, '..', 'src', 'tutorials', 'shop-steps.json');
-const PHOTOS = path.join(__dirname, 'shop-photos');
-const VW = 1600, VH = 900, DSF = 1.6;
-
-const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
-const exp = Math.floor(Date.now() / 1000) + 86400;
-const jwt = `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ sub: 'u-admin', exp, aal: 'aal2', role: 'authenticated' })}.sig`;
-const session = { access_token: jwt, refresh_token: 'r', expires_in: 86400, expires_at: exp, token_type: 'bearer', user: { id: 'u-admin', email: 'sam.taylor@example.com' } };
-
-const steps = [];
-let n = 0;
-let chapter = '';
-let page;
-
-async function settle(ms = 900) {
-  await page.waitForLoadState('networkidle').catch(() => {});
-  await page.waitForTimeout(ms);
-}
-async function snap() {
-  const file = `s${String(++n).padStart(3, '0')}.jpg`;
-  await page.screenshot({ path: path.join(OUT, file), type: 'jpeg', quality: 86 });
-  return file;
-}
-async function boxOf(loc) {
-  await loc.scrollIntoViewIfNeeded().catch(() => {});
-  await page.waitForTimeout(350);
-  const b = await loc.boundingBox();
-  return b ? { x: b.x / VW, y: b.y / VH, w: b.width / VW, h: b.height / VH } : null;
-}
-
-/**
- * One step: point at `loc` (optional), screenshot, do `act`, screenshot again.
- * `zoom` punches the camera in on the target; `hold` is seconds to keep the result on screen.
- */
-async function step(caption, loc, act, { zoom = 1, hold = 2.2, kind = 'click', typing } = {}) {
-  const target = loc ? await boxOf(loc) : null;
-  const before = await snap();
-  const fromUrl = page.url();
-  const frames = [];
-  if (typing) {
-    // Type in a few bites so the text visibly appears.
-    const { text, fill = true } = typing;
-    const cuts = [Math.ceil(text.length / 3), Math.ceil((2 * text.length) / 3), text.length];
-    if (!fill) await loc.click();
-    let prev = 0;
-    for (const c of cuts) {
-      if (fill) await loc.fill(text.slice(0, c));
-      else await page.keyboard.type(text.slice(prev, c), { delay: 4 });
-      prev = c;
-      await page.waitForTimeout(150);
-      frames.push(await snap());
-    }
-  }
-  if (act) await act(loc);
-  await settle();
-  const after = await snap();
-  // A click that opened another page: the camera pulls back out to show it.
-  const nav = page.url().split('?')[0] !== fromUrl.split('?')[0];
-  steps.push({ chapter, caption, target, kind, before, frames, after, zoom, hold, nav });
-  console.log(`${n} ${chapter} · ${caption}`);
-}
-/** A step with nothing to click: the screen as it is, with a caption (optionally pointing at something). */
-async function look(caption, loc, opts = {}) {
-  const target = loc ? await boxOf(loc) : null;
-  const shot = await snap();
-  steps.push({ chapter, caption, target, kind: loc ? 'point' : 'none', before: shot, frames: [], after: shot, zoom: opts.zoom ?? 1, hold: opts.hold ?? 3, nav: false });
-  console.log(`${n} ${chapter} · ${caption}`);
-}
-const go = async (p) => { await page.goto(BASE + p, { waitUntil: 'networkidle', timeout: 180000 }).catch(() => {}); await settle(1200); };
-const btn = (name, exact = false) => page.getByRole('button', { name, exact }).first();
-const link = (name, exact = false) => page.getByRole('link', { name, exact }).first();
-const sidebar = () => page.locator('aside').first();
-const variantsAdd = () => page.locator('section').filter({ hasText: 'What kind of product is this?' }).getByRole('button', { name: 'Add', exact: true }).first();
-
-(async () => {
-  fs.rmSync(OUT, { recursive: true, force: true });
-  fs.mkdirSync(OUT, { recursive: true });
-  fs.mkdirSync(path.dirname(MANIFEST), { recursive: true });
-  if (process.env.ROLES_FILE) fs.writeFileSync(process.env.ROLES_FILE, 'store_admin');
-
-  const b = await chromium.launch();
-  const ctx = await b.newContext({ viewport: { width: VW, height: VH }, deviceScaleFactor: DSF, acceptDownloads: true });
-  await ctx.addCookies([{ name: 'sb-localhost-auth-token', value: 'base64-' + Buffer.from(JSON.stringify(session)).toString('base64url'), url: BASE }]);
-  await ctx.addInitScript(() => {
-    localStorage.setItem('destiny-cookie-consent', JSON.stringify({ essential: true, media: true, analytics: false, updatedAt: Date.now() }));
-    localStorage.setItem('dc-admin-avatar-prompt-dismissed:u-admin', '1');
-    document.addEventListener('DOMContentLoaded', () => {
-      const s = document.createElement('style');
-      // The dev-only Next.js badge, and a caret that would blink between frames.
-      s.textContent = 'nextjs-portal{display:none!important} *{caret-color:transparent!important}';
-      document.head.appendChild(s);
-    });
-  });
-  await ctx.route('**/api/admin/notifications**', (r) => r.fulfill({ json: [] }));
-  page = await ctx.newPage();
-  page.on('pageerror', (e) => console.log('PAGE ERROR', e.message.slice(0, 160)));
+film({ id: 'shop', roles: 'store_admin' }, async ({ page, chapter, step, look, go, settle, btn, link, sidebar }) => {
+  const variantsAdd = () => page.locator('section').filter({ hasText: 'What kind of product is this?' }).getByRole('button', { name: 'Add', exact: true }).first();
 
   // ── 1. Finding your way ──────────────────────────────────────────────────
-  chapter = 'Finding your way';
+  chapter('Finding your way');
   await go('/admin');
   await look('Signed in as a Store Admin, the dashboard shows the shop at a glance.', null, { hold: 3.2 });
   await look('Paid orders waiting to be handed over are listed first, so nothing gets missed.', page.getByText(/paid order/i).first(), { zoom: 1.5 });
@@ -126,7 +18,7 @@ const variantsAdd = () => page.locator('section').filter({ hasText: 'What kind o
   await step('Open Store to see Products, Orders and Store Hero.', sidebar().getByText('Store', { exact: true }).first(), (l) => l.click(), { zoom: 1.6 });
 
   // ── 2. The product list ──────────────────────────────────────────────────
-  chapter = 'Your products';
+  chapter('Your products');
   await step('Products lists everything in the shop.', sidebar().getByRole('link', { name: 'Products', exact: true }), (l) => l.click());
   await look('Each row shows the price, how many variants, the stock left and the category.', page.locator('main ul li').first(), { zoom: 1.5 });
   await look('Badges tell you what’s live. Draft products are hidden from the shop.', page.getByText('Draft', { exact: true }).last(), { zoom: 1.7 });
@@ -140,7 +32,7 @@ const variantsAdd = () => page.locator('section').filter({ hasText: 'What kind o
   await step('All brings the full list back.', btn(/^All/), async (l) => { await btn(/^Sold out/).click(); await l.click(); }, { zoom: 1.4, hold: 1.6 });
 
   // ── 3. Add a product ─────────────────────────────────────────────────────
-  chapter = 'Add a product';
+  chapter('Add a product');
   await step('To add something new, choose New product.', link('New product'), (l) => l.click(), { zoom: 1.5 });
   const nameInput = page.getByPlaceholder('e.g. Destiny Logo Tee');
   await step('Give it a name to start.', nameInput, null, { zoom: 1.5, kind: 'type', typing: { text: 'Transformation Hoodie' } });
@@ -157,7 +49,7 @@ const variantsAdd = () => page.locator('section').filter({ hasText: 'What kind o
   await step('Sort order sets where it sits on the shop. Lower numbers come first.', sortInput, null, { zoom: 1.7, kind: 'type', typing: { text: '2' } });
 
   // ── 4. Photos ────────────────────────────────────────────────────────────
-  chapter = 'Photos';
+  chapter('Photos');
   const addPhoto = page.locator('section').filter({ hasText: 'First photo is the main image' }).getByRole('button', { name: 'Add', exact: true });
   const fileInput = page.locator('input[type="file"]').first();
   await step('Add photos. Pick one or several at once. They’re turned into small, fast WebP files for you.', addPhoto, async () => {
@@ -169,7 +61,7 @@ const variantsAdd = () => page.locator('section').filter({ hasText: 'What kind o
   await step('Wrong photo? Hover it and press the cross to remove it.', second.getByLabel('Remove image'), async (l) => { await second.hover(); await page.waitForTimeout(200); await l.click(); }, { zoom: 1.6 });
 
   // ── 5. Variants and stock ────────────────────────────────────────────────
-  chapter = 'Variants and stock';
+  chapter('Variants and stock');
   await look('Variants are the versions people choose between: colours and sizes, or formats for books.', page.getByText('What kind of product is this?'), { zoom: 1.3, hold: 3.2 });
   await step('Who is it for? Kids switches to age-based sizes…', btn('Kids', true), (l) => l.click(), { zoom: 1.5 });
   await step('…this one is Unisex, adult sizes XS to 3XL.', btn('Unisex', true), (l) => l.click(), { zoom: 1.5, hold: 1.6 });
@@ -200,7 +92,7 @@ const variantsAdd = () => page.locator('section').filter({ hasText: 'What kind o
   await look('The badge counts the variants this product will sell.', page.getByText(/\d+ variants/).first(), { zoom: 1.8 });
 
   // ── 6. Publish and save ──────────────────────────────────────────────────
-  chapter = 'Publish and save';
+  chapter('Publish and save');
   await step('Turn on Published to put it on the shop.', btn('Published', true), (l) => l.click(), { zoom: 1.8 });
   await step('Featured puts it in the spotlight at the top of the shop.', btn('Featured', true), (l) => l.click(), { zoom: 1.8 });
   await step('Nothing is kept until you press Save.', btn('Save', true), (l) => l.click(), { zoom: 1.6, hold: 2.6 });
@@ -212,7 +104,7 @@ const variantsAdd = () => page.locator('section').filter({ hasText: 'What kind o
   await step('Sizes that are sold out, or that you don’t make, are crossed out, so nobody can order them.', page.getByRole('button', { name: 'Stone', exact: true }), (l) => l.click(), { zoom: 1.7, hold: 3.2 });
 
   // ── 7. Books and other products ──────────────────────────────────────────
-  chapter = 'Books and other products';
+  chapter('Books and other products');
   await go('/admin/store');
   await step('Books work the same way, with formats instead of sizes.', page.getByRole('link', { name: /The Life Recovery Bible/ }), (l) => l.click(), { zoom: 1.4 });
   await page.locator('section').filter({ hasText: 'Variants' }).first().scrollIntoViewIfNeeded();
@@ -230,7 +122,7 @@ const variantsAdd = () => page.locator('section').filter({ hasText: 'What kind o
   await btn('Books', true).click(); await settle(400);
 
   // ── 8. Many products at once ─────────────────────────────────────────────
-  chapter = 'Many products at once';
+  chapter('Many products at once');
   await go('/admin/store');
   await step('Tick products to work on several at once.', page.getByLabel('Select Deep Strokes, Wide Reach Tee'), (l) => l.check(), { zoom: 1.6 });
   await look('Publish or unpublish them together, export them as a spreadsheet, or delete them.', page.getByText(/1 product selected|selected/).first(), { zoom: 1.4, hold: 3.2 });
@@ -244,7 +136,7 @@ const variantsAdd = () => page.locator('section').filter({ hasText: 'What kind o
   await step('Here we’ll keep it. Cancel.', page.getByRole('dialog').getByRole('button', { name: 'Cancel' }), async (l) => { await l.click(); await page.waitForTimeout(300); await btn('Clear', true).click().catch(() => {}); }, { zoom: 1.4, hold: 1.6 });
 
   // ── 9. Orders ────────────────────────────────────────────────────────────
-  chapter = 'Orders';
+  chapter('Orders');
   await step('Orders is where purchases arrive.', sidebar().getByRole('link', { name: 'Orders', exact: true }), (l) => l.click());
   await look('Each order shows its number, the customer, the date, the total and its status.', page.locator('main ul li').first(), { zoom: 1.4, hold: 3.2 });
   await look('Paid means the money has arrived and it’s waiting for collection at church.', page.getByText('Paid', { exact: true }).last(), { zoom: 1.6 });
@@ -263,7 +155,7 @@ const variantsAdd = () => page.locator('section').filter({ hasText: 'What kind o
   await step('Export all downloads the orders in view as a spreadsheet, for the finance team.', btn(/Export/), async (l) => { await btn(/^All/).click(); await settle(300); await l.click(); }, { zoom: 1.5, hold: 2.6 });
 
   // ── 10. The shop's hero ──────────────────────────────────────────────────
-  chapter = 'Store Hero';
+  chapter('Store Hero');
   await step('Store Hero is the big banner at the top of the shop.', sidebar().getByRole('link', { name: 'Store Hero', exact: true }), (l) => l.click(), { hold: 2.6 });
   await look('Two or more active slides rotate on their own.', page.getByText(/Two or more active slides/), { zoom: 1.5, hold: 3 });
   await step('Add slide makes a new one at the bottom.', btn('Add slide'), (l) => l.click(), { zoom: 1.5 });
@@ -282,7 +174,4 @@ const variantsAdd = () => page.locator('section').filter({ hasText: 'What kind o
   await look('The switch hides a slide without deleting it. The bin deletes it for good.', page.getByLabel('Delete slide').first(), { zoom: 1.7, hold: 3.4 });
   await step('And it’s live on the shop.', null, async () => { await go('/shop'); }, { hold: 3.6 });
 
-  fs.writeFileSync(MANIFEST, JSON.stringify({ viewport: { w: VW, h: VH, dsf: DSF }, steps }, null, 1));
-  console.log(`\n${steps.length} steps, ${n} frames → ${OUT}`);
-  await b.close();
-})();
+});

@@ -7,7 +7,6 @@
 
 import Link from "next/link";
 import { PageHeader, PageLoading } from "@/components/admin/AdminUI";
-import VideoPlayer from "@/components/ui/VideoPlayer";
 import MediaEmbed from "@/components/missions/MediaEmbed";
 import { useAdminSession } from "@/lib/useAdminSession";
 import { ROLE_VIDEOS, WELCOME_VIDEO, isPublished, type AdminHelpVideo } from "@/lib/adminHelpVideos";
@@ -25,14 +24,16 @@ function Player({ video }: { video: AdminHelpVideo }) {
       />
     );
   }
-  if (video.src) {
+  if (video.poster) {
+    // Made, not on YouTube yet: the still, marked as coming.
     return (
-      <VideoPlayer
-        src={video.src}
-        poster={video.poster}
-        label={video.title}
-        className="aspect-video w-full overflow-hidden rounded-2xl"
-      />
+      <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-[#f5f7fa]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={video.poster} alt="" className="h-full w-full object-cover opacity-60" />
+        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white px-4 py-2 text-sm font-bold text-destiny-grey shadow-sm">
+          Video coming soon
+        </span>
+      </div>
     );
   }
   return null;
@@ -79,10 +80,8 @@ export default function AdminHelpPage() {
           <ul className="mt-3 grid gap-3 sm:grid-cols-2">
             {mine.map((v) => (
               <li key={v.id} className={CARD}>
-                {isPublished(v) ? (
-                  <Player video={v} />
-                ) : null}
-                <div className={isPublished(v) ? "mt-4" : ""}>
+                {isPublished(v) || v.poster ? <Player video={v} /> : null}
+                <div className={isPublished(v) || v.poster ? "mt-4" : ""}>
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="font-black text-destiny-grey dark:text-white">{v.title}</h3>
                     {!isPublished(v) && (

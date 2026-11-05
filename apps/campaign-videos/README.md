@@ -11,8 +11,9 @@ then "Oh, and one more thing" and Destiny One. They share everything except the 
 | `AdminWelcome` | Admin help series, video 1: "Welcome to Destiny Admin", every role in a line, test mode, the Help page. For YouTube and /admin/help | 1:21 |
 | `ShopTutorial` | Admin help series, video 2: everything a Store Admin can do, filmed on the real /admin against a pretend shop. For YouTube and /admin/help | 7:25 |
 
-Finished renders are kept in `exports/` (the 4K `DownloadToday`, `Destiny-One-Film.mp4` and `Admin-Welcome.mp4`) so they can be
-downloaded from GitHub; `out/` stays ignored for working renders.
+Finished renders are kept in `exports/` (the 4K `DownloadToday` and `Destiny-One-Film.mp4`) so they can be
+downloaded from GitHub; `out/` stays ignored for working renders. The admin help videos are not committed (about
+60 MB each, for YouTube): render them to `out/` and hand the file over.
 
 ## Commands
 
@@ -66,8 +67,8 @@ before/after pairs for sliders in `stills/before-after/`. See `stills/README.md`
   numbers, no real account or data. `capture/admin-mock-supabase.cjs` stands in for Supabase just enough for
   middleware to let a session through, and `capture/admin.cjs` answers the pages' `/api/admin/*` calls and
   switches roles between shots (steps at the top of each file). `AdminWelcome` uses the same music and credit
-  as `DestinyOneFilm`; put the credit in the YouTube description. Its web copy is
-  `public/img/admin-help/welcome.mp4` (same ffmpeg command as above) with `welcome-poster.webp`.
+  as `DestinyOneFilm`; put the credit in the YouTube description. Its poster is
+  `public/img/admin-help/welcome-poster.webp`.
 - **The Store Admin tutorial** (`ShopTutorial`) is filmed, not drawn. `capture/shop-tutorial.cjs` drives the real
   store pages through every action (search and filters, a new product with photos, colours, sizes and stock,
   publishing, a book with a custom format, bulk actions, orders from paid to fulfilled, the shop hero) and saves
@@ -77,7 +78,11 @@ before/after pairs for sliders in `stills/before-after/`. See `stills/README.md`
   customers and orders). Steps are at the top of `shop-tutorial.cjs`. The frames land in `public/tutorial/shop/`
   (gitignored, about 170 JPEGs) and the step list in `src/tutorials/shop-steps.json` (committed), so re-run the
   capture before rendering on a fresh checkout. Restart the mock before each run: a run changes the shop.
-  Web copy: `public/img/admin-help/shop.mp4` with `shop-poster.webp`.
+  Poster: `public/img/admin-help/shop-poster.webp`.
+- **Making another role's tutorial**: write `capture/<id>-tutorial.cjs` with `film()` from
+  `capture/tutorial-kit.cjs` (setup steps are at its top), add a seed for the pretend data if the pages need any,
+  then a two-line `src/<Name>Tutorial.tsx` with `defineTutorial()` from `src/Tutorial.tsx`, and register it in
+  `src/Root.tsx`.
 - The glass tab bar on Destiny One screens is drawn in the video, because the app's web build (used for the
   screenshots) shows its tabs differently. The status bar (9:41) is drawn too.
 - Look: light pages, no glows, and every move uses one aggressive ease in and out (`EASE` in

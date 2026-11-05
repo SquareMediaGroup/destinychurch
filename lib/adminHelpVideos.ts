@@ -4,9 +4,10 @@
 // YouTube, and a new admin watches theirs, then practises in the tour's demo
 // mode (lib/demoMode.ts), where nothing is saved. This list is the series.
 //
-// To publish a video: upload it to YouTube, then set its `youtubeId` (the 11
-// characters after `v=`). Until then, `src` plays a copy from /public, and an
-// entry with neither shows as "Coming soon".
+// The videos themselves live on YouTube, not in this repository (they're made in
+// apps/campaign-videos and handed over as files). To publish one: upload it, then
+// set its `youtubeId` (the 11 characters after `v=`). Until then its card shows
+// the poster, if it has one, and "Coming soon".
 
 import type { AdminRole } from "@/lib/adminRoles";
 
@@ -17,8 +18,7 @@ export interface AdminHelpVideo {
   /** Who it's for. null = every admin. Super Admins see every video. */
   role: AdminRole | null;
   youtubeId?: string;
-  /** Self-hosted fallback, used only while there's no youtubeId. */
-  src?: string;
+  /** A still from the video (public/img/admin-help), shown before it plays. */
   poster?: string;
   /** Length, shown on the card ("1:45"). */
   length?: string;
@@ -29,7 +29,6 @@ export const WELCOME_VIDEO: AdminHelpVideo = {
   title: "Welcome to Destiny Admin",
   description: "What the admin is, what each role looks after, and where to come back to when you get stuck.",
   role: null,
-  src: "/img/admin-help/welcome.mp4",
   poster: "/img/admin-help/welcome-poster.webp",
   length: "1:21",
 };
@@ -66,7 +65,6 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
     description:
       "Adding products, photos, sizes and stock, publishing, orders from paid to collected, and the shop's hero slides.",
     role: "store_admin",
-    src: "/img/admin-help/shop.mp4",
     poster: "/img/admin-help/shop-poster.webp",
     length: "7:25",
   },
@@ -104,5 +102,5 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
 
 /** Whether a video has anything to play yet. */
 export function isPublished(video: AdminHelpVideo): boolean {
-  return Boolean(video.youtubeId || video.src);
+  return Boolean(video.youtubeId);
 }

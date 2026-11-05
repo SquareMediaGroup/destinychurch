@@ -57,6 +57,8 @@ async function openAdmin({ scale = DSF } = {}) {
   await ctx.route(/va\.vercel-scripts\.com|vitals\.vercel-insights\.com|\/_vercel\//, (r) => r.abort());
   const page = await ctx.newPage();
   page.on('pageerror', (e) => console.log('PAGE ERROR', e.message.slice(0, 160)));
+  // "Leave this page?" prompts: Playwright dismisses them by default, which keeps it on the page.
+  page.on('dialog', (d) => d.accept().catch(() => {}));
 
   return { b, ctx, page };
 }
@@ -154,10 +156,12 @@ async function film({ id, roles }, script) {
     BASE,
     PHOTOS,
     chapter: (name) => (chapter = name),
-    /** A part of the tutorial: its chapter name and steps. Skipped when ONLY names other parts. */
+    /** A part of the tutorial: its chapter name (no commas: ONLY splits on them) and its steps. */
     part: async (name, fn) => {
       if (ONLY && !ONLY.includes(name)) return;
       chapter = name;
+      // Filming a part on its own: start from the dashboard rather than a blank page.
+      if (page.url() === 'about:blank') await go('/admin');
       await fn();
     },
     step,
@@ -178,6 +182,7 @@ async function film({ id, roles }, script) {
     console.log(`\n${steps.length} steps, ${n} frames → ${OUT}`);
   } catch (e) {
     // Keep the last good step list; a failed run leaves its frames and a partial list beside them.
+    await page.screenshot({ path: path.join(OUT, 'failed.png') }).catch(() => {});
     fs.writeFileSync(path.join(OUT, 'steps.partial.json'), JSON.stringify({ viewport: { w: VW, h: VH, dsf: DSF }, steps }, null, 1));
     console.log(`\nFAILED after ${steps.length} steps: ${e.message.split('\n')[0]}`);
     process.exitCode = 1;

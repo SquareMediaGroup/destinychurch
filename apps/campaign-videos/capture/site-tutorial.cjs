@@ -6,6 +6,15 @@ const { film } = require('./tutorial-kit.cjs');
 
 film({ id: 'site', roles: 'site_admin' }, async (t) => {
   const { page, part, step, look, go, settle, btn, sidebar, main } = t;
+  /** A link inside the sidebar's Site group, opening the group first if it's closed. */
+  const siteLink = async (name) => {
+    const l = sidebar().getByRole('link', { name }).first();
+    if (!(await l.isVisible())) {
+      await sidebar().getByText('Site', { exact: true }).first().click();
+      await settle(400);
+    }
+    return l;
+  };
 
   await part('Finding your way', async () => {
     await go('/admin');
@@ -47,9 +56,10 @@ film({ id: 'site', roles: 'site_admin' }, async (t) => {
     await page.getByRole('dialog', { name: 'Preview' }).waitFor({ state: 'hidden', timeout: 5000 }).catch((e) => console.log('preview still open', e.message.slice(0, 60)));
     await settle(800);
     await step('Publish when it’s ready.', page.locator('button:visible', { hasText: /^Publish/ }).first(), (l) => l.click(), { zoom: 1.5, hold: 2.6 });
+    await step('It checks first, and lists anything that would make the page look unfinished. Cancel to fix them, or Publish anyway.', btn('Publish anyway', true), (l) => l.click(), { zoom: 1.4, hold: 3.6 });
   });
 
-  await part('Edit, history and the Bin', async () => {
+  await part('Editing and history', async () => {
     await go('/admin/posts');
     await step('Open a live page to change it.', main().getByRole('button', { name: 'Edit Christmas at Destiny' }), (l) => l.click(), { zoom: 1.4, hold: 2.4 });
     await look('Changes to a live page stay a draft until you press Publish changes, so you can take your time.', btn(/Publish changes/), { zoom: 1.5, hold: 3.4 });
@@ -65,7 +75,7 @@ film({ id: 'site', roles: 'site_admin' }, async (t) => {
   });
 
   await part('Redirects', async () => {
-    await step('Redirects are short addresses like destinytees.uk/give, for flyers, posters and socials.', sidebar().getByRole('link', { name: /Redirects/ }).first(), (l) => l.click(), { hold: 3.2 });
+    await step('Redirects are short addresses like destinytees.uk/give, for flyers, posters and socials.', await siteLink(/Redirects/), (l) => l.click(), { hold: 3.2 });
     await step('New redirect.', btn(/New redirect/), (l) => l.click(), { zoom: 1.5 });
     await step('A label, to remember what it’s for…', page.getByPlaceholder('e.g. Alpha Sign Up'), null, { zoom: 1.5, typing: { text: 'Carol singing' } });
     await step('…the short address…', page.getByPlaceholder('alpha-signup'), null, { zoom: 1.5, typing: { text: 'carols' } });
@@ -75,13 +85,13 @@ film({ id: 'site', roles: 'site_admin' }, async (t) => {
     await step('Get a QR code for it, ready for a poster.', main().getByRole('button', { name: 'Get a QR code for /carols' }), (l) => l.click(), { zoom: 1.4, hold: 3 });
     await page.keyboard.press('Escape');
     await settle(400);
-    await step('The switch turns one off for a while. The bin deletes it.', main().getByRole('button', { name: 'Deactivate /youth' }), (l) => l.click(), { zoom: 1.6, hold: 2.8 });
+    await step('The switch turns one off for a while. The bin deletes it.', page.getByLabel('Deactivate /youth'), (l) => l.click(), { zoom: 1.6, hold: 2.8 });
   });
 
   await part('The status page', async () => {
-    await step('The status page at status.destinytees.uk tells everyone when something isn’t working.', sidebar().getByRole('link', { name: /Status page/ }).first(), (l) => l.click(), { hold: 3.2 });
+    await step('The status page at status.destinytees.uk tells everyone when something isn’t working.', await siteLink(/Status page/), (l) => l.click(), { hold: 3.2 });
     await step('New incident.', btn(/New incident/), (l) => l.click(), { zoom: 1.5 });
-    await step('Choose the type: an outage, an amber alert when something’s slow, or planned maintenance.', btn('Amber alert', true), (l) => l.click(), { zoom: 1.6, hold: 2.8 });
+    await step('Choose the type: an outage, an amber alert when something’s slow, or planned maintenance.', main().getByText('Amber alert', { exact: true }).first(), (l) => l.click(), { zoom: 1.6, hold: 2.8 });
     await step('Say what’s wrong…', page.getByPlaceholder('e.g. Destiny One messages are slow to send'), null, { zoom: 1.5, typing: { text: 'Sermons are slow to start playing' } });
     await step('…tick what’s affected…', page.getByLabel('Sermons', { exact: true }), (l) => l.check(), { zoom: 1.6 });
     await step('…and what people will notice, and what you’re doing about it.', main().locator('textarea').first(), null, { zoom: 1.4, typing: { text: 'Sermons may take a few seconds to start. We’re looking into it.' } });
@@ -90,11 +100,11 @@ film({ id: 'site', roles: 'site_admin' }, async (t) => {
   });
 
   await part('Analytics', async () => {
-    await step('Analytics shows which short links, QR codes and tiles people actually use.', sidebar().getByRole('link', { name: /Analytics/ }).first(), (l) => l.click(), { hold: 3.4 });
+    await step('Analytics shows which short links, QR codes and tiles people actually use.', await siteLink(/Analytics/), (l) => l.click(), { hold: 3.4 });
     await look('Clicks over time, the most-used links, and where people came from.', null, { hold: 3.4 });
-    await step('In person counts taps on the NFC tiles and visits to the links pages.', btn('In person', true), (l) => l.click(), { zoom: 1.4, hold: 3 });
-    await step('Choose the time range: today, a week, a month, three months or all time.', btn('90 days', true), (l) => l.click(), { zoom: 1.5, hold: 2.8 });
-    await look('Whole site shows visits to the entire website.', btn('Whole site', true), { zoom: 1.6, hold: 2.6 });
+    await step('In person counts taps on the NFC tiles and visits to the links pages.', main().getByText('In person', { exact: true }).first(), (l) => l.click(), { zoom: 1.4, hold: 3 });
+    await step('Choose the time range: today, a week, a month, three months or all time.', main().getByText('90 days', { exact: true }).first(), (l) => l.click(), { zoom: 1.5, hold: 2.8 });
+    await look('Whole site shows visits to the entire website.', main().getByText('Whole site', { exact: true }).first(), { zoom: 1.6, hold: 2.6 });
   });
 
   await part('DestinyAI', async () => {

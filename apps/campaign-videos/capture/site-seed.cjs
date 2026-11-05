@@ -61,7 +61,7 @@ module.exports = () => ({
 module.exports.defaults = {
   posts: () => ({ body: null, is_published: false, hero_style: 'plain', hero_image_url: null, subtitle: null, description: null, og_image_url: null, show_rails: true, draft: null, publish_from: null, publish_until: null, hide_from_search: false, tags: [], deleted_at: null, updated_by: null, review_link_version: 0, review_requested_at: null, review_requested_by: null }),
   redirects: () => ({ label: null, active: true }),
-  status_incidents: () => ({ components: [], resolved_at: null, long_outage_alerted_at: null, author_name: null, created_by: null }),
+  status_incidents: () => ({ components: [], started_at: new Date().toISOString(), resolved_at: null, long_outage_alerted_at: null, author_name: null, created_by: null }),
   status_incident_updates: () => ({ author_name: null, created_by: null }),
 };
 module.exports.embeds = { status_incident_updates: 'incident_id', post_revisions: 'post_id' };

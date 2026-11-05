@@ -249,7 +249,7 @@
   },
   {
    "chapter": "Notes and closing",
-   "caption": "Add note.",
+   "caption": "Add note. It joins the ticket’s activity.",
    "target": {
     "x": 0.582685546875,
     "y": 0.8787152777777778,
@@ -260,26 +260,9 @@
    "before": "s026.jpg",
    "frames": [],
    "after": "s027.jpg",
-   "zoom": 1.6,
-   "hold": 2.4,
+   "zoom": 1.4,
+   "hold": 2.6,
    "nav": false
-  },
-  {
-   "chapter": "Notes and closing",
-   "caption": "See what they see shows the ticket as the person who asked sees it.",
-   "target": {
-    "x": 0.685625,
-    "y": 0.0033333333333333335,
-    "w": 0.16875,
-    "h": 0.02666666666666667
-   },
-   "kind": "click",
-   "before": "s028.jpg",
-   "frames": [],
-   "after": "s029.jpg",
-   "zoom": 1.5,
-   "hold": 3.4,
-   "nav": true
   },
   {
    "chapter": "Notes and closing",
@@ -291,9 +274,9 @@
     "h": 0.29444444444444445
    },
    "kind": "point",
-   "before": "s030.jpg",
+   "before": "s028.jpg",
    "frames": [],
-   "after": "s030.jpg",
+   "after": "s028.jpg",
    "zoom": 1.2,
    "hold": 4,
    "nav": false

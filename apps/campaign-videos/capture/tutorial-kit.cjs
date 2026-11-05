@@ -106,7 +106,8 @@ async function film({ id, roles }, script) {
   /**
    * One step: point at `loc` (optional), screenshot, do `act`, screenshot again.
    * `zoom` punches the camera in on the target; `hold` is the least seconds to keep the result up.
-   * `typing: { text, fill }` types `text` into `loc` in three bites first (fill: false for rich text).
+   * `typing: { text, fill, select }` types `text` into `loc` in three bites first (fill: false for rich
+   * text; select: true to type over the paragraph clicked).
    */
   async function step(caption, loc, act, { zoom = 1, hold = 2.2, kind = 'click', typing, wait = 0 } = {}) {
     const target = loc ? await boxOf(loc) : null;
@@ -114,9 +115,9 @@ async function film({ id, roles }, script) {
     const fromUrl = page.url();
     const frames = [];
     if (typing) {
-      const { text, fill = true } = typing;
+      const { text, fill = true, select = false } = typing;
       const cuts = [Math.ceil(text.length / 3), Math.ceil((2 * text.length) / 3), text.length];
-      if (!fill) await loc.click();
+      if (!fill) await loc.click(select ? { clickCount: 3 } : undefined);
       let prev = 0;
       for (const c of cuts) {
         if (fill) await loc.fill(text.slice(0, c));
@@ -163,8 +164,9 @@ async function film({ id, roles }, script) {
     look,
     go,
     settle,
-    btn: (name, exact = false) => page.getByRole('button', { name, exact }).first(),
-    link: (name, exact = false) => page.getByRole('link', { name, exact }).first(),
+    // Visible ones only: some pages keep a hidden copy of a control for small screens.
+    btn: (name, exact = false) => page.getByRole('button', { name, exact }).locator('visible=true').first(),
+    link: (name, exact = false) => page.getByRole('link', { name, exact }).locator('visible=true').first(),
     sidebar: () => page.locator('aside').first(),
     /** The page's own content, not the header, sidebar or breadcrumbs. */
     main: () => page.locator('main').first(),

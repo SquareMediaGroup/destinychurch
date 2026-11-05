@@ -66,3 +66,41 @@ module.exports.defaults = {
 };
 module.exports.embeds = { status_incident_updates: 'incident_id', post_revisions: 'post_id' };
 module.exports.serial = ['status_incidents', 'status_incident_updates'];
+
+// supabase/migrations/20260827_engagement_events.sql's engagement_rollup(), with made-up but
+// consistent figures: what the Analytics page shows for short links, QR codes and tiles.
+const TARGETS = {
+  redirect: [['give', '/give', 412], ['connect', '/connect', 268], ['youth', '/youth', 131], ['alpha', '/alpha', 96]],
+  nfc: [['connect-card', 'Connect Card', 188], ['give', 'Give', 143], ['kids', 'Kids church', 61], ['wifi', 'Wi-Fi', 57]],
+  links: [['sunday', 'Destiny Church: Sunday', 233], ['youth', 'Destiny Youth', 87]],
+};
+module.exports.rpc = {
+  engagement_rollup: ({ p_since, p_source }) => {
+    const days = p_since ? Math.max(1, Math.round((Date.now() - Date.parse(p_since)) / 86400000)) : 120;
+    const scale = Math.min(days, 120) / 30;
+    const sources = p_source ? [p_source] : Object.keys(TARGETS);
+    const byTarget = sources.flatMap((s) => (TARGETS[s] ?? []).map(([key, label, n]) => ({ key, label, events: Math.round(n * scale), visitors: Math.round(n * scale * 0.7) })));
+    const events = byTarget.reduce((a, b) => a + b.events, 0);
+    const visitors = Math.round(events * 0.7);
+    const split = (rows) => rows.map(([key, share]) => ({ key, label: null, events: Math.round(events * share), visitors: Math.round(visitors * share) }));
+    const n = Math.min(days, 90);
+    const timeseries = Array.from({ length: n }, (_, i) => {
+      const d = new Date(Date.now() - (n - 1 - i) * 86400000);
+      const sunday = d.getUTCDay() === 0;
+      const e = Math.round((events / n) * (sunday ? 3.2 : 0.62) * (0.85 + ((i * 37) % 30) / 100));
+      return { day: d.toISOString().slice(0, 10), events: e, visitors: Math.round(e * 0.7) };
+    });
+    return {
+      totals: { events, visitors, targets: byTarget.length, bots: Math.round(events * 0.08) },
+      timeseries,
+      bySource: sources.map((s) => ({ key: s, label: null, events: (TARGETS[s] ?? []).reduce((a, t) => a + Math.round(t[2] * scale), 0), visitors: 0 })),
+      byTarget,
+      byCountry: split([['GB', 0.94], ['NG', 0.03], ['IE', 0.02], ['US', 0.01]]),
+      byReferrer: split([['instagram.com', 0.41], ['(direct)', 0.33], ['facebook.com', 0.17], ['google.com', 0.09]]),
+      byDevice: split([['mobile', 0.82], ['desktop', 0.15], ['tablet', 0.03]]),
+      byBrowser: split([['Safari', 0.58], ['Chrome', 0.36], ['Samsung Internet', 0.06]]),
+      bySrcTag: split([['qr', 0.46], ['ig', 0.31], ['flyer', 0.23]]),
+      byIpCategory: split([['residential', 0.71], ['mobile network', 0.29]]),
+    };
+  },
+};

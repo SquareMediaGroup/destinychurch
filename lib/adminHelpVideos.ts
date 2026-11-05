@@ -49,9 +49,12 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
   },
   {
     id: "events",
-    title: "Event Admin",
-    description: "Courses, pop-ups, the featured event, links pages and the talent show.",
+    title: "Event Admin: courses, events and announcements",
+    description:
+      "Course dates and banners, the site popup, the featured event, NFC tiles, links pages, song requests, talent show voting and DestinyAI.",
     role: "event_admin",
+    poster: "/img/admin-help/events-poster.webp",
+    length: "8:46",
   },
   {
     id: "training",

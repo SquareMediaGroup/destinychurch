@@ -38,18 +38,24 @@ const EMBEDS = { product_variants: 'product_id', order_items: 'order_id' };
 
 const db = {};
 const table = (t) => (db[t] ??= []);
+// Tables whose id is a number counting up ("generated always as identity"), from a seed's `serial`.
+const SERIAL = new Set();
+const counters = {};
 function row(t, values) {
-  const r = { id: crypto.randomUUID(), created_at: now(), updated_at: now(), ...(DEFAULTS[t]?.() ?? {}), ...values };
+  const id = SERIAL.has(t) ? (counters[t] = Math.max(counters[t] ?? 0, Number(values.id ?? 0)) + (values.id ? 0 : 1)) : crypto.randomUUID();
+  const r = { id, created_at: now(), updated_at: now(), ...(DEFAULTS[t]?.() ?? {}), ...values };
   return r;
 }
 // A seed module exports ({ base }) => ({ table: [rows] }), and may also export:
 //   defaults: { table: () => ({ column: value }) }  column defaults the database would fill in
 //   embeds:   { child_table: 'foreign_key' }         more alias:table(*) relations
 //   rpc:      { name: (args, { table, row, now }) => result }  database functions the routes call
+//   serial:   ['table']                                 tables with numbered ids instead of UUIDs
 //   files:    [{ bucket, path, file, type }]           storage objects to preload
 const seedMod = process.env.SEED ? require(path.resolve(process.env.SEED)) : null;
 Object.assign(DEFAULTS, seedMod?.defaults ?? {});
 Object.assign(EMBEDS, seedMod?.embeds ?? {});
+for (const t of seedMod?.serial ?? []) SERIAL.add(t);
 const RPC = seedMod?.rpc ?? {};
 if (seedMod) {
   const seed = seedMod({ base: BASE });

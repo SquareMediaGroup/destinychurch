@@ -49,8 +49,8 @@ module.exports = ({ base }) => {
     ],
     talent_show_settings: [{ id: 1, show_name: 'Destiny’s Got Talent', voting_open: false, results_revealed: false, round: 1 }],
     talent_show_acts: [
-      { name: 'The Okafor Sisters', performers: 'Amara & Chioma Okafor', description: 'An acoustic cover, two voices and a guitar.', sort_order: 0, hidden: false },
-      { name: 'Ben on Keys', performers: 'Ben Hughes', description: 'A medley of worship classics on the piano.', sort_order: 1, hidden: false },
+      { name: 'The Okafor Sisters', performers: 'Amara & Chioma Okafor', description: 'An acoustic cover, two voices and a guitar.', sort_order: 0, hidden: false, judge_xs: 0 },
+      { name: 'Ben on Keys', performers: 'Ben Hughes', description: 'A medley of worship classics on the piano.', sort_order: 1, hidden: false, judge_xs: 0 },
     ],
     // The tutorial isn't about the onboarding tour, so it has been seen and the checklist hidden.
     admin_onboarding: [{ auth_user_id: 'u-admin', completed_steps: [], gate_seen: true, dismissed: true }],
@@ -63,7 +63,7 @@ module.exports.defaults = {
   nfc_tiles: () => ({ active: true, sort_order: 0, subtitle: null, icon: 'star', mode: 'info', embed_url: null, embed_size: 'md', body: null, image_url: null, image_path: null, cta_text: null, cta_link: null }),
   link_pages: () => ({ title: '', bio: '', avatar_url: null, theme: {}, socials: [], socials_position: 'top', seo_title: null, seo_description: null, og_image_url: null, noindex: false, published: true }),
   link_blocks: () => ({ sort_order: 0, active: true, data: {}, starts_at: null, ends_at: null }),
-  talent_show_acts: () => ({ performers: '', description: '', sort_order: 0, hidden: false }),
+  talent_show_acts: () => ({ performers: '', description: '', sort_order: 0, hidden: false, judge_xs: 0 }),
   song_requests: () => ({ status: 'queued', artwork_url: null }),
 };
 module.exports.embeds = { link_blocks: 'page_id' };

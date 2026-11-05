@@ -7,10 +7,11 @@
 // Setup, the same for every tutorial:
 // 1. SEED=capture/<seed>.cjs ROLES_FILE=<file> node capture/admin-mock-supabase.cjs
 //    (restart it before each run: a run changes the data it starts from)
-// 2. In a website checkout, with next.config.ts images allowing http://localhost:54399 and
-//    `dangerouslyAllowLocalIP: true` (local-only, never commit that):
+// 2. In a website checkout, with next.config.ts images allowing http://localhost:54399
+//    and `dangerouslyAllowLocalIP: true` (local-only, never
+//    commit that), on port 80:
 //    NEXT_PUBLIC_SUPABASE_URL=http://localhost:54399 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=demo
-//    SUPABASE_SECRET_KEY=demo npx next dev -p 3100
+//    SUPABASE_SECRET_KEY=demo npx next dev -p 80
 //    Leave every other key unset: with no Stripe, email, Buzzsprout or Playbook keys, nothing can
 //    reach a real outside service. Where a step needs one, the script answers that request in the
 //    browser instead (t.ctx.route).
@@ -23,7 +24,10 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-const BASE = process.env.BASE || 'http://localhost:3100';
+// The local copy of the site runs on port 80, and just before each screenshot the visible text
+// "localhost" becomes "destinytees.uk", so addresses on screen (share links, "go to …") read as the
+// church's own. (Pointing destinytees.uk itself at the local copy stops the admin's scripts running.)
+const BASE = process.env.BASE || 'http://localhost';
 const VW = 1600, VH = 900, DSF = 1.6;
 const PHOTOS = path.join(__dirname, 'shop-photos');
 
@@ -49,6 +53,8 @@ async function openAdmin({ scale = DSF } = {}) {
     });
   });
   await ctx.route('**/api/admin/notifications**', (r) => r.fulfill({ json: [] }));
+  // Vercel's analytics and speed insights: filming shouldn't count as visits.
+  await ctx.route(/va\.vercel-scripts\.com|vitals\.vercel-insights\.com|\/_vercel\//, (r) => r.abort());
   const page = await ctx.newPage();
   page.on('pageerror', (e) => console.log('PAGE ERROR', e.message.slice(0, 160)));
 
@@ -80,6 +86,12 @@ async function film({ id, roles }, script) {
     await page.waitForTimeout(ms);
   };
   const snap = async () => {
+    await page.evaluate(() => {
+      const fix = (v) => v.replace(/https?:\/\/localhost(:\d+)?/g, 'https://destinytees.uk').replace(/\blocalhost(:\d+)?/g, 'destinytees.uk');
+      const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      for (let n = walk.nextNode(); n; n = walk.nextNode()) if (n.nodeValue.includes('localhost')) n.nodeValue = fix(n.nodeValue);
+      for (const el of document.querySelectorAll('input,textarea')) if (el.value && el.value.includes('localhost')) el.value = fix(el.value);
+    }).catch(() => {});
     const file = `s${String(++n).padStart(3, '0')}.jpg`;
     await page.screenshot({ path: path.join(OUT, file), type: 'jpeg', quality: 86 });
     return file;
@@ -96,7 +108,7 @@ async function film({ id, roles }, script) {
    * `zoom` punches the camera in on the target; `hold` is the least seconds to keep the result up.
    * `typing: { text, fill }` types `text` into `loc` in three bites first (fill: false for rich text).
    */
-  async function step(caption, loc, act, { zoom = 1, hold = 2.2, kind = 'click', typing } = {}) {
+  async function step(caption, loc, act, { zoom = 1, hold = 2.2, kind = 'click', typing, wait = 0 } = {}) {
     const target = loc ? await boxOf(loc) : null;
     const before = await snap();
     const fromUrl = page.url();
@@ -115,6 +127,7 @@ async function film({ id, roles }, script) {
       }
     }
     if (act) await act(loc);
+    if (wait) await page.waitForTimeout(wait);
     await settle();
     const after = await snap();
     // A click that opened another page: the camera pulls back out to show it.

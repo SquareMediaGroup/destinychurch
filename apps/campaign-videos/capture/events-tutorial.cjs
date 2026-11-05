@@ -149,14 +149,14 @@ film({ id: 'events', roles: 'event_admin' }, async (t) => {
       await page.waitForTimeout(500);
       await page.getByText('A ChurchSuite event, or the next few.').click();
     }, { zoom: 1.3, hold: 3 });
-    await step('Appearance: colours, fonts and the button style, with the preview changing as you go.', ed.getByText('Appearance', { exact: true }).first(), (l) => l.click(), { zoom: 1.2, hold: 3.4 });
-    await step('Profile: the picture, name, short bio and social links at the top.', ed.getByText('Profile', { exact: true }).first(), (l) => l.click(), { zoom: 1.2, hold: 3 });
-    await step('Settings: the address, the title Google shows, and Published.', ed.getByText('Settings', { exact: true }).first(), (l) => l.click(), { zoom: 1.2, hold: 3 });
+    await step('Appearance: colours, fonts and the button style, with the preview changing as you go.', main().locator('button', { hasText: 'Appearance' }).first(), (l) => l.click(), { zoom: 1.2, hold: 3.4 });
+    await step('Profile: the picture, name, short bio and social links at the top.', main().locator('button', { hasText: 'Profile' }).first(), (l) => l.click(), { zoom: 1.2, hold: 3 });
+    await step('Settings: the address, the title Google shows, and Published.', main().locator('button', { hasText: 'Settings' }).first(), (l) => l.click(), { zoom: 1.2, hold: 3 });
     await step('Save.', main().getByRole('button', { name: 'Save', exact: true }).first(), (l) => l.click(), { zoom: 1.6, hold: 2.2 });
     await go('/admin/links');
-    await step('Back on the list, open the Sunday page.', main().getByRole('link', { name: /Destiny Church/ }).first(), (l) => l.click(), { zoom: 1.4 });
-    await step('Responses holds whatever people send through its forms.', main().getByText('Responses', { exact: true }).first(), (l) => l.click(), { zoom: 1.3, hold: 3.2 });
-    await step('Stats shows views and the most-clicked links.', main().getByText('Stats', { exact: true }).first(), (l) => l.click(), { zoom: 1.3, hold: 3 });
+    await step('Back on the list, open the Sunday page.', main().getByRole('link', { name: /links\/sunday · / }).first(), (l) => l.click(), { zoom: 1.4 });
+    await step('Responses holds whatever people send through its forms.', main().locator('button', { hasText: 'Responses' }).first(), (l) => l.click(), { zoom: 1.3, hold: 3.2 });
+    await step('Stats shows views and the most-clicked links.', main().locator('button', { hasText: 'Stats' }).first(), (l) => l.click(), { zoom: 1.3, hold: 3 });
   });
 
   // ── Song requests ────────────────────────────────────────────────────────
@@ -166,7 +166,7 @@ film({ id: 'events', roles: 'event_admin' }, async (t) => {
     await step('Name the night…', page.getByLabel('Event name'), null, { zoom: 1.5, typing: { text: 'Youth Christmas party' } });
     await step('…set how many songs can wait at once, and how many each person can ask for, and Save settings.', btn('Save settings', true), (l) => l.click(), { zoom: 1.5, hold: 3 });
     await step('Open requests when the night starts. Explicit songs are always blocked.', btn('Open requests', true), (l) => l.click(), { zoom: 1.6, hold: 2.6 });
-    await step('Remove takes a song off the list. If Spotify already has it queued, skip it on the device.', main().getByRole('button', { name: 'Remove' }).first(), (l) => l.click(), { zoom: 1.6, hold: 3.2 });
+    await step('Remove takes a song off the list. If Spotify already has it queued, skip it on the device.', main().getByRole('button', { name: 'Remove' }).first(), (l) => l.click(), { zoom: 1.6, hold: 3.2, wait: 2500 });
   });
 
   // ── Talent show ──────────────────────────────────────────────────────────
@@ -190,8 +190,7 @@ film({ id: 'events', roles: 'event_admin' }, async (t) => {
     await go('/admin/talent-show');
     await step('Reveal results when you’re ready. The screen shows the winner.', btn('Reveal results', true), (l) => l.click(), { zoom: 1.6, hold: 2.8 });
     await step('Clear votes and start again resets it all, ready for another round.', btn('Clear votes and start again', true), (l) => l.click(), { zoom: 1.6, hold: 2.6 });
-    const dialog = page.getByRole('dialog');
-    if (await dialog.count()) await step('It asks first. Here we’ll keep tonight’s votes.', dialog.getByRole('button', { name: 'Cancel' }), (l) => l.click(), { zoom: 1.4, hold: 1.8 });
+    await step('It asks first. Here we’ll keep tonight’s votes.', btn('Cancel', true), (l) => l.click(), { zoom: 1.4, hold: 1.8 });
   });
 
   // ── DestinyAI ────────────────────────────────────────────────────────────

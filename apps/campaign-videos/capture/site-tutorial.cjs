@@ -26,8 +26,11 @@ film({ id: 'site', roles: 'site_admin' }, async (t) => {
     await step('Posts are the website’s standalone pages: campaigns, one-off events, anything temporary.', sidebar().getByRole('link', { name: /Posts/ }).first(), (l) => l.click(), { hold: 3.2 });
     await look('Each shows its address, whether it’s live, its visits in the last 30 days and when it was last edited.', main().locator('table tbody tr, ul li').first(), { zoom: 1.3, hold: 3.4 });
     await step('Filter by status: live, scheduled, ended or draft…', btn(/^Draft/), (l) => l.click(), { zoom: 1.5 });
-    await step('…or by tag.', btn(/^christmas/), async (l) => { await btn(/^Draft/).click(); await settle(300); await l.click(); }, { zoom: 1.5 });
-    await step('Clear the filter, and search by title or address.', page.getByPlaceholder('Search by title or URL'), async () => { await btn(/^christmas/).click(); }, { zoom: 1.5, typing: { text: 'baptism' } });
+    await step('…or by tag.', btn(/^christmas/), async (l) => { await btn(/^All/).click(); await settle(300); await l.click(); }, { zoom: 1.5 });
+    // Back to every tag: the second All (the first is for status).
+    await page.getByRole('button', { name: /^All/ }).locator('visible=true').nth(1).click();
+    await settle(400);
+    await step('Or search by title or address.', page.getByPlaceholder('Search by title or URL'), null, { zoom: 1.5, typing: { text: 'baptism' } });
     await page.getByPlaceholder('Search by title or URL').fill('');
     await settle(300);
   });

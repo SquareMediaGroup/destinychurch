@@ -103,6 +103,24 @@ function matcher(params) {
     }
     tests.push(not ? (r) => !t(r) : t);
   }
+  // or=(a.ilike.*x*,b.eq.y): any of them. A nested and(...) inside counts as a match (rare here).
+  const orRaw = params.find(([k]) => k === 'or')?.[1];
+  if (orRaw) {
+    const parts = [];
+    let depth = 0, cur = '';
+    for (const ch of orRaw.replace(/^\(|\)$/g, '')) {
+      if (ch === '(') depth++;
+      if (ch === ')') depth--;
+      if (ch === ',' && depth === 0) { parts.push(cur); cur = ''; } else cur += ch;
+    }
+    if (cur) parts.push(cur);
+    const alts = parts.map((p) => {
+      if (/^and\(/.test(p)) return () => true;
+      const m = /^([a-z_]+)\.(.*)$/.exec(p);
+      return m ? matcher([[m[1], m[2]]]) : () => true;
+    });
+    tests.push((r) => alts.some((a) => a(r)));
+  }
   return (r) => tests.every((t) => t(r));
 }
 function ordered(rows, order) {
@@ -229,10 +247,14 @@ http.createServer(async (req, res) => {
   const select = url.searchParams.get('select');
 
   if (t === 'admin_roles') {
-    if (req.method !== 'GET' && req.method !== 'HEAD') return send(200, one ? {} : []);
+    // A normal table (a seed can add other admins), except the stand-in admin's own row always
+    // carries the roles in ROLES_FILE, so a capture can switch roles between runs.
     const r = roles();
-    const row0 = { auth_user_id: user.id, email: user.email, avatar_url: null, name: 'Sam Taylor', ...Object.fromEntries(ALL.map((k) => [k, r.includes(k)])) };
-    return send(200, one ? row0 : [row0]);
+    const flags = Object.fromEntries(ALL.map((k) => [k, r.includes(k)]));
+    const rows = table('admin_roles');
+    const own = rows.find((x) => x.auth_user_id === user.id);
+    if (own) Object.assign(own, flags);
+    else rows.push(row('admin_roles', { auth_user_id: user.id, email: user.email, avatar_url: null, name: 'Sam Taylor', ...flags }));
   }
 
   const rows = table(t);

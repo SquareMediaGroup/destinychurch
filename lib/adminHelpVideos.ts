@@ -82,9 +82,11 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
   },
   {
     id: "design",
-    title: "Design Admin",
-    description: "Picking up design tickets and delivering the files.",
+    title: "Design Admin: from request to finished design",
+    description: "Reading the brief, claiming a ticket, delivering files and video links, and notes.",
     role: "design_admin",
+    poster: "/img/admin-help/design-poster.webp",
+    length: "2:05",
   },
   {
     id: "hr",

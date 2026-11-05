@@ -18,8 +18,11 @@ film({ id: 'hr', roles: 'hr_admin' }, async (t) => {
 
   await part('Finding your way', async () => {
     await go('/admin');
-    await step('Signed in as an HR Admin, HR is your section.', sidebar().getByText('HR', { exact: true }).first(), (l) => l.click(), { zoom: 1.5 });
-    await step('The HR home shows who’s waiting for an answer.', await hrLink(/^HR$/), async () => { await go('/admin/hr'); }, { hold: 2.6 });
+    await step('Signed in as an HR Admin, HR is your section. Its home page shows who’s waiting for an answer.', sidebar().getByText('HR', { exact: true }).first(), async (l) => {
+      await l.click();
+      await settle(500);
+      if (!page.url().includes('/admin/hr')) await go('/admin/hr');
+    }, { zoom: 1.5, hold: 2.6 });
     await look('Pending leave and upcoming reviews at the top, then every HR section.', main().getByText('Pending leave').first(), { zoom: 1.3, hold: 3.4 });
     await look('Hide HR pages blurs everything at once if someone walks past your screen.', btn(/Hide HR pages/), { zoom: 1.6, hold: 3.2 });
   });
@@ -38,7 +41,7 @@ film({ id: 'hr', roles: 'hr_admin' }, async (t) => {
       await field('Start date').fill('2026-12-01');
       await field('Annual leave (days)').fill('20');
     }, { zoom: 1.5, hold: 2.6 });
-    await look('Give them a login to the staff portal to book leave and see their own documents, or link one they already have.', page.getByText('Create a new login').first(), { zoom: 1.4, hold: 4 });
+    await step('Give them a login to the staff portal, to book leave and see their own documents. Set a first password, or link an admin login they already have.', page.getByPlaceholder('Set a password (min 8 characters)'), null, { zoom: 1.4, typing: { text: 'Welcome2026!' }, hold: 3.8 });
     await step('Add staff.', page.getByRole('button', { name: 'Add staff', exact: true }).last(), (l) => l.click(), { zoom: 1.5, hold: 2.4 });
     await step('Open someone to see everything about them.', main().getByText('Grace Wilson').first(), (l) => l.click(), { zoom: 1.3, hold: 2.4 });
     await look('Their details, leave left, documents, reviews, and their onboarding and leaving checklists, on one page.', null, { hold: 4 });
@@ -101,6 +104,6 @@ film({ id: 'hr', roles: 'hr_admin' }, async (t) => {
     await step('Create role. It stays a draft until you publish it.', btn('Create role', true), (l) => l.click(), { zoom: 1.5, hold: 2.6 });
     await step('Applications are the people who applied through the jobs page.', await hrLink(/Applications/), (l) => l.click(), { hold: 2.8 });
     await step('Open one to read it.', main().getByText('Chloe Martin').first(), (l) => l.click(), { zoom: 1.3, hold: 3 });
-    await look('Move each one along as you go: new, reviewing, shortlisted, rejected or hired.', main().getByRole('button', { name: /^Shortlisted/ }).first(), { zoom: 1.4, hold: 3.6 });
+    await look('Move each one along as you go: new, reviewing, shortlisted, rejected or hired.', null, { hold: 3.6 });
   });
 });

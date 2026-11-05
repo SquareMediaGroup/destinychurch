@@ -181,6 +181,10 @@ http.createServer(async (req, res) => {
   if (url.pathname === '/auth/v1/user') return send(200, user);
   // Sign-in accounts (HR checks which staff have a portal login): just the invented admin.
   if (url.pathname === '/auth/v1/admin/users' && req.method === 'GET') return send(200, { users: [user], aud: 'authenticated' });
+  if (url.pathname === '/auth/v1/admin/users' && req.method === 'POST') {
+    const b = JSON.parse(body.toString() || '{}');
+    return send(200, { id: crypto.randomUUID(), aud: 'authenticated', role: 'authenticated', email: b.email, app_metadata: {}, user_metadata: b.user_metadata ?? {}, created_at: now() });
+  }
   if (url.pathname.startsWith('/auth/')) return send(200, {});
 
   // Storage: upload, remove, serve.

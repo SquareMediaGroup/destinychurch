@@ -42,12 +42,18 @@ function row(t, values) {
   const r = { id: crypto.randomUUID(), created_at: now(), updated_at: now(), ...(DEFAULTS[t]?.() ?? {}), ...values };
   return r;
 }
-if (process.env.SEED) {
-  const seed = require(path.resolve(process.env.SEED))({ base: BASE });
+// A seed module exports ({ base }) => ({ table: [rows] }), and may also export:
+//   defaults: { table: () => ({ column: value }) }  column defaults the database would fill in
+//   embeds:   { child_table: 'foreign_key' }         more alias:table(*) relations
+//   rpc:      { name: (args, { table, row, now }) => result }  database functions the routes call
+//   files:    [{ bucket, path, file, type }]           storage objects to preload
+const seedMod = process.env.SEED ? require(path.resolve(process.env.SEED)) : null;
+Object.assign(DEFAULTS, seedMod?.defaults ?? {});
+Object.assign(EMBEDS, seedMod?.embeds ?? {});
+const RPC = seedMod?.rpc ?? {};
+if (seedMod) {
+  const seed = seedMod({ base: BASE });
   for (const [t, rows] of Object.entries(seed)) for (const r of rows) table(t).push(row(t, r));
-}
-if (process.env.ADMIN_ROLES_ROW !== '0') {
-  // admin_roles is answered from ROLES_FILE below; nothing to seed.
 }
 
 // ── Filters ──────────────────────────────────────────────────────────────────
@@ -182,6 +188,17 @@ http.createServer(async (req, res) => {
   if (url.pathname.startsWith('/storage/')) return send(200, []);
 
   if (!url.pathname.startsWith('/rest/v1/')) return send(200, {});
+  if (url.pathname.startsWith('/rest/v1/rpc/')) {
+    const name = url.pathname.slice('/rest/v1/rpc/'.length);
+    const fn = RPC[name];
+    if (!fn) return send(404, { code: 'PGRST202', message: `function ${name} is not in the pretend database` });
+    try {
+      const out = fn(body.length ? JSON.parse(body.toString()) : {}, { table, row, now, db });
+      return send(200, out ?? null);
+    } catch (e) {
+      return send(400, { code: 'P0001', message: e.message });
+    }
+  }
   const t = url.pathname.slice('/rest/v1/'.length);
   const accept = req.headers.accept || '';
   const prefer = req.headers.prefer || '';
@@ -256,9 +273,4 @@ http.createServer(async (req, res) => {
   send(405, { message: 'method not allowed' });
 }).listen(PORT, () => console.log('mock supabase on', PORT, process.env.SEED ? `(seeded from ${process.env.SEED})` : ''));
 
-// Seed files can preload storage: module.exports = ({ base }) => ({ products: [...], ... }) and
-// put files with `module.exports.files = [{ bucket, path, file }]`.
-if (process.env.SEED) {
-  const mod = require(path.resolve(process.env.SEED));
-  for (const f of mod.files ?? []) files.set(`${f.bucket}/${f.path}`, { type: f.type || 'image/webp', body: fs.readFileSync(f.file) });
-}
+for (const f of seedMod?.files ?? []) files.set(`${f.bucket}/${f.path}`, { type: f.type || 'image/webp', body: fs.readFileSync(f.file) });

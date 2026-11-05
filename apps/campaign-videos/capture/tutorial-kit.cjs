@@ -29,24 +29,14 @@ const PHOTOS = path.join(__dirname, 'shop-photos');
 
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
 
-async function film({ id, roles }, script) {
-  const OUT = path.join(__dirname, '..', 'public', 'tutorial', id);
-  const MANIFEST = path.join(__dirname, '..', 'src', 'tutorials', `${id}-steps.json`);
-  fs.rmSync(OUT, { recursive: true, force: true });
-  fs.mkdirSync(OUT, { recursive: true });
-  fs.mkdirSync(path.dirname(MANIFEST), { recursive: true });
-  if (process.env.ROLES_FILE) {
-    const prev = fs.existsSync(process.env.ROLES_FILE) ? fs.readFileSync(process.env.ROLES_FILE, 'utf8').trim() : '';
-    fs.writeFileSync(process.env.ROLES_FILE, roles);
-    if (prev !== roles) await new Promise((r) => setTimeout(r, 16000)); // middleware caches roles for 15s
-  }
-
+/** A browser signed in to /admin as the stand-in admin, at the tutorial viewport. */
+async function openAdmin({ scale = DSF } = {}) {
   const exp = Math.floor(Date.now() / 1000) + 86400;
   const jwt = `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ sub: 'u-admin', exp, aal: 'aal2', role: 'authenticated' })}.sig`;
   const session = { access_token: jwt, refresh_token: 'r', expires_in: 86400, expires_at: exp, token_type: 'bearer', user: { id: 'u-admin', email: 'sam.taylor@example.com' } };
 
   const b = await chromium.launch();
-  const ctx = await b.newContext({ viewport: { width: VW, height: VH }, deviceScaleFactor: DSF, acceptDownloads: true });
+  const ctx = await b.newContext({ viewport: { width: VW, height: VH }, deviceScaleFactor: scale, acceptDownloads: true });
   await ctx.addCookies([{ name: 'sb-localhost-auth-token', value: 'base64-' + Buffer.from(JSON.stringify(session)).toString('base64url'), url: BASE }]);
   await ctx.addInitScript(() => {
     localStorage.setItem('destiny-cookie-consent', JSON.stringify({ essential: true, media: true, analytics: false, updatedAt: Date.now() }));
@@ -61,6 +51,25 @@ async function film({ id, roles }, script) {
   await ctx.route('**/api/admin/notifications**', (r) => r.fulfill({ json: [] }));
   const page = await ctx.newPage();
   page.on('pageerror', (e) => console.log('PAGE ERROR', e.message.slice(0, 160)));
+
+  return { b, ctx, page };
+}
+
+async function film({ id, roles }, script) {
+  // ONLY="Part one,Part two" films just those parts, into a separate folder, for working on a script.
+  const ONLY = process.env.ONLY ? process.env.ONLY.split(',').map((x) => x.trim()) : null;
+  const OUT = path.join(__dirname, '..', 'public', 'tutorial', ONLY ? `${id}-only` : id);
+  const MANIFEST = ONLY ? path.join(OUT, 'steps.json') : path.join(__dirname, '..', 'src', 'tutorials', `${id}-steps.json`);
+  fs.rmSync(OUT, { recursive: true, force: true });
+  fs.mkdirSync(OUT, { recursive: true });
+  fs.mkdirSync(path.dirname(MANIFEST), { recursive: true });
+  if (process.env.ROLES_FILE) {
+    const prev = fs.existsSync(process.env.ROLES_FILE) ? fs.readFileSync(process.env.ROLES_FILE, 'utf8').trim() : '';
+    fs.writeFileSync(process.env.ROLES_FILE, roles);
+    if (prev !== roles) await new Promise((r) => setTimeout(r, 16000)); // middleware caches roles for 15s
+  }
+
+  const { b, ctx, page } = await openAdmin();
 
   const steps = [];
   let n = 0;
@@ -78,7 +87,7 @@ async function film({ id, roles }, script) {
   const boxOf = async (loc) => {
     await loc.scrollIntoViewIfNeeded().catch(() => {});
     await page.waitForTimeout(350);
-    const bb = await loc.boundingBox();
+    const bb = await loc.boundingBox({ timeout: 8000 });
     return bb ? { x: bb.x / VW, y: bb.y / VH, w: bb.width / VW, h: bb.height / VH } : null;
   };
 
@@ -131,6 +140,12 @@ async function film({ id, roles }, script) {
     BASE,
     PHOTOS,
     chapter: (name) => (chapter = name),
+    /** A part of the tutorial: its chapter name and steps. Skipped when ONLY names other parts. */
+    part: async (name, fn) => {
+      if (ONLY && !ONLY.includes(name)) return;
+      chapter = name;
+      await fn();
+    },
     step,
     look,
     go,
@@ -155,4 +170,4 @@ async function film({ id, roles }, script) {
   }
 }
 
-module.exports = { film, PHOTOS };
+module.exports = { film, openAdmin, PHOTOS, BASE };

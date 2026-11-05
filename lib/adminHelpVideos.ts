@@ -58,9 +58,12 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
   },
   {
     id: "training",
-    title: "Training Admin",
-    description: "Building and updating training for the team.",
+    title: "Training Admin: training for every team",
+    description:
+      "Categories, sub-groups and passwords, folders, writing and publishing posts, and what the team sees.",
     role: "training_admin",
+    poster: "/img/admin-help/training-poster.webp",
+    length: "3:08",
   },
   {
     id: "store",

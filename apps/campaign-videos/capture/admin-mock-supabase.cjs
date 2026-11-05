@@ -35,6 +35,8 @@ const DEFAULTS = {
 };
 // alias:table(*) embeds, by the foreign key on the child table.
 const EMBEDS = { product_variants: 'product_id', order_items: 'order_id' };
+// Parent rows embedded in a child (to-one), as { parent_table: 'child foreign key' }, from a seed's `toOne`.
+const TO_ONE = {};
 
 const db = {};
 const table = (t) => (db[t] ??= []);
@@ -51,10 +53,12 @@ function row(t, values) {
 //   embeds:   { child_table: 'foreign_key' }         more alias:table(*) relations
 //   rpc:      { name: (args, { table, row, now }) => result }  database functions the routes call
 //   serial:   ['table']                                 tables with numbered ids instead of UUIDs
+//   toOne:    { parent_table: 'foreign_key' }          parent(*) embedded in a child row, as an object
 //   files:    [{ bucket, path, file, type }]           storage objects to preload
 const seedMod = process.env.SEED ? require(path.resolve(process.env.SEED)) : null;
 Object.assign(DEFAULTS, seedMod?.defaults ?? {});
 Object.assign(EMBEDS, seedMod?.embeds ?? {});
+Object.assign(TO_ONE, seedMod?.toOne ?? {});
 for (const t of seedMod?.serial ?? []) SERIAL.add(t);
 const RPC = seedMod?.rpc ?? {};
 if (seedMod) {
@@ -137,7 +141,11 @@ function shape(rows, select) {
       if (emb) {
         const [, alias, child, sub] = emb;
         const fk = EMBEDS[child];
-        out[alias || child] = fk ? shape(ordered(table(child).filter((c) => c[fk] === r.id), 'sort_order.asc'), sub) : [];
+        if (TO_ONE[child]) {
+          // A parent row embedded in its child: hr_staff(*) on a leave request is the request's staff_id.
+          const parent = table(child).find((c) => c.id === r[TO_ONE[child]]);
+          out[alias || child] = parent ? shape([parent], sub)[0] : null;
+        } else out[alias || child] = fk ? shape(ordered(table(child).filter((c) => c[fk] === r.id), 'sort_order.asc'), sub) : [];
       } else if (p === '*') Object.assign(out, r);
       else {
         const [col, as] = p.split(':').reverse();
@@ -171,6 +179,8 @@ http.createServer(async (req, res) => {
   const body = await readBody(req);
 
   if (url.pathname === '/auth/v1/user') return send(200, user);
+  // Sign-in accounts (HR checks which staff have a portal login): just the invented admin.
+  if (url.pathname === '/auth/v1/admin/users' && req.method === 'GET') return send(200, { users: [user], aud: 'authenticated' });
   if (url.pathname.startsWith('/auth/')) return send(200, {});
 
   // Storage: upload, remove, serve.

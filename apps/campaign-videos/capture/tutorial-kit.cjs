@@ -172,6 +172,8 @@ async function film({ id, roles }, script) {
     btn: (name, exact = false) => page.getByRole('button', { name, exact }).locator('visible=true').first(),
     link: (name, exact = false) => page.getByRole('link', { name, exact }).locator('visible=true').first(),
     sidebar: () => page.locator('aside').first(),
+    /** The input, select or text box just after a <label> reading `text`. */
+    field: (text) => page.locator(`xpath=//label[normalize-space(.)=${JSON.stringify(text)}]/following::*[self::input or self::select or self::textarea][1]`).locator('visible=true').first(),
     /** The page's own content, not the header, sidebar or breadcrumbs. */
     main: () => page.locator('main').first(),
   };

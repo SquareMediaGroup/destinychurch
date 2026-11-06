@@ -16,6 +16,7 @@ import type {
   ProductResult,
   ProductResultVariant,
   SermonResult,
+  EventResult,
   WeatherToolResult,
   DirectionsToolResult,
   SearchWebResult,
@@ -168,6 +169,48 @@ export function SermonResultCards({ sermons }: { sermons: SermonResult[] }) {
     <div className="mt-2 space-y-2">
       {sermons.map((s) => (
         <SermonResultCard key={s.id} sermon={s} />
+      ))}
+    </div>
+  );
+}
+
+// ── Events ───────────────────────────────────────────────────────────────────
+
+/** How many events the chat shows as cards; the model still sees the full list. */
+const MAX_EVENT_CARDS = 3;
+
+function EventResultCard({ event }: { event: EventResult }) {
+  const more = event.totalUpcomingDates > 1 ? `+${event.totalUpcomingDates - 1} more dates` : null;
+  return (
+    <Link
+      href={event.url}
+      className="flex gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 transition hover:bg-white/8"
+    >
+      {event.thumbnailUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={event.thumbnailUrl} alt="" className="h-16 w-24 shrink-0 rounded-xl object-cover" />
+      ) : (
+        <div className="flex h-16 w-24 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/20 text-xs font-bold uppercase tracking-wide text-white/80">
+          Event
+        </div>
+      )}
+      <div className="min-w-0">
+        <p className="line-clamp-2 text-sm font-bold text-white">{event.name}</p>
+        {event.next && <p className="mt-0.5 truncate text-xs text-on-dark-subtle">{event.next}</p>}
+        <p className="truncate text-xs text-on-dark-subtle">
+          {[event.location?.split(",")[0], more].filter(Boolean).join(" · ")}
+        </p>
+      </div>
+    </Link>
+  );
+}
+
+export function EventResultCards({ events }: { events: EventResult[] }) {
+  if (events.length === 0) return null;
+  return (
+    <div className="mt-2 space-y-2">
+      {events.slice(0, MAX_EVENT_CARDS).map((e) => (
+        <EventResultCard key={e.seriesKey} event={e} />
       ))}
     </div>
   );

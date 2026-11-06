@@ -9,6 +9,7 @@ import { lazy, Suspense } from "react";
 import {
   ProductResultCards,
   SermonResultCards,
+  EventResultCards,
   WeatherResultCard,
   DirectionsResultCard,
   WebResultsCard,
@@ -75,6 +76,7 @@ export function SmartSearchThread({
               <>
                 {msg.products && msg.products.length > 0 && <ProductResultCards products={msg.products} />}
                 {msg.sermons && msg.sermons.length > 0 && <SermonResultCards sermons={msg.sermons} />}
+                {msg.events && msg.events.length > 0 && <EventResultCards events={msg.events} />}
                 {msg.weather && <WeatherResultCard data={msg.weather} />}
                 {msg.directions && <DirectionsResultCard data={msg.directions} />}
                 {msg.web && <WebResultsCard data={msg.web} />}

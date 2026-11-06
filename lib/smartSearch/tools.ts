@@ -7,6 +7,9 @@ import { getFullSermonArchive } from "@/lib/speakerOverrides.server";
 import { searchSermons } from "@/lib/sermonSearch";
 import { DESTINY_CENTRE_MAP_QUERY, googleMapsUrl } from "@/lib/maps";
 import { ADDRESS_ONE_LINE } from "@/lib/churchInfo";
+import { buildEventIndex, fetchChurchSuiteEventsResult } from "@destiny/shared";
+import { serializeEventSeries } from "@/lib/appSerializers";
+import { RESERVED_EVENT_SLUGS } from "@/lib/events";
 
 // ── Smart Search tools ─────────────────────────────────────────────────────
 // Tool-calling tools the /api/chat route exposes to the model. Each network
@@ -89,6 +92,26 @@ export const TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
           },
         },
         required: ["query"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "find_events",
+      description:
+        "Search Destiny's live ChurchSuite calendar: every upcoming event, with dates, times, location, a summary and the sign-up link. Use it for anything about what's on, when the next event is, when something is happening, or how to sign up. With no query it lists everything in the date range, soonest first.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Words to match against event names and descriptions, e.g. 'youth', 'baptism', 'women'. Leave out to list everything.",
+          },
+          from_date: { type: "string", description: "YYYY-MM-DD. Only events with a date on or after this. Defaults to today." },
+          to_date: { type: "string", description: "YYYY-MM-DD. Only events with a date on or before this." },
+        },
+        additionalProperties: false,
       },
     },
   },
@@ -329,6 +352,105 @@ async function runFindSermons(args: {
   }
 }
 
+// ── find_events (ChurchSuite calendar) ──────────────────────────────────────
+// Shared with Destiny One's DestinyAI (lib/destinyOne/assistant.server.ts),
+// which reaches it through executeTool — keep slug + seriesKey in the result,
+// its share_event tool needs both.
+
+/** One upcoming event series surfaced by find_events. */
+export interface EventResult {
+  name: string;
+  slug: string;
+  seriesKey: string;
+  category: string | null;
+  /** "Sun 8 Nov 2026, 10:30 am" — the first matching date, London time. */
+  next: string | null;
+  ends: string | null;
+  moreDates: (string | null)[];
+  totalUpcomingDates: number;
+  location: string | null;
+  summary: string;
+  signupUrl: string | null;
+  /** Absolute /whats-on/<slug> URL. */
+  webUrl: string;
+  /** Site-relative /whats-on/<slug>, for the in-chat card's link. */
+  url: string;
+  thumbnailUrl: string | null;
+}
+
+export interface FindEventsResult {
+  available: boolean;
+  reason?: string;
+  from?: string;
+  to?: string | null;
+  count?: number;
+  events?: EventResult[];
+}
+
+const londonDate = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleDateString("en-CA", { timeZone: "Europe/London" }) : null;
+const londonWhen = (iso: string | null) =>
+  iso
+    ? new Date(iso).toLocaleString("en-GB", {
+        timeZone: "Europe/London",
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : null;
+
+async function runFindEvents(args: { query?: string; from_date?: string; to_date?: string }): Promise<FindEventsResult> {
+  const feed = await fetchChurchSuiteEventsResult({ next: { revalidate: 300 } });
+  if (!feed.ok) {
+    return { available: false, reason: "The ChurchSuite calendar isn't responding right now." };
+  }
+  const series = buildEventIndex(feed.events, { reservedSlugs: RESERVED_EVENT_SLUGS }).series.map(serializeEventSeries);
+
+  const from = args.from_date || londonDate(new Date().toISOString())!;
+  const to = args.to_date || null;
+  const words = (args.query ?? "").toLowerCase().split(/\s+/).filter((w) => w.length > 1);
+
+  const events = series
+    .map((s) => {
+      const dates = s.occurrences.filter((o) => {
+        const d = londonDate(o.startsAt);
+        return d && d >= from && (!to || d <= to);
+      });
+      return { s, dates };
+    })
+    .filter(({ s, dates }) => {
+      if (!dates.length) return false;
+      if (!words.length) return true;
+      const hay = `${s.name} ${s.summary} ${s.categoryName ?? ""} ${s.location?.name ?? ""}`.toLowerCase();
+      return words.some((w) => hay.includes(w));
+    })
+    // The index is ordered by each series' next date; a date range can make a
+    // later session the first match, so re-sort on what actually matched.
+    .sort((a, b) => Date.parse(a.dates[0].startsAt) - Date.parse(b.dates[0].startsAt))
+    .slice(0, words.length ? 12 : 40)
+    .map(({ s, dates }) => ({
+      name: s.name,
+      slug: s.slug,
+      seriesKey: s.seriesKey,
+      category: s.categoryName,
+      next: londonWhen(dates[0].startsAt),
+      ends: londonWhen(dates[0].endsAt),
+      moreDates: dates.slice(1, 6).map((d) => londonWhen(d.startsAt)),
+      totalUpcomingDates: dates.length,
+      location: s.location ? [s.location.name, s.location.address].filter(Boolean).join(", ") : null,
+      // The full description only when there are few matches, to keep the prompt small.
+      summary: words.length ? s.summary : s.summary.slice(0, 120),
+      signupUrl: s.signupUrl,
+      webUrl: s.webUrl,
+      url: `/whats-on/${s.slug}`,
+      thumbnailUrl: s.thumbnailUrl,
+    }));
+  return { available: true, from, to, count: events.length, events };
+}
+
 // ── get_weather (Open-Meteo, no API key) ────────────────────────────────────
 
 interface GeocodeResult {
@@ -538,6 +660,7 @@ async function runExtractPage(args: { url: string }, ctx: ToolContext): Promise<
 export type ToolResult =
   | { name: "find_products"; data: FindProductsResult }
   | { name: "find_sermons"; data: FindSermonsResult }
+  | { name: "find_events"; data: FindEventsResult }
   | { name: "get_weather"; data: WeatherToolResult }
   | { name: "get_directions"; data: DirectionsToolResult }
   | { name: "search_web"; data: SearchWebResult }
@@ -569,6 +692,15 @@ export async function executeTool(name: string, rawArgs: string, ctx: ToolContex
           query: (args.query as string) ?? "",
           speaker: args.speaker as string | undefined,
           after_date: args.after_date as string | undefined,
+        }),
+      };
+    case "find_events":
+      return {
+        name,
+        data: await runFindEvents({
+          query: args.query as string | undefined,
+          from_date: args.from_date as string | undefined,
+          to_date: args.to_date as string | undefined,
         }),
       };
     case "get_weather":

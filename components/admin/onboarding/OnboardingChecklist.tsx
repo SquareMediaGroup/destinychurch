@@ -1,26 +1,26 @@
 "use client";
 
-// The "Get Started" launcher and its checklist.
+// The "Get Started" launcher.
 //
 // Collapsed it's a pill in the bottom-right with the number of things left;
-// open it's a list of the sections this person still owes, each one clickable
-// to jump straight into that part of the tour. Finishing the last one collapses
-// it for good.
+// open it's the three stages after the welcome - videos, sandbox, finish - each
+// one a button that jumps straight there. Pressing Finish hides it for good (the
+// Help page and the command palette are the way back).
 //
-// The rainbow border runs while there's still something to do and stops when
-// there isn't — the same BorderBeam the Smart Search pill uses when it's
-// loading, which is the site's existing way of saying "look here".
+// The rainbow border runs while there's still something to do - the same
+// BorderBeam the Smart Search pill uses when it's loading, which is the site's
+// existing way of saying "look here".
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { BorderBeam } from "border-beam";
-import { progressFor } from "@/lib/adminOnboarding";
+import { TASKS, progressFor, type OnboardingStage } from "@/lib/adminOnboarding";
 import { useHydrated } from "@/lib/useHydrated";
 import { useOnboarding } from "@/lib/onboardingProgress";
-import { useOnboardingTour } from "./OnboardingProvider";
+import { useOnboardingFlow } from "./OnboardingProvider";
 
 export default function OnboardingChecklist() {
-  const { sections, completed, start } = useOnboardingTour();
+  const { completed, go } = useOnboardingFlow();
   const { dismiss } = useOnboarding();
   const [open, setOpen] = useState(false);
   const mounted = useHydrated();
@@ -34,7 +34,7 @@ export default function OnboardingChecklist() {
 
   if (!mounted) return null;
 
-  const { done, total, pct } = progressFor(sections, completed);
+  const { done, total, pct } = progressFor(completed);
   const left = total - done;
 
   return createPortal(
@@ -45,9 +45,7 @@ export default function OnboardingChecklist() {
           <div className="relative p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 id="onboarding-checklist-title" className="text-sm font-black text-white">
-                  Get started
-                </h2>
+                <h2 className="text-sm font-black text-white">Get started</h2>
                 <p className="mt-0.5 text-xs text-white/55">
                   {done} of {total} done. Pick any one to jump straight in.
                 </p>
@@ -70,17 +68,17 @@ export default function OnboardingChecklist() {
             </div>
 
             <ul className="mt-4 space-y-0.5">
-              {sections.map((section) => {
-                const isDone = completed.has(section.id);
+              {TASKS.map((task) => {
+                const isDone = completed.has(task.id);
                 return (
-                  <li key={section.id}>
+                  <li key={task.id}>
                     <button
                       type="button"
                       onClick={() => {
                         // Closed first, so it doesn't spring back open over the
-                        // page when the tour ends.
+                        // page when the stage ends.
                         setOpen(false);
-                        start(section.id);
+                        go(task.id as OnboardingStage);
                       }}
                       className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition hover:bg-white/10"
                     >
@@ -93,13 +91,16 @@ export default function OnboardingChecklist() {
                       >
                         <span className="material-symbols-rounded text-sm" aria-hidden="true">check</span>
                       </span>
-                      <span
-                        className={`text-sm font-bold ${
-                          isDone ? "text-white/45 line-through" : "text-white/85"
-                        }`}
-                      >
-                        {section.label}
-                        {isDone && <span className="sr-only"> (done)</span>}
+                      <span>
+                        <span
+                          className={`block text-sm font-bold ${
+                            isDone ? "text-white/45 line-through" : "text-white/85"
+                          }`}
+                        >
+                          {task.label}
+                          {isDone && <span className="sr-only"> (done)</span>}
+                        </span>
+                        <span className="block text-xs text-white/45">{task.hint}</span>
                       </span>
                     </button>
                   </li>
@@ -116,7 +117,7 @@ export default function OnboardingChecklist() {
                 Hide checklist
               </button>
               <p className="mt-1 text-[11px] text-white/40">
-                Bring it back any time: press Command-K and search for &ldquo;tour&rdquo;.
+                Bring it back any time: press Command-K and search for &ldquo;onboarding&rdquo;.
               </p>
             </div>
           </div>

@@ -1,17 +1,16 @@
 "use client";
 
-// Runs the admin onboarding: decides whether anything shows at all, drives the
-// tour from step to step, and owns the demo-mode switch.
+// Runs admin onboarding: Welcome, Videos, Sandbox, Finish.
 //
-// The state machine per step is: navigate if we're not on the right page →
-// wait for the step's data-tour anchor to exist → position the card → wait for
-// Next, or for a click on the anchor. Anchors are polled rather than observed
-// because the page they live on is usually still fetching when we arrive;
-// giving up after a couple of seconds and showing a centred card is better than
-// a tour that stalls on a slow list.
+// Videos and Finish are modals (OnboardingDialog). The Sandbox is not: it is
+// the real admin with demo mode switched on, and a bar across the top
+// (SandboxBar) saying so. Any stage can be reached from any other, at any time -
+// from the dialog's stepper, the Get Started launcher, the Help page or the
+// command palette (`?onboarding=<stage>` on any admin URL).
 //
-// Demo mode is entered for the *whole* run, not just the sandbox steps. A tour
-// where only some buttons are safe is a tour nobody trusts.
+// Demo mode (lib/demoMode.ts) is on for exactly as long as the sandbox is open,
+// and off for everything else, including Finish: the thing a person is asked to
+// believe is that the sandbox is the only place saves are fake.
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -24,55 +23,39 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  checklistFor,
-  checklistForRole,
-  finaleStep,
-  progressFor,
-  sectionOfStep,
-  stepsOf,
-  type TourSection,
-  type TourStep,
-} from "@/lib/adminOnboarding";
 import { clearDemoCookie, enterDemoMode, exitDemoMode } from "@/lib/demoMode";
+import { stageFromParam, type OnboardingStage } from "@/lib/adminOnboarding";
 import { useOnboarding } from "@/lib/onboardingProgress";
-import { useAdminSession, setRolePreview, type PreviewRole } from "@/lib/useAdminSession";
+import { rolesForPreview, useAdminSession, setRolePreview, type PreviewRole } from "@/lib/useAdminSession";
 import dynamic from "next/dynamic";
 import OnboardingChecklist from "./OnboardingChecklist";
 import RolePreviewBar from "./RolePreviewBar";
-const TourSpotlight = dynamic(() => import("./TourSpotlight"));
-const WelcomeGate = dynamic(() => import("./WelcomeGate"));
+import SandboxBar from "./SandboxBar";
+const OnboardingDialog = dynamic(() => import("./OnboardingDialog"));
 
-/** How long to wait for a step's anchor before showing the card unanchored. */
-const ANCHOR_TIMEOUT_MS = 2500;
-/**
- * How long to keep looking after that. A list that takes four seconds to load
- * still gets its spotlight; the card just moves onto it when it turns up.
- */
-const ANCHOR_GIVE_UP_MS = 10000;
+/** `?onboarding=videos` (or welcome, sandbox, finish) on any admin URL opens that stage. */
+const STAGE_PARAM = "onboarding";
+/** The old tour's parameter. Bookmarks and the published videos still point at it. */
+const LEGACY_PARAM = "tour";
 
-/** `?tour=1` on any admin URL (re)starts the tour — the command palette's way in. */
-const TOUR_PARAM = "tour";
-
-interface TourContext {
-  /** The checklist this person is owed, in order. */
-  sections: TourSection[];
+interface FlowContext {
+  /** The stage on screen, or null when onboarding is out of the way. */
+  stage: OnboardingStage | null;
+  /** Which of videos / sandbox / finish this person has done. */
   completed: ReadonlySet<string>;
-  running: boolean;
-  /** Start the whole checklist, or resume at the first unfinished section. */
-  start: (sectionId?: string) => void;
-  /** Preview one role's tour — super admins only. */
-  startRole: (role: PreviewRole, sectionId?: string) => void;
-  /** Bring the checklist back (clearing it if it was finished) and run it. */
-  restart: () => void;
-  stop: () => void;
+  /** Open a stage. Sandbox also takes you to the dashboard and switches saves off. */
+  go: (stage: OnboardingStage) => void;
+  /** A super admin: look at one role's onboarding, with the admin narrowed to it. */
+  startRole: (role: PreviewRole, stage?: OnboardingStage) => void;
+  /** Put onboarding away without finishing. */
+  close: () => void;
 }
 
-const Ctx = createContext<TourContext | null>(null);
+const Ctx = createContext<FlowContext | null>(null);
 
-export function useOnboardingTour(): TourContext {
+export function useOnboardingFlow(): FlowContext {
   const ctx = useContext(Ctx);
-  if (!ctx) throw new Error("useOnboardingTour must be used inside OnboardingProvider");
+  if (!ctx) throw new Error("useOnboardingFlow must be used inside OnboardingProvider");
   return ctx;
 }
 
@@ -82,37 +65,26 @@ export default function OnboardingProvider({ children }: { children: React.React
   const { roles, actualRoles, previewRole, loaded: sessionLoaded } = useAdminSession();
   const progress = useOnboarding();
 
-  // What the person is actually taught. A super admin previewing Store Admin
-  // gets the store tour; a super admin who isn't previewing gets nothing.
-  const sections = useMemo(
-    () => (previewRole ? checklistForRole(previewRole) : checklistFor(roles)),
-    [previewRole, roles],
-  );
+  const [chosen, setChosen] = useState<OnboardingStage | null>(null);
+  const ready = sessionLoaded && progress.loaded;
 
-  const [run, setRun] = useState<{ steps: TourStep[]; index: number } | null>(null);
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const [searching, setSearching] = useState(false);
-  // advance() is handed to click listeners on page elements, which capture it
-  // once; the ref is how it reads the run it's actually in rather than the one
-  // that existed when the listener was attached.
-  const runRef = useRef(run);
+  // First visit: the welcome opens by itself. Previewing someone else's admin is
+  // not a first visit, and neither is anything once the gate has been answered.
+  const autoWelcome = ready && !previewRole && !progress.gateSeen && chosen === null;
+  const stage: OnboardingStage | null = chosen ?? (autoWelcome ? "welcome" : null);
+  const sandboxing = stage === "sandbox";
+
+  /* ── Demo mode is on for exactly as long as the sandbox is ───────────────── */
   useEffect(() => {
-    runRef.current = run;
-  }, [run]);
-
-  const step = run ? run.steps[run.index] : null;
-
-  /* ── Demo mode is on for exactly as long as a tour is ────────────────────── */
-  useEffect(() => {
-    if (run) {
+    if (sandboxing) {
       enterDemoMode();
       return;
     }
-    // Also runs on first mount: a tab closed mid-tour would otherwise leave the
-    // cookie behind and middleware would refuse real saves for two hours.
+    // Also runs on first mount: a tab closed mid-sandbox would otherwise leave
+    // the cookie behind and middleware would refuse real saves for two hours.
     exitDemoMode();
     clearDemoCookie();
-  }, [run]);
+  }, [sandboxing]);
 
   useEffect(() => {
     const onUnload = () => clearDemoCookie();
@@ -120,261 +92,116 @@ export default function OnboardingProvider({ children }: { children: React.React
     return () => window.removeEventListener("beforeunload", onUnload);
   }, []);
 
-  /* ── Navigate to the step's page ─────────────────────────────────────────── */
-  // Exact match on purpose. A prefix match left Back stranded: stepping back
-  // from the new-product form to "press New product" kept you on
-  // /admin/store/products/new, which counts as "under /admin/store", so the
-  // button the step points at never appeared. Steps that belong on a page the
-  // route can't name use `stay` instead.
+  // The sandbox's phantom rows live in memory and are gone the moment demo mode
+  // ends, but a page already showing them would keep showing them. Leaving the
+  // sandbox lands on the dashboard so nothing real is edited on top of one.
+  const wasSandboxing = useRef(false);
   useEffect(() => {
-    if (!step || step.stay) return;
-    if (pathname !== step.route) router.push(step.route);
-  }, [step, pathname, router]);
+    if (wasSandboxing.current && !sandboxing && pathname !== "/admin") router.push("/admin");
+    wasSandboxing.current = sandboxing;
+  }, [sandboxing, pathname, router]);
 
-  /* ── Find the anchor, then keep it in view ───────────────────────────────── */
-  useEffect(() => {
-    const anchors = step?.anchor
-      ? Array.isArray(step.anchor)
-        ? step.anchor
-        : [step.anchor]
-      : [];
-    const selector = anchors.length ? anchors : null;
-    const started = performance.now();
-    let frame = 0;
-    let first = true;
-
-    // All of this runs inside the animation frame rather than in the effect
-    // body: the page we've just navigated to is usually still fetching its list
-    // when we arrive, so there is nothing to measure synchronously anyway.
-    const look = () => {
-      if (first) {
-        first = false;
-        setAnchorEl(null);
-        setSearching(selector !== null);
-      }
-      if (!selector) return;
-
-      // The admin renders desktop and mobile copies of the header search and
-      // the nav; only one of them has a size at any width, so take the first
-      // match that is actually on screen rather than the first in the DOM.
-      let found: HTMLElement | undefined;
-      for (const name of selector) {
-        found = Array.from(document.querySelectorAll<HTMLElement>(`[data-tour="${name}"]`)).find(
-          (el) => el.getBoundingClientRect().width > 0,
-        );
-        if (found) break;
-      }
-      if (found) {
-        setAnchorEl(found);
-        setSearching(false);
-        found.scrollIntoView({ block: "center", behavior: "smooth" });
-        return;
-      }
-      const waited = performance.now() - started;
-      // Slow page: show the card centred rather than stall, but keep looking
-      // so it can still jump onto the anchor once the page catches up.
-      if (waited > ANCHOR_TIMEOUT_MS) setSearching(false);
-      if (waited > ANCHOR_GIVE_UP_MS) return;
-      frame = requestAnimationFrame(look);
-    };
-
-    frame = requestAnimationFrame(look);
-    return () => cancelAnimationFrame(frame);
-  }, [step, pathname]);
-
-  const advance = useCallback(() => {
-    const active = runRef.current;
-    if (!active) return;
-    const current = active.steps[active.index];
-    const next = active.steps[active.index + 1];
-
-    // Tick the section off as we leave its last step.
-    if (current) {
-      const section = sectionOfStep(sections, current.id);
-      const isLastOfSection = section
-        ? section.steps[section.steps.length - 1].id === current.id
-        : false;
+  const go = useCallback(
+    (next: OnboardingStage) => {
       // Progress belongs to the person, not to a preview of somebody else.
-      if (section && isLastOfSection && !previewRole) progress.completeSection(section.id);
-    }
-
-    if (!next) {
-      setRun(null);
-      return;
-    }
-    setRun({ ...active, index: active.index + 1 });
-  }, [sections, progress, previewRole]);
-
-  const back = useCallback(() => {
-    setRun((active) =>
-      active && active.index > 0 ? { ...active, index: active.index - 1 } : active,
-    );
-  }, []);
-
-  /* ── Type the demo value in for them ─────────────────────────────────────── */
-  useEffect(() => {
-    if (!anchorEl || !step?.prefill) return;
-    const field =
-      anchorEl instanceof HTMLInputElement || anchorEl instanceof HTMLTextAreaElement
-        ? anchorEl
-        : anchorEl.querySelector<HTMLInputElement | HTMLTextAreaElement>("input, textarea");
-    if (!field || field.value) return;
-
-    // React tracks the last value it set on the node, so assigning .value
-    // directly is swallowed on the next render. Going through the prototype
-    // setter and firing a real input event is what makes React's onChange run.
-    const proto =
-      field instanceof HTMLTextAreaElement
-        ? HTMLTextAreaElement.prototype
-        : HTMLInputElement.prototype;
-    Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(field, step.prefill);
-    field.dispatchEvent(new Event("input", { bubbles: true }));
-    field.classList.add("tour-prefilled");
-    field.focus();
-    const timer = window.setTimeout(() => field.classList.remove("tour-prefilled"), 1400);
-    return () => window.clearTimeout(timer);
-  }, [anchorEl, step]);
-
-  /* ── Steps that advance when you press the thing ─────────────────────────── */
-  useEffect(() => {
-    if (!anchorEl || !step?.advanceOnClick) return;
-    // Tracked so a click that lands just before the tour is dismissed doesn't
-    // advance it 260ms later, after it has already gone.
-    let timer = 0;
-    const onClick = () => {
-      window.clearTimeout(timer);
-      timer = window.setTimeout(advance, 260);
-    };
-    anchorEl.addEventListener("click", onClick);
-    return () => {
-      window.clearTimeout(timer);
-      anchorEl.removeEventListener("click", onClick);
-    };
-  }, [anchorEl, step, advance]);
-
-  const buildRun = useCallback(
-    (list: TourSection[], label: string, sectionId?: string) => {
-      const steps = [...stepsOf(list), finaleStep(label)];
-      const from = sectionId
-        ? steps.findIndex((s) => sectionOfStep(list, s.id)?.id === sectionId)
-        : 0;
-      return { steps, index: from === -1 ? 0 : from };
+      const record = !previewRole;
+      if (record) progress.setGateSeen();
+      // Leaving a stage ticks it off, so moving on is the same as finishing it.
+      if (record && stage === "videos" && (next === "sandbox" || next === "finish")) progress.complete("videos");
+      if (record && stage === "sandbox" && next !== "sandbox") progress.complete("sandbox");
+      if (next === "sandbox" && pathname !== "/admin") router.push("/admin");
+      setChosen(next);
     },
-    [],
+    [previewRole, progress, stage, pathname, router],
   );
 
-  const start = useCallback(
-    (sectionId?: string) => {
-      if (!sections.length) return;
-      progress.setGateSeen();
-      setRun(buildRun(sections, previewRole ?? "admin", sectionId));
-    },
-    [sections, buildRun, progress, previewRole],
-  );
+  const close = useCallback(() => {
+    if (!previewRole) progress.setGateSeen();
+    setChosen(null);
+  }, [previewRole, progress]);
+
+  const finish = useCallback(() => {
+    if (!previewRole) {
+      progress.complete("finish");
+      progress.dismiss();
+    }
+    setChosen(null);
+  }, [previewRole, progress]);
 
   const startRole = useCallback(
-    (role: PreviewRole, sectionId?: string) => {
-      // Narrow the interface to the role as well. Otherwise "every page you can
-      // reach is here" spotlights a super admin's full sidebar, which is the
-      // opposite of what the preview is for. The preview bar stays up after the
-      // tour so they can keep looking around, and says how to leave.
+    (role: PreviewRole, next: OnboardingStage = "videos") => {
+      // Narrow the interface to the role as well, so the sandbox's sidebar is the
+      // one that role actually gets. The preview bar stays up afterwards so they
+      // can keep looking around, and says how to leave.
       setRolePreview(role);
-      const list = checklistForRole(role);
-      setRun(buildRun(list, role, sectionId));
+      if (next === "sandbox" && pathname !== "/admin") router.push("/admin");
+      setChosen(next);
     },
-    [buildRun],
+    [pathname, router],
   );
 
-  const restart = useCallback(() => {
-    if (!sections.length) {
-      // Nothing of their own to run. A super admin's tours live on the preview
-      // page; anyone else (HR only, say) simply has no tour yet.
-      if (actualRoles.super_admin) router.push("/admin/onboarding");
-      return;
-    }
-    const { done, total } = progressFor(sections, progress.completed);
-    if (done >= total) progress.reset();
-    else progress.restore();
-    start();
-  }, [sections, progress, start, router, actualRoles.super_admin]);
-
-  const stop = useCallback(() => setRun(null), []);
-
-  const ready = sessionLoaded && progress.loaded;
-
-  const value = useMemo<TourContext>(
-    () => ({
-      sections,
-      completed: progress.completed,
-      running: run !== null,
-      start,
-      startRole,
-      restart,
-      stop,
-    }),
-    [sections, progress.completed, run, start, startRole, restart, stop],
+  const value = useMemo<FlowContext>(
+    () => ({ stage, completed: progress.completed, go, startRole, close }),
+    [stage, progress.completed, go, startRole, close],
   );
 
-  const { done, total } = progressFor(sections, progress.completed);
-
-  // Nothing shows until we know who this is, and nothing shows for someone with
-  // no tour to run (a super admin who isn't previewing).
-  const eligible = ready && sections.length > 0;
-  const showGate = eligible && !previewRole && !progress.gateSeen && !run;
-  const showChecklist = eligible && !run && progress.gateSeen && !progress.dismissed && done < total;
+  const showLauncher =
+    ready && stage === null && progress.gateSeen && !progress.dismissed && !previewRole && !progress.completed.has("finish");
 
   return (
     <Ctx.Provider value={value}>
-      {previewRole && actualRoles.super_admin && <RolePreviewBar role={previewRole} />}
+      {sandboxing ? (
+        <SandboxBar previewRole={previewRole} onVideos={() => go("videos")} onFinish={() => go("finish")} />
+      ) : (
+        previewRole && actualRoles.super_admin && <RolePreviewBar role={previewRole} />
+      )}
       {children}
       {/* Its own Suspense boundary: useSearchParams would otherwise opt every
           admin page out of prerendering. */}
       <Suspense fallback={null}>
-        <TourParam ready={ready} onTour={restart} />
+        <StageParam ready={ready} onStage={go} />
       </Suspense>
-      {showGate && <WelcomeGate sections={sections} roles={roles} onStart={start} onSkip={progress.setGateSeen} />}
-      {showChecklist && <OnboardingChecklist />}
-      {run && step && (
-        <TourSpotlight
-          step={step}
-          section={sectionOfStep(sections, step.id)}
-          anchor={anchorEl}
-          searching={searching}
-          index={run.index}
-          total={run.steps.length}
-          onNext={advance}
-          onBack={back}
-          onExit={stop}
+      {stage && stage !== "sandbox" && (
+        <OnboardingDialog
+          stage={stage}
+          roles={previewRole ? rolesForPreview(previewRole) : roles}
+          previewing={previewRole !== null}
+          onGo={go}
+          onClose={close}
+          onFinish={finish}
         />
       )}
+      {showLauncher && <OnboardingChecklist />}
     </Ctx.Provider>
   );
 }
 
 /**
- * Starts the tour when `?tour=1` lands on the URL (the command palette's
- * "Take the admin tour"), then strips the parameter so a refresh doesn't start
- * it again. A component of its own so the search-params read sits behind a
- * Suspense boundary.
+ * Opens a stage when `?onboarding=<stage>` lands on the URL (the command
+ * palette's entries, the Help page), then strips the parameter so a refresh
+ * doesn't open it again. The old `?tour=1` opens the sandbox, which is what the
+ * old tour was for. A component of its own so the search-params read sits behind
+ * a Suspense boundary.
  */
-function TourParam({ ready, onTour }: { ready: boolean; onTour: () => void }) {
+function StageParam({ ready, onStage }: { ready: boolean; onStage: (stage: OnboardingStage) => void }) {
   const params = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const wanted = params.has(TOUR_PARAM);
-  // onTour changes identity on most renders; only a fresh ?tour=1 should fire.
-  const onTourRef = useRef(onTour);
+  const wanted = stageFromParam(params.get(STAGE_PARAM)) ?? (params.has(LEGACY_PARAM) ? "sandbox" : null);
+  // onStage changes identity on most renders; only a fresh parameter should fire.
+  const onStageRef = useRef(onStage);
   useEffect(() => {
-    onTourRef.current = onTour;
-  }, [onTour]);
+    onStageRef.current = onStage;
+  }, [onStage]);
 
   useEffect(() => {
     if (!ready || !wanted) return;
     const rest = new URLSearchParams(params.toString());
-    rest.delete(TOUR_PARAM);
+    rest.delete(STAGE_PARAM);
+    rest.delete(LEGACY_PARAM);
     const query = rest.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-    onTourRef.current();
+    onStageRef.current(wanted);
   }, [ready, wanted, params, pathname, router]);
 
   return null;

@@ -8,7 +8,7 @@
 // bar. This narrows what the interface offers, which is the question being
 // asked — "what will a new Store Admin actually be handed?" — and nothing more.
 
-import { TOURS } from "@/lib/adminOnboarding";
+import { roleLabel } from "@/lib/adminRoles";
 import { setRolePreview, type PreviewRole } from "@/lib/useAdminSession";
 
 export default function RolePreviewBar({ role }: { role: PreviewRole }) {
@@ -16,7 +16,7 @@ export default function RolePreviewBar({ role }: { role: PreviewRole }) {
     <div className="sticky top-0 z-40 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-destiny-grey px-4 py-2 text-center text-white">
       <span className="material-symbols-rounded text-base text-destiny-orange" aria-hidden="true">visibility</span>
       <span className="text-xs font-bold uppercase tracking-widest">
-        Previewing as {TOURS[role].label}
+        Previewing as {roleLabel(role)}
       </span>
       <span className="text-xs text-white/55">
         The sidebar and pages below show only what this access level offers — your own

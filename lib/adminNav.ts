@@ -471,8 +471,8 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         label: "Onboarding",
         icon: "school",
         role: "super_admin",
-        description: "What each access level is taught, and the admin seen from their side.",
-        keywords: ["tour", "training", "walkthrough", "welcome", "preview", "roles", "new starter"],
+        description: "The videos and sandbox each access level gets, and the admin seen from their side.",
+        keywords: ["tour", "training", "sandbox", "videos", "welcome", "preview", "roles", "new starter"],
       },
       {
         href: "/admin/users",
@@ -585,14 +585,31 @@ export const ADMIN_QUICK_ACTIONS: AdminQuickAction[] = [
     keywords: ["revalidate", "purge", "stale", "rebuild"],
   },
   {
-    // Handled by OnboardingProvider, which picks up ?tour=1 on any admin page.
-    // Also the only way back to a checklist someone hid or already finished.
-    id: "take-tour",
-    label: "Take the admin tour",
+    // Handled by OnboardingProvider, which picks up ?onboarding=<stage> on any
+    // admin page. Also the way back after pressing Finish, which hides the
+    // Get Started launcher.
+    id: "onboarding-restart",
+    label: "Restart onboarding",
     icon: "rocket_launch",
     role: null,
-    href: "/admin?tour=1",
-    keywords: ["onboarding", "get started", "walkthrough", "help", "guide", "checklist", "welcome"],
+    href: "/admin?onboarding=welcome",
+    keywords: ["onboarding", "get started", "welcome", "help", "guide", "checklist", "tour", "new starter"],
+  },
+  {
+    id: "onboarding-videos",
+    label: "Watch the onboarding videos",
+    icon: "play_circle",
+    role: null,
+    href: "/admin?onboarding=videos",
+    keywords: ["onboarding", "video", "how to", "help", "training", "tour", "guide"],
+  },
+  {
+    id: "onboarding-sandbox",
+    label: "Open the sandbox",
+    icon: "science",
+    role: null,
+    href: "/admin?onboarding=sandbox",
+    keywords: ["onboarding", "practice", "try", "test mode", "demo", "tour", "safe", "rehearse"],
   },
   {
     id: "view-site",

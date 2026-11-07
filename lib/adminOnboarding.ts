@@ -1,497 +1,77 @@
-// Every guided tour in /admin, in one place.
+// Admin onboarding, in one place.
 //
-// Same idea as lib/adminNav.ts: one registry, everything derives from it. The
-// welcome gate, the checklist, the spotlight overlay and the super-admin
-// preview page all read this file, so adding a section to a tour is one edit.
+// Onboarding is four stages, and a person can go back to any of the last three
+// whenever they like:
 //
-// Tours are keyed by access level, not by page. Someone with three roles is
-// taught three tours back to back — the checklist simply gets longer, which is
-// the honest thing to show a person who genuinely does have three jobs.
-// super_admin has no tour of its own: it can reach everything, so a "super
-// admin tour" would be every tour at once. Super admins preview other roles
-// from /admin/onboarding instead.
+//   1. Welcome   - who you are in the admin and what you've been given
+//   2. Videos    - the welcome video, then one how-to per role you hold
+//   3. Sandbox   - the real admin pages with every save switched off
+//                  (lib/demoMode.ts), so you can try what the videos showed
+//   4. Finish    - tell us you're ready; the Get Started launcher goes away
 //
-// Anchors are `data-tour` attributes, not CSS classes or nth-child paths, so a
-// restyle can't silently break a tour. Most live on the shared admin primitives
-// (PageHeader, ListToolbar, SearchInput, the sidebar links), which is why five
-// tours need so few edits to the pages themselves. Keep the routes in step with
-// ROUTE_RULES in lib/adminRoles.ts — tests/unit/admin-onboarding.spec.ts fails
-// the build if a tour ever points a role at a page it cannot open.
+// The videos themselves are listed in lib/adminHelpVideos.ts. There is no guided
+// tour any more: a spotlight that walks you through one fixed path is a worse
+// way to learn than the video plus a free run at the real pages.
+//
+// Progress is three ticks (videos, sandbox, finish) stored in
+// admin_onboarding.completed_steps. Older rows also hold the ids of retired tour
+// sections; nothing reads them and they are harmless.
 
-import type { RoleFlags } from "@/lib/adminRoles";
+import { ADMIN_ROLES, type AdminRole, type RoleFlags } from "./adminRoles";
 
-/**
- * Roles with a tour. Deliberately not "every AdminRole except super_admin" —
- * hr_admin has no tour of its own yet (HR launched without one; add it here
- * once one exists). Listing the roles explicitly means a future access level
- * lands with no tour and no build error, rather than forcing a placeholder
- * tour into existence just to satisfy a type.
- */
-export type OnboardedRole = "training_admin" | "event_admin" | "store_admin" | "site_admin";
+export type OnboardingStage = "welcome" | "videos" | "sandbox" | "finish";
 
-export interface TourStep {
-  id: string;
-  /** Navigated to before the step is shown. */
-  route: string;
-  /**
-   * `data-tour` value to spotlight. Omit for a centred card with no target. A
-   * list is tried in order and the first one on screen wins — the sidebar only
-   * exists at desktop width and the tab bar only on phones, so a step about
-   * "where the pages are" names both.
-   */
-  anchor?: string | string[];
-  title: string;
-  body: string;
-  placement?: "top" | "bottom" | "left" | "right" | "auto";
-  /**
-   * This step invites a real interaction — typing into the form, pressing
-   * Save. Demo mode is on for the whole tour regardless; this only tells the
-   * overlay to stop asking for a click on Next and let the page do the talking.
-   */
-  sandbox?: boolean;
-  /** Typed into the anchored field for them, so the demo has something to save. */
-  prefill?: string;
-  /** Advance when the anchored element is clicked, rather than on Next. */
-  advanceOnClick?: boolean;
-  /**
-   * Don't navigate for this step — we're already somewhere the route can't
-   * name, like the editor for the product the previous step just invented.
-   */
-  stay?: boolean;
-}
+/** The stages in the order a person meets them. */
+export const STAGES: { id: OnboardingStage; label: string; icon: string }[] = [
+  { id: "welcome", label: "Welcome", icon: "waving_hand" },
+  { id: "videos", label: "Videos", icon: "play_circle" },
+  { id: "sandbox", label: "Sandbox", icon: "science" },
+  { id: "finish", label: "Finish", icon: "flag" },
+];
 
-export interface TourSection {
-  /** Stable — this is what lands in admin_onboarding.completed_steps. */
-  id: string;
-  label: string;
-  steps: TourStep[];
-}
+/** What the launcher counts: every stage after the welcome. */
+export type OnboardingTask = "videos" | "sandbox" | "finish";
 
-export interface Tour {
-  role: OnboardedRole;
-  label: string;
-  icon: string;
-  blurb: string;
-  sections: TourSection[];
-}
-
-/** Shown to everyone, once, before their first role tour. */
-const ORIENTATION: TourSection = {
-  id: "orientation",
-  label: "Find your way around",
-  steps: [
-    {
-      id: "orientation-welcome",
-      route: "/admin",
-      title: "This is your dashboard",
-      body: "Everything you can change on the website starts from here. You only see the sections your access level covers, so if something is missing, it belongs to someone else.",
-    },
-    {
-      id: "orientation-sidebar",
-      route: "/admin",
-      anchor: ["sidebar", "tabbar"],
-      placement: "right",
-      title: "Every page you can reach is here",
-      body: "Pages are grouped by what they do. If a page isn't listed, your access level doesn't include it. That's normal, not a fault.",
-    },
-    {
-      id: "orientation-search",
-      route: "/admin",
-      anchor: "command-trigger",
-      placement: "bottom",
-      title: "Jump anywhere with one key",
-      body: "Press Command-K (Control-K on Windows) from any page and start typing. It finds pages and your actual content, like a product name or a post title, and takes you straight there. It's also where you restart this tour: search for \"tour\".",
-    },
-  ],
-};
-
-/**
- * Closes every tour. Says out loud that nothing was saved, because the whole
- * point of practising is not having to wonder afterwards.
- */
-export function finaleStep(role: string): TourStep {
-  return {
-    id: `${role}-finale`,
-    route: "/admin",
-    title: "That's it, and nothing was saved",
-    body: "Everything you just did was practice. Nothing was created or changed on the website, and anything you made disappears when the tour ends. To run it again, press Command-K and search for \"tour\".",
-  };
-}
-
-const STORE: Tour = {
-  role: "store_admin",
-  label: "Store Admin",
-  icon: "storefront",
-  blurb: "Products, orders and the shop's hero slides.",
-  sections: [
-    {
-      id: "store-products",
-      label: "Add a product",
-      steps: [
-        {
-          id: "store-list",
-          route: "/admin/store",
-          anchor: "page-header",
-          placement: "bottom",
-          title: "Everything in the shop",
-          body: "Each row is one product. The badge tells you whether it's live on the site or still a draft — a draft is invisible to customers, so you can build a product over several days safely.",
-        },
-        {
-          id: "store-toolbar",
-          route: "/admin/store",
-          anchor: "list-toolbar",
-          placement: "bottom",
-          title: "Finding one product",
-          body: "Search by name, or filter by status. Pressing the forward-slash key focuses this box from anywhere on the page.",
-        },
-        {
-          id: "store-new",
-          route: "/admin/store",
-          anchor: "page-action",
-          placement: "left",
-          title: "Start a new product",
-          body: "Let's make one now. Nothing you do here is real — press this to begin.",
-          advanceOnClick: true,
-        },
-        {
-          id: "store-name",
-          route: "/admin/store/products/new",
-          anchor: "product-name",
-          placement: "bottom",
-          sandbox: true,
-          prefill: "Practice Tee",
-          title: "A name is all you need to start",
-          body: "We've filled in a practice name. Everything else — photos, sizes, price — comes on the next screen, so you never have to get it all right in one go.",
-        },
-        {
-          id: "store-create",
-          route: "/admin/store/products/new",
-          anchor: "product-submit",
-          placement: "top",
-          sandbox: true,
-          advanceOnClick: true,
-          title: "Create it",
-          body: "Press this and you'll land in the product editor, exactly as you would for real. No product is actually created.",
-        },
-        {
-          id: "store-editor",
-          route: "/admin/store/products",
-          stay: true,
-          anchor: "page-header",
-          placement: "bottom",
-          sandbox: true,
-          title: "The product editor",
-          body: "This is where a product actually gets built: photos, description, price, and the grid of colours and sizes. Each colour-and-size pair is a variant with its own stock count, which is how the shop knows when to stop selling something.",
-        },
-      ],
-    },
-    {
-      id: "store-orders",
-      label: "Work through an order",
-      steps: [
-        {
-          id: "orders-list",
-          route: "/admin/store/orders",
-          anchor: "page-header",
-          placement: "bottom",
-          title: "Orders come in here",
-          body: "Paid orders need fulfilling — that means posting the item and marking it sent, which emails the customer. Pending orders are checkouts that were never paid for and can be ignored.",
-        },
-        {
-          id: "orders-filter",
-          route: "/admin/store/orders",
-          anchor: "list-toolbar",
-          placement: "bottom",
-          title: "Start with what needs doing",
-          body: "Filter to paid but unfulfilled and you have your job list for the day. The dashboard shows the same count so you can see it without coming in here.",
-        },
-      ],
-    },
-    {
-      id: "store-hero",
-      label: "Change the shop's hero",
-      steps: [
-        {
-          id: "hero-intro",
-          route: "/admin/store/hero",
-          anchor: "page-header",
-          placement: "bottom",
-          title: "The slides at the top of the shop",
-          body: "These rotate at the top of the public shop page. Keep them to two or three — every extra slide is one more thing a visitor has to wait through before they see products.",
-        },
-      ],
-    },
-  ],
-};
-
-const SITE: Tour = {
-  role: "site_admin",
-  label: "Site Admin",
-  icon: "article",
-  blurb: "Standalone pages and vanity URLs.",
-  sections: [
-    {
-      id: "site-posts",
-      label: "Write a page",
-      steps: [
-        {
-          id: "posts-list",
-          route: "/admin/posts",
-          anchor: "page-header",
-          placement: "bottom",
-          title: "Posts are standalone pages",
-          body: "Not a blog — these are one-off pages for campaigns and events, each living at its own address on the site. Drafts are invisible to the public until you publish them.",
-        },
-        {
-          id: "posts-new",
-          route: "/admin/posts",
-          anchor: "page-action",
-          placement: "left",
-          title: "Starting one",
-          body: "A new post opens the block editor: you stack sections — text, images, buttons — rather than fighting with one big text box.",
-        },
-        {
-          id: "posts-slug",
-          route: "/admin/posts",
-          title: "The address matters",
-          body: "Each post has a slug, which is the bit after the slash in the address. Change it after you've shared the link and the old link breaks — so set it once, before you publish.",
-        },
-      ],
-    },
-    {
-      id: "site-redirects",
-      label: "Make a short link",
-      steps: [
-        {
-          id: "redirects-intro",
-          route: "/admin/redirects",
-          anchor: "page-header",
-          placement: "bottom",
-          title: "Short links you control",
-          body: "A redirect is a tidy address on our own site that forwards somewhere else. Print it on a flyer, then change where it points later without reprinting anything.",
-        },
-        {
-          id: "redirects-new",
-          route: "/admin/redirects",
-          anchor: "page-action",
-          placement: "left",
-          sandbox: true,
-          advanceOnClick: true,
-          title: "Make one now",
-          body: "Press this to open the form. Nothing you enter will be saved.",
-        },
-        {
-          id: "redirects-form",
-          route: "/admin/redirects",
-          anchor: "redirect-form",
-          placement: "bottom",
-          sandbox: true,
-          title: "Three fields, one rule",
-          body: "The label is for you, the slug is what people type, and the target is where they end up. Keep slugs short and lower-case, because they get read aloud from a stage more often than you'd think. Try saving one: it won't be created.",
-        },
-      ],
-    },
-  ],
-};
-
-const EVENT: Tour = {
-  role: "event_admin",
-  label: "Event Admin",
-  icon: "campaign",
-  blurb: "Courses, pop-ups, the featured event and the NFC page.",
-  sections: [
-    {
-      id: "event-courses",
-      label: "Update a course",
-      steps: [
-        {
-          id: "courses-intro",
-          route: "/admin/alpha",
-          anchor: "page-header",
-          placement: "bottom",
-          title: "Course dates live here",
-          body: "Alpha, Destiny 12:2, the Bible Course and CAP Money each have their own page and all work the same way: add a date, and it appears on the public course page automatically.",
-        },
-        {
-          id: "courses-featured",
-          route: "/admin/featured-course",
-          anchor: "page-header",
-          placement: "bottom",
-          title: "One course gets top billing",
-          body: "Whichever course you pick here headlines the What's On page. Only one at a time, on purpose — a page with four equal headlines has none.",
-        },
-      ],
-    },
-    {
-      id: "event-popup",
-      label: "Change the pop-up",
-      steps: [
-        {
-          id: "popup-intro",
-          route: "/admin/popup",
-          anchor: "page-header",
-          placement: "bottom",
-          title: "The pop-up visitors see",
-          body: "This appears a few seconds after someone lands on the site, once per visit. It is the loudest thing we own, so it earns its place only when there's something genuinely time-sensitive to say.",
-        },
-        {
-          id: "popup-save",
-          route: "/admin/popup",
-          anchor: "popup-save",
-          placement: "top",
-          sandbox: true,
-          title: "Try saving it",
-          body: "Change the wording and press Save. The page will tell you it saved — it didn't. Nothing on the live site has changed, and nobody has seen anything.",
-        },
-      ],
-    },
-    {
-      id: "event-featured",
-      label: "Promote an event",
-      steps: [
-        {
-          id: "featured-intro",
-          route: "/admin/featured-event",
-          anchor: "page-header",
-          placement: "bottom",
-          title: "Pulling an event out of ChurchSuite",
-          body: "The list comes straight from ChurchSuite, so you never retype an event. Pick one and it's promoted across the site. If you want it in the pop-up too, the Event Popup page controls that wording.",
-        },
-      ],
-    },
-    {
-      id: "event-nfc",
-      label: "Edit the tap-card page",
-      steps: [
-        {
-          id: "nfc-intro",
-          route: "/admin/nfc",
-          anchor: "page-header",
-          placement: "bottom",
-          title: "What the welcome cards open",
-          body: "Tapping a card with a phone opens this page. Each tile is a link — keep it to the few things a first-time visitor needs, and hide the rest rather than deleting them.",
-        },
-      ],
-    },
-  ],
-};
-
-const TRAINING: Tour = {
-  role: "training_admin",
-  label: "Training Admin",
-  icon: "school",
-  blurb: "Team training categories, sub-groups and posts.",
-  sections: [
-    {
-      id: "training-structure",
-      label: "Learn the structure",
-      steps: [
-        {
-          id: "training-intro",
-          route: "/admin/training",
-          anchor: "page-header",
-          placement: "bottom",
-          title: "Three levels, no more",
-          body: "A category is a team — Production, Hospitality. Inside it are sub-groups, and inside those are the actual training posts. Getting the category right first saves moving things later.",
-        },
-        {
-          id: "training-list",
-          route: "/admin/training",
-          anchor: "list-toolbar",
-          placement: "bottom",
-          title: "Open one to go deeper",
-          body: "Clicking a category takes you into its sub-groups, and a sub-group into its posts. The breadcrumbs at the top always climb back out.",
-        },
-        {
-          id: "training-new",
-          route: "/admin/training",
-          anchor: "page-action",
-          placement: "left",
-          sandbox: true,
-          advanceOnClick: true,
-          title: "Make a practice category",
-          body: "Press this to open the form.",
-        },
-        {
-          id: "training-form",
-          route: "/admin/training",
-          anchor: "modal",
-          placement: "right",
-          sandbox: true,
-          title: "Fill it in however you like",
-          body: "Give it a name and press Save. It will appear in the list as if it were real, but nothing is created.",
-        },
-      ],
-    },
-  ],
-};
-
-export const TOURS: Record<OnboardedRole, Tour> = {
-  store_admin: STORE,
-  site_admin: SITE,
-  event_admin: EVENT,
-  training_admin: TRAINING,
-};
-
-/** Short names for the access levels, for buttons that can't fit a sentence. */
-export const ROLE_LABELS: Record<OnboardedRole, string> = {
-  site_admin: "Site",
-  store_admin: "Store",
-  event_admin: "Events",
-  training_admin: "Training",
-};
-
-/** Fixed order, so a two-role user always sees their tours in the same sequence. */
-export const TOUR_ORDER: OnboardedRole[] = [
-  "site_admin",
-  "store_admin",
-  "event_admin",
-  "training_admin",
+export const TASKS: { id: OnboardingTask; label: string; hint: string }[] = [
+  { id: "videos", label: "Watch your videos", hint: "A few minutes on each part of the admin you look after." },
+  { id: "sandbox", label: "Try it in the sandbox", hint: "The real pages, with nothing saved." },
+  { id: "finish", label: "Finish when you're ready", hint: "Hides this checklist. You can come back any time." },
 ];
 
 /**
- * The tours this person is owed. Super admins get none — they have every role,
- * so this would be every tour; they preview a single role from
- * /admin/onboarding instead.
+ * Roles a super admin can look at the admin as. Every access level except
+ * super_admin itself: it holds all the others, so "previewing" it would show
+ * nothing different.
  */
-export function toursFor(roles: RoleFlags): Tour[] {
-  if (roles.super_admin) return [];
-  return TOUR_ORDER.filter((role) => roles[role]).map((role) => TOURS[role]);
+export type OnboardedRole = Exclude<AdminRole, "super_admin">;
+
+export const ONBOARDED_ROLES: OnboardedRole[] = ADMIN_ROLES.filter(
+  (r): r is OnboardedRole => r !== "super_admin",
+);
+
+export const ROLE_ICONS: Record<OnboardedRole, string> = {
+  site_admin: "language",
+  store_admin: "storefront",
+  event_admin: "event",
+  training_admin: "school",
+  hr_admin: "badge",
+  design_admin: "draw",
+  sermon_admin: "mic",
+  safeguarding_admin: "shield",
+  destiny_one_admin: "smartphone",
+};
+
+/** The roles this person holds, in registry order, without super_admin. */
+export function heldRoles(roles: RoleFlags): OnboardedRole[] {
+  return ONBOARDED_ROLES.filter((role) => roles[role]);
 }
 
-/** Orientation first, then every section of every tour they're owed. */
-export function checklistFor(roles: RoleFlags): TourSection[] {
-  const tours = toursFor(roles);
-  if (!tours.length) return [];
-  return [ORIENTATION, ...tours.flatMap((tour) => tour.sections)];
+export function progressFor(completed: ReadonlySet<string>): { done: number; total: number; pct: number } {
+  const done = TASKS.filter((t) => completed.has(t.id)).length;
+  return { done, total: TASKS.length, pct: Math.round((done / TASKS.length) * 100) };
 }
 
-/** The same list for one role, used by the super-admin preview page. */
-export function checklistForRole(role: OnboardedRole): TourSection[] {
-  return [ORIENTATION, ...TOURS[role].sections];
+/** `?onboarding=` values accepted on any /admin URL. */
+export function stageFromParam(value: string | null): OnboardingStage | null {
+  return STAGES.find((s) => s.id === value)?.id ?? null;
 }
-
-export function stepsOf(sections: TourSection[]): TourStep[] {
-  return sections.flatMap((section) => section.steps);
-}
-
-/** Which section a step belongs to — the overlay ticks it off on the last step. */
-export function sectionOfStep(sections: TourSection[], stepId: string): TourSection | null {
-  return sections.find((s) => s.steps.some((step) => step.id === stepId)) ?? null;
-}
-
-export function progressFor(
-  sections: TourSection[],
-  completed: ReadonlySet<string>,
-): { done: number; total: number; pct: number } {
-  const total = sections.length;
-  const done = sections.filter((s) => completed.has(s.id)).length;
-  return { done, total, pct: total === 0 ? 100 : Math.round((done / total) * 100) };
-}
-
-/** Roughly how long the whole thing takes, for the welcome gate. */
-export function minutesFor(sections: TourSection[]): number {
-  return Math.max(1, Math.round(stepsOf(sections).length * 0.25));
-}
-
-export const ORIENTATION_SECTION = ORIENTATION;

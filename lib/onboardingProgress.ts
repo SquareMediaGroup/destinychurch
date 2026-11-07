@@ -1,7 +1,7 @@
 "use client";
 
-// The signed-in admin's onboarding progress, shared by the gate, the checklist
-// and the tour.
+// The signed-in admin's onboarding progress, shared by the onboarding dialog,
+// the Get Started launcher and the sandbox bar.
 //
 // Same module-scope cached-promise trick as lib/useAdminSession.ts: three
 // components need this on every admin page load, and without sharing they'd
@@ -67,7 +67,7 @@ function load(): Promise<OnboardingState> {
 /**
  * Local state moves first and the write follows. A failed PATCH is swallowed:
  * losing a tick is a smaller problem than a checklist that freezes because the
- * network hiccupped mid-tour.
+ * network hiccupped mid-onboarding.
  */
 function save(patch: Record<string, unknown>) {
   void fetch("/api/admin/onboarding", {
@@ -88,7 +88,8 @@ export function useOnboarding() {
     };
   }, []);
 
-  const completeSection = useCallback((id: string) => {
+  /** Tick one of the launcher's tasks (videos, sandbox, finish). */
+  const complete = useCallback((id: string) => {
     if (current.completed.has(id)) return;
     const completed = new Set(current.completed);
     completed.add(id);
@@ -107,16 +108,5 @@ export function useOnboarding() {
     save({ dismissed: true, gate_seen: true });
   }, []);
 
-  const restore = useCallback(() => {
-    publish({ ...current, dismissed: false });
-    save({ dismissed: false });
-  }, []);
-
-  /** "Run it again" — clears every tick so the checklist starts over. */
-  const reset = useCallback(() => {
-    publish({ ...current, completed: new Set(), dismissed: false });
-    save({ completed_steps: [], reset: true, dismissed: false });
-  }, []);
-
-  return { ...state, completeSection, setGateSeen, dismiss, restore, reset };
+  return { ...state, complete, setGateSeen, dismiss };
 }

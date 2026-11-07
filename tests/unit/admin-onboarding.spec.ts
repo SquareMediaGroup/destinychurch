@@ -1,31 +1,26 @@
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import { test, expect } from "@playwright/test";
 import {
-  ROLE_LABELS,
-  TOURS,
-  TOUR_ORDER,
-  checklistFor,
-  checklistForRole,
-  minutesFor,
+  ONBOARDED_ROLES,
+  ROLE_ICONS,
+  STAGES,
+  TASKS,
+  heldRoles,
   progressFor,
-  sectionOfStep,
-  stepsOf,
+  stageFromParam,
 } from "../../lib/adminOnboarding";
-import { NO_ROLES, hasAccess, type RoleFlags } from "../../lib/adminRoles";
+import { ROLE_VIDEOS, WELCOME_VIDEO, videosFor } from "../../lib/adminHelpVideos";
+import { NO_ROLES, roleLabel, type RoleFlags } from "../../lib/adminRoles";
 import { __demoInternals } from "../../lib/demoMode";
 
 /**
  * Two things are being guarded here.
  *
- *  1. Tours must not send a role somewhere it can't go. A tour that navigates a
- *     Store Admin to /admin/posts bounces them to "you don't have access" —
- *     from inside the thing that was supposed to be teaching them. Same class
- *     of drift tests/unit/admin-nav.spec.ts catches for the sidebar.
+ *  1. The onboarding registry: four stages, a video for every role a person can
+ *     hold, and progress counted in the launcher's three tasks.
  *  2. Demo mode must genuinely stop writes. Everything else about onboarding is
- *     cosmetic; this is the promise made to someone pressing Save on a form
- *     they've been told is a rehearsal, and it is the one thing worth asserting
- *     at the network boundary rather than by reading the code.
+ *     cosmetic; this is the promise made to someone pressing Save in the
+ *     sandbox, and it is the one thing worth asserting at the network boundary
+ *     rather than by reading the code.
  */
 
 const roles = (...granted: (keyof RoleFlags)[]): RoleFlags => ({
@@ -35,118 +30,53 @@ const roles = (...granted: (keyof RoleFlags)[]): RoleFlags => ({
 
 /* ── The registry ──────────────────────────────────────────────────────────── */
 
-test("every tour route is reachable by the role it belongs to", () => {
-  for (const role of TOUR_ORDER) {
-    const flags = roles(role);
-    for (const step of stepsOf(checklistForRole(role))) {
-      expect(
-        hasAccess(flags, step.route),
-        `${role} cannot reach ${step.route} (step ${step.id})`,
-      ).toBe(true);
-    }
+test("onboarding is welcome, videos, sandbox, finish - in that order", () => {
+  expect(STAGES.map((s) => s.id)).toEqual(["welcome", "videos", "sandbox", "finish"]);
+  // The launcher counts everything after the welcome.
+  expect(TASKS.map((t) => t.id)).toEqual(["videos", "sandbox", "finish"]);
+});
+
+test("every stage is reachable from the URL, and nothing else is", () => {
+  for (const { id } of STAGES) expect(stageFromParam(id)).toBe(id);
+  expect(stageFromParam("tour")).toBeNull();
+  expect(stageFromParam(null)).toBeNull();
+});
+
+test("every role a person can hold has a video, a label and an icon", () => {
+  for (const role of ONBOARDED_ROLES) {
+    expect(ROLE_VIDEOS.some((v) => v.role === role), `no video for ${role}`).toBe(true);
+    expect(roleLabel(role)).not.toBe(role);
+    expect(ROLE_ICONS[role], `no icon for ${role}`).toBeTruthy();
   }
+  expect(ONBOARDED_ROLES).not.toContain("super_admin");
 });
 
-test("step and section ids are unique across every tour", () => {
-  const stepIds: string[] = [];
-  const sectionIds: string[] = [];
-  for (const role of TOUR_ORDER) {
-    for (const section of checklistForRole(role)) {
-      sectionIds.push(section.id);
-      for (const step of section.steps) stepIds.push(step.id);
-    }
-  }
-  // Orientation is shared by every tour, so count it once per role.
-  const dedupe = (ids: string[]) => new Set(ids).size;
-  expect(dedupe(stepIds)).toBe(dedupe(stepIds));
-  for (const role of TOUR_ORDER) {
-    const own = stepsOf(checklistForRole(role)).map((s) => s.id);
-    expect(new Set(own).size, `${role} repeats a step id`).toBe(own.length);
-  }
-  expect(new Set(sectionIds).size).toBeGreaterThan(0);
+test("video ids are unique", () => {
+  const ids = [WELCOME_VIDEO, ...ROLE_VIDEOS].map((v) => v.id);
+  expect(new Set(ids).size).toBe(ids.length);
 });
 
-test("every role in TOUR_ORDER has a tour, a label and at least one section", () => {
-  for (const role of TOUR_ORDER) {
-    expect(TOURS[role], `no tour for ${role}`).toBeTruthy();
-    expect(TOURS[role].sections.length).toBeGreaterThan(0);
-    expect(ROLE_LABELS[role]).toBeTruthy();
-    for (const section of TOURS[role].sections) {
-      expect(section.steps.length, `${section.id} has no steps`).toBeGreaterThan(0);
-    }
-  }
+test("people are shown the videos for the roles they hold", () => {
+  expect(videosFor(NO_ROLES)).toEqual([]);
+  expect(videosFor(roles("store_admin", "site_admin")).map((v) => v.role)).toEqual([
+    "store_admin",
+    "site_admin",
+  ]);
+  // Super admins hold everything, so they are shown everything.
+  expect(videosFor(roles("super_admin"))).toEqual(ROLE_VIDEOS);
 });
 
-test("super admins are offered no tour of their own", () => {
-  expect(checklistFor(roles("super_admin"))).toEqual([]);
-  // …but a super admin previewing a role gets that role's tour in full.
-  expect(checklistForRole("store_admin").length).toBeGreaterThan(1);
+test("heldRoles lists what someone holds, never super_admin", () => {
+  expect(heldRoles(roles("hr_admin", "store_admin"))).toEqual(["store_admin", "hr_admin"]);
+  expect(heldRoles(roles("super_admin"))).toEqual([]);
 });
 
-test("a two-role admin gets both checklists, in registry order", () => {
-  const both = checklistFor(roles("site_admin", "store_admin")).map((s) => s.id);
-  const site = checklistForRole("site_admin").map((s) => s.id);
-  const store = TOURS.store_admin.sections.map((s) => s.id);
-  expect(both).toEqual([...site, ...store]);
-});
-
-test("progress is counted in sections, not steps", () => {
-  const sections = checklistForRole("store_admin");
-  expect(progressFor(sections, new Set())).toEqual({
-    done: 0,
-    total: sections.length,
-    pct: 0,
-  });
-  const all = new Set(sections.map((s) => s.id));
-  expect(progressFor(sections, all).pct).toBe(100);
-  expect(progressFor([], new Set()).pct).toBe(100);
-  expect(minutesFor(sections)).toBeGreaterThanOrEqual(1);
-});
-
-test("a step resolves back to the section that owns it", () => {
-  const sections = checklistForRole("store_admin");
-  expect(sectionOfStep(sections, "store-create")?.id).toBe("store-products");
-  expect(sectionOfStep(sections, "not-a-step")).toBeNull();
-});
-
-test("every anchor a tour spotlights is rendered by the page it's on", () => {
-  // The tour waits for its anchor, gives up and shows a centred card pointing
-  // at nothing. That failure is silent, which is how most of the Event Admin
-  // tour ended up spotlighting nothing: its pages never used PageHeader, so
-  // "page-header" was never on screen. Read from source rather than rendered,
-  // so it's a heuristic: the page (or an admin component it imports) must
-  // either write the attribute itself or use the shared primitive that does.
-  const root = join(__dirname, "../..");
-  const SHELL = new Set(["sidebar", "tabbar", "command-trigger"]);
-  const VIA: Record<string, string> = {
-    "page-header": "<PageHeader",
-    "page-action": "<PageHeader",
-    "list-toolbar": "<ListToolbar",
-    "list-search": "<SearchInput",
-    modal: "<Modal",
-  };
-  const read = (file: string) => (existsSync(file) ? readFileSync(file, "utf8") : "");
-  const pageSource = (route: string) => {
-    const page = read(join(root, "app", route, "page.tsx"));
-    const imported = Array.from(page.matchAll(/from "@\/components\/admin\/([^"]+)"/g)).map(
-      (m) => read(join(root, "components/admin", `${m[1]}.tsx`)),
-    );
-    return [page, ...imported].join("\n");
-  };
-
-  for (const role of TOUR_ORDER) {
-    for (const step of stepsOf(checklistForRole(role))) {
-      // `stay` steps sit on a page their route can't name (a fresh product's editor).
-      if (!step.anchor || step.stay) continue;
-      const names = Array.isArray(step.anchor) ? step.anchor : [step.anchor];
-      if (names.every((n) => SHELL.has(n))) continue;
-      const src = pageSource(step.route);
-      const found = names.some(
-        (n) => src.includes(`data-tour="${n}"`) || (VIA[n] !== undefined && src.includes(VIA[n])),
-      );
-      expect(found, `${step.id}: ${step.route} never renders data-tour="${names.join('" or "')}"`).toBe(true);
-    }
-  }
+test("progress is counted in launcher tasks", () => {
+  expect(progressFor(new Set())).toEqual({ done: 0, total: 3, pct: 0 });
+  expect(progressFor(new Set(["videos"])).done).toBe(1);
+  expect(progressFor(new Set(["videos", "sandbox", "finish"])).pct).toBe(100);
+  // Ids left behind by the retired tour are ignored.
+  expect(progressFor(new Set(["store-products", "orientation"])).done).toBe(0);
 });
 
 /* ── Demo mode ─────────────────────────────────────────────────────────────── */
@@ -221,7 +151,7 @@ test("a created row appears in the next list, and can be opened", async () => {
     ).json()) as Record<string, unknown>[];
     expect(list.map((p) => p.name)).toEqual(["Existing", "Practice Tee"]);
 
-    // The editor the tour navigates to must not 404 on a row that isn't real.
+    // The editor opened after "create" must not 404 on a row that isn't real.
     const opened = (await (
       await demoFetch(`/api/admin/store/products/${row.id}`)
     ).json()) as Record<string, unknown>;

@@ -2,11 +2,11 @@
 
 // Onboarding, seen from the super admin's side.
 //
-// Super admins never get onboarding themselves — they hold every role, so
-// "their" tour would be every tour at once, and none of it would tell them what
-// they actually want to know: what does the person I just created see when they
-// log in? This page answers that directly. Pick an access level and either walk
-// its tour or drop into the admin with the interface narrowed to it.
+// Super admins hold every role, so what they want to know is not "what do I
+// watch" but "what does the person I just created see when they log in?". This
+// page answers that directly. Pick an access level and either open the sandbox
+// as that role, or drop into the admin with the interface narrowed to it. Their
+// videos are listed so you can see what they will be asked to watch.
 //
 // Narrowing is presentation only. Middleware still knows you're a super admin
 // and will still open anything you type in the address bar; the preview bar
@@ -14,22 +14,20 @@
 
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/admin/AdminUI";
-import { useOnboardingTour } from "@/components/admin/onboarding/OnboardingProvider";
-import {
-  ROLE_LABELS,
-  TOURS,
-  TOUR_ORDER,
-  checklistForRole,
-  minutesFor,
-} from "@/lib/adminOnboarding";
+import { useOnboardingFlow } from "@/components/admin/onboarding/OnboardingProvider";
+import { ONBOARDED_ROLES, ROLE_ICONS } from "@/lib/adminOnboarding";
+import { ROLE_VIDEOS, isPublished } from "@/lib/adminHelpVideos";
+import { NO_ROLES, roleLabel } from "@/lib/adminRoles";
 import { useAdminSession, setRolePreview, type PreviewRole } from "@/lib/useAdminSession";
 import { visibleItems } from "@/lib/adminNav";
-import { NO_ROLES } from "@/lib/adminRoles";
+
+const SECONDARY =
+  "inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10";
 
 export default function OnboardingAdminPage() {
   const router = useRouter();
   const { actualRoles, previewRole, loaded } = useAdminSession();
-  const { startRole } = useOnboardingTour();
+  const { startRole } = useOnboardingFlow();
 
   function preview(role: PreviewRole) {
     setRolePreview(role);
@@ -40,15 +38,11 @@ export default function OnboardingAdminPage() {
     <div className="mx-auto max-w-5xl px-6 py-10">
       <PageHeader
         title="Onboarding"
-        subtitle="What each access level is taught when they first sign in, and what the admin looks like from their side. Running a tour also switches the admin to that access level's view."
+        subtitle="What each access level gets: a welcome, their videos, then a sandbox where nothing is saved. Opening one here also switches the admin to that access level's view."
         back={{ href: "/admin", label: "Dashboard" }}
         action={
           previewRole ? (
-            <button
-              type="button"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
-              onClick={() => setRolePreview(null)}
-            >
+            <button type="button" className={SECONDARY} onClick={() => setRolePreview(null)}>
               Exit preview
             </button>
           ) : undefined
@@ -62,11 +56,9 @@ export default function OnboardingAdminPage() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {TOUR_ORDER.map((role) => {
-          const tour = TOURS[role];
-          const sections = checklistForRole(role);
+        {ONBOARDED_ROLES.map((role) => {
+          const video = ROLE_VIDEOS.find((v) => v.role === role);
           const reach = visibleItems({ ...NO_ROLES, [role]: true });
-          const minutes = minutesFor(sections);
           const active = previewRole === role;
           return (
             <div
@@ -80,13 +72,12 @@ export default function OnboardingAdminPage() {
               <div className="mb-4 flex items-center gap-3">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-destiny-orange/10">
                   <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">
-                    {tour.icon}
+                    {ROLE_ICONS[role]}
                   </span>
                 </span>
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-base font-black text-destiny-grey dark:text-white">{tour.label}</h2>
-                  <p className="text-xs text-destiny-grey/55 dark:text-white/55">{tour.blurb}</p>
-                </div>
+                <h2 className="min-w-0 flex-1 text-base font-black text-destiny-grey dark:text-white">
+                  {roleLabel(role)}
+                </h2>
                 {active && (
                   <span className="shrink-0 rounded-full bg-destiny-orange/10 px-2.5 py-1 text-[11px] font-bold text-destiny-orange">
                     Previewing
@@ -102,43 +93,39 @@ export default function OnboardingAdminPage() {
               </p>
 
               <p className="mb-1 text-xs font-bold uppercase tracking-widest text-destiny-grey/40 dark:text-white/40">
-                Their checklist · about {minutes} {minutes === 1 ? "minute" : "minutes"}
+                Their video
               </p>
-              <ol className="mb-5 space-y-1">
-                {sections.map((section, i) => (
-                  <li key={section.id} className="flex gap-2 text-sm text-destiny-grey/70 dark:text-white/70">
-                    <span className="tabular-nums text-destiny-grey/35 dark:text-white/35">{i + 1}.</span>
-                    {section.label}
-                  </li>
-                ))}
-              </ol>
+              <p className="mb-5 text-sm text-destiny-grey/70 dark:text-white/70">
+                {video ? video.title : "None yet"}
+                {video && (
+                  <span className="text-destiny-grey/45 dark:text-white/45">
+                    {isPublished(video) ? ` · ${video.length ?? ""}` : " · coming soon"}
+                  </span>
+                )}
+              </p>
 
               <div className="mt-auto flex flex-wrap gap-2">
                 <button
                   type="button"
                   className="inline-flex items-center gap-1.5 rounded-xl bg-destiny-orange px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-110"
-                  onClick={() => startRole(role)}
+                  onClick={() => startRole(role, "sandbox")}
                 >
-                  <span className="material-symbols-rounded text-lg" aria-hidden="true">play_arrow</span>
-                  Run this tour
+                  <span className="material-symbols-rounded text-lg" aria-hidden="true">science</span>
+                  Open the sandbox
+                </button>
+                <button type="button" className={SECONDARY} onClick={() => startRole(role, "videos")}>
+                  <span className="material-symbols-rounded text-lg" aria-hidden="true">play_circle</span>
+                  Their videos
                 </button>
                 {active ? (
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
-                    onClick={() => setRolePreview(null)}
-                  >
+                  <button type="button" className={SECONDARY} onClick={() => setRolePreview(null)}>
                     <span className="material-symbols-rounded text-lg" aria-hidden="true">visibility_off</span>
                     Exit preview
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
-                    onClick={() => preview(role)}
-                  >
+                  <button type="button" className={SECONDARY} onClick={() => preview(role)}>
                     <span className="material-symbols-rounded text-lg" aria-hidden="true">visibility</span>
-                    Preview as {ROLE_LABELS[role]}
+                    Preview as {roleLabel(role)}
                   </button>
                 )}
               </div>
@@ -146,11 +133,6 @@ export default function OnboardingAdminPage() {
           );
         })}
       </div>
-
-      <p className="mt-6 text-sm text-destiny-grey/55 dark:text-white/55">
-        Other access levels, such as HR Admin, don&rsquo;t have a tour yet. People who
-        only hold those see the dashboard without a welcome or checklist.
-      </p>
     </div>
   );
 }

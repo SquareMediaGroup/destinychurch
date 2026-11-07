@@ -8,9 +8,12 @@ then "Oh, and one more thing" and Destiny One. They share everything except the 
 | `ComingIn2027` | Destiny One, "Coming in 2027", destinytees.uk/app | 3:30 |
 | `DownloadToday` | "Download today", App Store badge, destinytees.uk/app | 3:30 |
 | `DestinyOneFilm` | Destiny One alone, in more depth, with music; "Coming in 2027". Plays on /app | 1:03 |
+| `AdminWelcome` | Admin help series, video 1: "Welcome to Destiny Admin", every role in a line, test mode, the Help page. For YouTube and /admin/help | 1:21 |
+| `ShopTutorial` | Admin help series, video 2: everything a Store Admin can do, filmed on the real /admin against a pretend shop. For YouTube and /admin/help | 7:25 |
 
 Finished renders are kept in `exports/` (the 4K `DownloadToday` and `Destiny-One-Film.mp4`) so they can be
-downloaded from GitHub; `out/` stays ignored for working renders.
+downloaded from GitHub; `out/` stays ignored for working renders. The admin help videos are not committed (about
+60 MB each, for YouTube): render them to `out/` and hand the file over.
 
 ## Commands
 
@@ -21,6 +24,8 @@ npm run dev                      # Remotion Studio, to preview and tweak
 npx remotion render ComingIn2027 out/ComingIn2027.mp4
 npx remotion render DownloadToday out/DownloadToday.mp4
 npx remotion render DestinyOneFilm out/Destiny-One-Film.mp4
+npx remotion render AdminWelcome out/Admin-Welcome.mp4 --crf=18
+npx remotion render ShopTutorial out/Shop-Tutorial.mp4 --crf=18   # needs a capture run first, see below
 npm run lint                     # eslint + tsc
 ```
 
@@ -58,6 +63,36 @@ before/after pairs for sliders in `stills/before-after/`. See `stills/README.md`
 - **The web copy of the film** on /app is `public/img/destiny-one/film.mp4` (re-encoded, CRF 22, faststart)
   with `film-poster.webp`. After re-rendering:
   `ffmpeg -i out/Destiny-One-Film.mp4 -c:v libx264 -preset slow -crf 22 -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart ../../public/img/destiny-one/film.mp4`
+- **The admin screens** (`public/admin/`) are the real /admin with an invented admin (Sam Taylor) and made-up
+  numbers, no real account or data. `capture/admin-mock-supabase.cjs` stands in for Supabase just enough for
+  middleware to let a session through, and `capture/admin.cjs` answers the pages' `/api/admin/*` calls and
+  switches roles between shots (steps at the top of each file). `AdminWelcome` uses the same music and credit
+  as `DestinyOneFilm`; put the credit in the YouTube description. Its poster is
+  `public/img/admin-help/welcome-poster.webp`.
+- **The Store Admin tutorial** (`ShopTutorial`) is filmed, not drawn. `capture/shop-tutorial.cjs` drives the real
+  store pages through every action (search and filters, a new product with photos, colours, sizes and stock,
+  publishing, a book with a custom format, bulk actions, orders from paid to fulfilled, the shop hero) and saves
+  a screenshot before and after each one, plus where the cursor goes. The site's own API routes run as normal;
+  only the database is pretend: `capture/admin-mock-supabase.cjs` keeps tables and uploaded files in memory,
+  seeded by `capture/shop-seed.cjs` (the shop's real products and photos from `capture/shop-photos/`, invented
+  customers and orders). Steps are at the top of `shop-tutorial.cjs`. The frames land in `public/tutorial/shop/`
+  (gitignored, about 170 JPEGs) and the step list in `src/tutorials/shop-steps.json` (committed), so re-run the
+  capture before rendering on a fresh checkout. Restart the mock before each run: a run changes the shop.
+  Poster: `public/img/admin-help/shop-poster.webp`.
+- **Making another role's tutorial**: write `capture/<id>-tutorial.cjs` with `film()` from
+  `capture/tutorial-kit.cjs` (setup steps are at its top), add a seed for the pretend data if the pages need any,
+  then a two-line `src/<Name>Tutorial.tsx` with `defineTutorial()` from `src/Tutorial.tsx`, and register it in
+  `src/Root.tsx`.
+- **Every role has one**: shop, events, site, training, hr, design, sermons, super, d1 (Destiny One Admin) and
+  safeguarding, each `capture/<id>-tutorial.cjs` with its `<id>-seed.cjs`. The Destiny One and Safeguarding
+  tutorials don't rebuild Destiny One's database functions: `capture/d1-fake-api.cjs` answers
+  `/api/admin/destiny-one/*` in the browser from invented people and an invented conversation, so the real
+  pages are filmed and no real message is ever opened. Run them with `SEED=capture/d1-seed.cjs`.
+- The filming browser can't show date boxes in UK order (its headless build has only US date formats), so
+  date fields read mm/dd/yyyy in the videos. Dates written by the site itself are UK-style.
+- **YouTube thumbnails** (`src/Thumbnails.tsx`, 1280×720, one `Thumb-<id>` still per video): `npm run thumbnails`
+  → `out/thumbnails/<id>.jpg`. Each uses one frame from its tutorial, copied to `public/thumbnails/` (committed),
+  so they render without re-filming. Set `REMOTION_BROWSER` to a Chrome path if Remotion can't download its own.
 - The glass tab bar on Destiny One screens is drawn in the video, because the app's web build (used for the
   screenshots) shows its tabs differently. The status bar (9:41) is drawn too.
 - Look: light pages, no glows, and every move uses one aggressive ease in and out (`EASE` in

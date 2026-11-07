@@ -74,6 +74,14 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         description: "Ask for admin jobs in plain English: banners, popups, posts, the featured event.",
         keywords: ["ai", "assistant", "chat", "agent", "ask", "help", "schedule", "automate"],
       },
+      {
+        href: "/admin/help",
+        label: "Help",
+        icon: "help",
+        role: null,
+        description: "Short videos on how the admin works, for every role.",
+        keywords: ["help", "videos", "tutorial", "how to", "stuck", "guide", "youtube", "onboarding"],
+      },
     ],
   },
   {

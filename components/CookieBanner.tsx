@@ -14,7 +14,9 @@ export default function CookieBanner() {
   const bannerRef = useRef<HTMLDivElement>(null);
 
   // /portal is the staff self-service area: its own minimal shell, no site chrome.
-  const visible = mounted && !consent && !pathname.startsWith("/portal");
+  // /talent-show/screen runs full screen on a projector with nobody to dismiss it.
+  const visible =
+    mounted && !consent && !pathname.startsWith("/portal") && pathname !== "/talent-show/screen";
 
   // Publish how much of the viewport bottom the banner covers so the toast
   // stack (ToastProvider) sits above it instead of on top of it — the

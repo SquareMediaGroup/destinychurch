@@ -18,8 +18,11 @@ export interface MenuLayoutInput {
   /** The message bubble, in window coordinates. */
   bubble: Rect;
   screen: { w: number; h: number };
-  /** Safe area: status bar / notch and home indicator. */
-  insets: { top: number; bottom: number };
+  /**
+   * Safe area: status bar / notch and home indicator, and on iPhone Duo the
+   * side status bar and camera (left/right; 0 when not given).
+   */
+  insets: { top: number; bottom: number; left?: number; right?: number };
   /** Mine sit on the right, so the bar and actions line up with the right edge. */
   mine: boolean;
   bar: { w: number; h: number };
@@ -43,14 +46,16 @@ function clamp(v: number, lo: number, hi: number) {
   return Math.min(Math.max(v, lo), Math.max(lo, hi));
 }
 
-/** Left edge of something `w` wide, lined up with the bubble's outer edge and kept on screen. */
-function alignX(bubble: Rect, w: number, screenW: number, mine: boolean) {
+/** Left edge of something `w` wide, lined up with the bubble's outer edge and kept on screen (inside the side safe area). */
+function alignX(bubble: Rect, w: number, screenW: number, mine: boolean, left: number, right: number) {
   const x = mine ? bubble.x + bubble.w - w : bubble.x;
-  return clamp(x, EDGE, screenW - EDGE - w);
+  return clamp(x, left + EDGE, screenW - right - EDGE - w);
 }
 
 export function menuLayout({ bubble, screen, insets, mine, bar, card }: MenuLayoutInput): MenuLayout {
   const top = insets.top + EDGE;
+  const left = insets.left ?? 0;
+  const right = insets.right ?? 0;
   const bottom = screen.h - insets.bottom - EDGE;
   const room = bottom - top;
 
@@ -63,8 +68,8 @@ export function menuLayout({ bubble, screen, insets, mine, bar, card }: MenuLayo
   const bubbleY = stackTop + bar.h + GAP;
 
   return {
-    bar: { x: alignX(bubble, bar.w, screen.w, mine), y: stackTop },
+    bar: { x: alignX(bubble, bar.w, screen.w, mine, left, right), y: stackTop },
     bubble: { x: bubble.x, y: bubbleY, h: shownH, clipped: shownH < bubble.h },
-    card: { x: alignX(bubble, card.w, screen.w, mine), y: bubbleY + shownH + GAP },
+    card: { x: alignX(bubble, card.w, screen.w, mine, left, right), y: bubbleY + shownH + GAP },
   };
 }

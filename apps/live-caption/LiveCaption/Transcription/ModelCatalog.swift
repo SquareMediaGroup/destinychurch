@@ -27,6 +27,22 @@ enum ModelCatalog {
     /// checkout's `Vendor/Models` (where `fetch-whisper-model.sh` puts them,
     /// so a developer running from Xcode doesn't have to copy files around).
     static func availableModels() -> [WhisperModel] {
+        allModelFiles().filter { !isVADModel($0.url) }
+    }
+
+    /// The Silero voice-activity model `SpeechDetector` needs, if one has
+    /// been fetched (`Scripts/fetch-whisper-model.sh silero-v5.1.2`). It sits
+    /// in the same folders as the whisper models but is not one, so it's kept
+    /// out of the model picker.
+    static func vadModel() -> WhisperModel? {
+        allModelFiles().filter { isVADModel($0.url) }.sorted { $0.name > $1.name }.first
+    }
+
+    private static func isVADModel(_ url: URL) -> Bool {
+        url.lastPathComponent.lowercased().contains("silero")
+    }
+
+    private static func allModelFiles() -> [WhisperModel] {
         var seenPaths = Set<String>()
         var models: [WhisperModel] = []
 

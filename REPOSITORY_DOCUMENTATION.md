@@ -87,7 +87,7 @@ Responses: JSON, Server-Side HTML, Redirects, Cached Assets
 
 - **Public Pages:** No auth required; cached at edge
 - **Member Features:** Supabase Auth (email/password); tokens in secure cookies
-- **Admin Dashboard:** Supabase Auth required; additional role checks via proxy
+- **Admin Dashboard:** Supabase Auth required, **plus two-factor sign-in** (a code from an authenticator app; the session must be `aal2`) for every account with an admin role; additional role checks via proxy. See [Two-factor sign-in](#two-factor-sign-in-admins)
 - **API Endpoints:** Service role key (server-to-database); user tokens (client-to-server)
 
 ---
@@ -212,6 +212,7 @@ destinychurch/
 │   │   │   │                      #   hr/ includes checklists/ + checklist-templates/
 │   │   │   └── ...
 │   │   ├── portal/                # Staff self-service API — me/, reviews/, checklists/, team/, leave/, documents/, design/ (linked hr_staff)
+│   │   ├── auth/mfa/              # Two-factor sign-in: enroll/, verify/, recover/ (signed-in admin, before aal2)
 │   │   ├── design-request/        # Public, share-token-scoped: [token]/ + deliverable downloads/confirm
 │   │   ├── cron/                  # Vercel Cron — hr-review-reminders/, design-deliverables-purge/, … (Bearer CRON_SECRET)
 │   │   ├── chat/                  # POST /api/chat — Smart Search tool-calling chat
@@ -270,7 +271,7 @@ destinychurch/
 │   ├── buzzsprout.server.ts       # Publishes sermon audio to Buzzsprout (admin upload flow)
 │   ├── youtube.ts                 # YouTube API client
 │   ├── smartSearch.ts             # AI search logic (parseAnswer, fallbacks)
-│   ├── smartSearch/tools.ts       # Smart Search tool-calling tools (products, sermons, weather, maps, web)
+│   ├── smartSearch/tools.ts       # Smart Search tool-calling tools (products, sermons, events, weather, maps, web)
 │   ├── embedLoading.ts            # Stage timings for the embed loading overlay
 │   ├── pageContent.ts             # Dynamic page editing
 │   ├── posts.ts                   # Post types + hero styles (postTemplates.ts: starter layouts; postPreview.server.ts: signed draft previews)
@@ -279,6 +280,8 @@ destinychurch/
 │   ├── hr.ts                      # HR staff operations, types, leave/review label maps
 │   ├── hrEmail.ts                 # HR notification emails (leave request/decision, review digest) via Resend
 │   ├── staffPortalAuth.ts         # /portal + /api/portal auth boundary (linked hr_staff row, not admin_roles)
+│   ├── twoFactor.ts / twoFactor.server.ts / backupCodes.ts  # Admin two-factor sign-in: aal2 check (middleware), backup codes, resets
+│   ├── portalStatus.ts            # PORTAL_OPEN switch — the portal is closed, "Coming Summer 2027"; lists every place that reads it
 │   ├── designTickets.ts           # Design queue vocabulary + the canTransition state machine (client-safe)
 │   ├── designTickets.server.ts    # applyTransition (the only writer of status), requester identity, requesterView
 │   ├── designEmail.ts             # Design ticket notifications via Resend
@@ -413,6 +416,10 @@ destinychurch/
 │   ├── status/                    # status.destinytees.uk — public status of the website and Destiny One
 │   │                               # (Next.js, own npm project AND own Vercel project, no Supabase client,
 │   │                               # so it stays up when the site or Supabase is down). See "Status page" below.
+│   ├── campaign-videos/           # Remotion project: the two launch films (website, then Destiny One;
+│   │                               # "Coming in 2027" and "Download today" endings), plus the 1-minute
+│   │                               # Destiny One film shown on /app. Own npm project,
+│   │                               # excluded from the root tsconfig/eslint. See "Campaign videos" below.
 │   ├── talent-buzzer/             # Talent show judge buzzers — one app on both machines: hub (LED) / Avolites
 │   │                               # agent (Titan PC). Android tablets press -> Titan Web API cue +
 │   │                               # X / golden takeover + sound on the LED screen. LAN only, own
@@ -424,6 +431,10 @@ destinychurch/
 │                                   # and/or publishing an NDI source. Audio never leaves the machine.
 │                                   # whisper.cpp is a git submodule under Vendor/; the NDI SDK is
 │                                   # license-gated and not committed. Build via `make` (see its README).
+│                                   # Settings > NDI Network sets the interface, discovery servers and
+│                                   # multicast (written to an app-owned ndi-config.v1.json via
+│                                   # NDI_CONFIG_DIR). A Silero VAD gate keeps applause/music/noise
+│                                   # away from whisper (needs ggml-silero-*.bin in the Models folder).
 ├── mobile/                        # Native SwiftUI iOS app (Swift 6, strict concurrency). Five tabs —
 │                                   # Home/Sermons/Events/Give/More. XcodeGen project (project.yml is
 │                                   # the source of truth; the .xcodeproj is generated, not committed).
@@ -450,6 +461,7 @@ destinychurch/
 │   └── workflows/                 # ci.yml (every PR), playwright.yml (manual e2e), AI content jobs, talent-buzzer-release.yml
 │
 ├── .claude/                       # Claude Code settings
+│   └── skills/                    # Project skills: vibe-security, remotion-* (Remotion video skills from remotion-dev/skills)
 ├── .vscode/                       # VS Code workspace settings
 ├── next.config.ts                 # Next.js configuration
 ├── playwright.config.ts           # E2E test configuration
@@ -521,6 +533,8 @@ CREATE TABLE site_banner (
   type text,                           -- 'sitewide', 'alpha', 'youth_alpha', 'recovery', 'bible_course'
   link text,                           -- Optional URL for banner
   link_text text,                      -- CTA button text
+  starts_at timestamptz,               -- optional: hidden until then (20261105_01_admin_destinyai.sql)
+  ends_at timestamptz,                 -- optional: hidden from then (check: ends_at > starts_at)
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz
 );
@@ -529,9 +543,16 @@ CREATE TABLE site_banner (
 -- RLS: Service role only
 ```
 
+**Scheduling:** `active` is the switch; `starts_at` / `ends_at` are an optional
+window inside it. `getActiveBanner()` in `app/layout.tsx` drops rows outside
+their window with `isWithinWindow()` (`lib/schedule.ts`). The layout is
+`noStore()`, so "live in 2 hours, gone at 3pm" needs no cron job. It selects `*`
+rather than naming the window columns so the banner keeps working on a database
+that hasn't had the migration yet.
+
 **Used By:**
 - `app/layout.tsx` fetches active banner on every request
-- Admin dashboard to edit banners
+- Admin dashboard to edit banners (`/admin/banner` has Show from / Hide after fields)
 
 ---
 
@@ -594,22 +615,34 @@ migration was needed.
 
 ```sql
 CREATE TABLE hire_enquiries (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  email text NOT NULL,
-  phone text NOT NULL,
-  date_needed date NOT NULL,
-  event_description text NOT NULL,
-  approx_guests integer,
-  created_at timestamptz DEFAULT now()
+  id            bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name          text NOT NULL,
+  email         text NOT NULL,
+  phone         text NOT NULL,
+  organisation  text,
+  event_type    text NOT NULL,   -- "Other — <description>" when the visitor picked Other
+  space         text NOT NULL,
+  date          text NOT NULL,   -- YYYY-MM-DD from the form
+  start_time    text NOT NULL,
+  end_time      text NOT NULL,
+  attendance    text NOT NULL,
+  requirements  text,
+  message       text,
+  church_member text,            -- "Yes" / "No", asked for weddings (20261031_01 migration)
+  created_at    timestamptz NOT NULL DEFAULT now()
 );
 
--- RLS: Public insert; service role read
+-- RLS: "service only" — the server action writes with the service role
 ```
 
+There is no `event_type_other` column: the "Please describe your event" answer
+is folded into `event_type`. Sending a column the table doesn't have makes
+PostgREST reject the whole insert, which is how every enquiry failed between
+9 and 31 October 2026.
+
 **Used By:**
-- `app/hire/actions.ts` (server action) inserts submissions
-- Admin dashboard to view inquiries
+- `app/hire/actions.ts` (server action) inserts submissions and emails techteam@destinytees.uk
+- No admin page reads it yet — enquiries are handled from that email
 
 ---
 
@@ -757,6 +790,8 @@ CREATE TABLE site_popup (
   cta_link text,                       -- Button URL
   image_url text,                      -- Popup image
   show_once boolean DEFAULT true,      -- Show only once per browser session
+  starts_at timestamptz,               -- optional window, same rules as site_banner
+  ends_at timestamptz,
   updated_at timestamptz DEFAULT now()
 );
 
@@ -764,7 +799,7 @@ CREATE TABLE site_popup (
 ```
 
 **Used By:**
-- `app/layout.tsx` fetches active pop-up
+- `app/layout.tsx` fetches active pop-up (outside its window it reads as off)
 - Displayed by `SitePopup.tsx` component
 - Admin dashboard to manage pop-ups
 
@@ -931,7 +966,7 @@ having a linked `hr_staff` row, not by an `admin_roles` flag.
 - HR admin to manage staff directory
 - `/admin/hr` dashboard
 - `/portal` + `/api/portal/*` — staff self-service, gated by the linked login
-  (`lib/staffPortalAuth.ts`)
+  (`lib/staffPortalAuth.ts`). Closed until Summer 2027 (`lib/portalStatus.ts`)
 
 ---
 
@@ -1012,6 +1047,35 @@ and `lib/adminRoles.ts` for the enforcement logic.
   15s to take effect
 - `app/api/admin/search` — cross-section record search for the ⌘K palette. Open to any signed-in
   admin, but it re-reads the caller's roles and only queries the sections that role can open
+
+---
+
+#### 10d. **admin_mfa_recovery_codes / admin_mfa_lockouts**
+**Purpose:** Backup codes for admin two-factor sign-in, and the wrong-guess counter that locks them (migration `20261104_01_admin_two_factor.sql`). The authenticator app itself is a Supabase Auth TOTP factor, stored by Supabase, not here.
+
+```sql
+CREATE TABLE admin_mfa_recovery_codes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  auth_user_id uuid NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
+  code_hash text NOT NULL UNIQUE,   -- SHA-256 of the normalised code; the code itself is never stored
+  used_at timestamptz,              -- set once, by an update that only matches an unused code
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE admin_mfa_lockouts (
+  auth_user_id uuid PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
+  failed_count integer NOT NULL DEFAULT 0,
+  window_started_at timestamptz NOT NULL DEFAULT now(),
+  locked_until timestamptz          -- 5 wrong backup codes in 15 minutes locks them for 15 minutes
+);
+
+-- admin_mfa_record_failure(p_user uuid) → timestamptz: counts one wrong code in
+-- a single statement and returns locked_until (null while not locked).
+```
+
+**Access:** service role only. RLS on with no policies, every grant revoked from `anon` and `authenticated`, and the function's `EXECUTE` revoked too, so the publishable key in the browser can't read a hash or reset a lockout. Tested by `tests/sql/admin-two-factor.sql` (`scripts/test-sql.sh admin-two-factor`).
+
+**Used by:** `lib/twoFactor.server.ts` (issue, spend, count, remove) through `app/api/auth/mfa/*`, `app/api/admin/me/two-factor` and `app/api/admin/users/[id]/two-factor`.
 
 ---
 
@@ -1844,6 +1908,11 @@ The design request queue (`/portal/design/request` → `/admin/design`). Someone
 team for a poster, a designer claims it, works it, uploads the finished file, and the
 requester downloads it or asks for changes.
 
+**Intake is closed until Summer 2027** along with the rest of the staff portal
+(`lib/portalStatus.ts`): `submitDesignRequest` refuses every submission and the
+admin queue's "Request form" button reads "Request form coming Summer 2027". Tickets
+already in the queue, and requesters' `/design-request/[token]` tracking links, keep working.
+
 ```sql
 -- A uuid pk so tickets aren't enumerable, plus a separate sequence for the
 -- human reference: "DT-0007" is what gets said out loud and put in a subject line.
@@ -2310,7 +2379,8 @@ the text field when the box is empty. It works like WhatsApp: hold to record and
 cancel, slide up to lock it hands-free (then the bin and Send appear); a quick tap just shows a hint. The gesture
 is a `PanResponder` in `Composer.tsx`; the field shows a recording readout (time, "Slide to cancel") and it stops
 by itself at 5 minutes, recording mono AAC at 64 kbps (`expo-audio`). The camera is no longer in the text field;
-it is under the + sheet. Under a second is
+it is under the + menu (`src/components/AttachSheet.tsx`: a Liquid Glass panel that grows out of the
++ button, with Camera, Photos, Document, Poll and Event rows; the + turns to a × while it's open). Under a second is
 dropped. In a bubble, nothing loads until Play, and only one voice note plays at a time. Voice notes can't
 be searched (there's no text).
 
@@ -2333,9 +2403,9 @@ no auth user, no ChurchSuite record; hidden from the directory and `d1_admin_mem
   attachment), mentioning the asker so they're notified even if the group is muted.
 `d1_post_assistant_message` (service_role only) is the only way to post as DestinyAI. The answering itself
 is `lib/destinyOne/assistant.server.ts`, run from `after()` in `POST groups/[id]/messages`: the same model
-and tools as Smart Search (`lib/smartSearch/tools.ts`, `CHURCH_FACTS`), plus `find_events` (the live
-ChurchSuite calendar, via `upcomingEventSeries()` in `lib/destinyOne/events.server.ts`) and `share_event`
-(attaches one event card to the answer). It broadcasts "DestinyAI is typing…" while it works, is limited to
+and tools as Smart Search (`lib/smartSearch/tools.ts`, `CHURCH_FACTS` — including its `find_events`, the live
+ChurchSuite calendar), plus `share_event` (attaches one event card to the answer, taking the `slug` +
+`seriesKey` from a `find_events` result). It broadcasts "DestinyAI is typing…" while it works, is limited to
 6 questions a minute per member, has a safeguarding section in its prompt (999, Childline, Samaritans,
 the Safeguarding Lead), and says sorry in the chat rather than going quiet if anything fails. In its own
 chat it re-reads the last 16 messages for follow-ups, and only reads text (the composer is text-only there).
@@ -2392,6 +2462,18 @@ RLS-on with a deny-all policy; every read/write goes through API routes using th
 | `song_request_settings` | One row: `open`, `event_name`, `max_queue`, `per_device_limit` |
 | `song_request_spotify` | One row: the church account's `refresh_token` (never sent to a client), `account_name` |
 | `song_requests` | `spotify_track_id`, `title`, `artist`, `artwork_url`, `status` (`queued`/`played`/`removed`), `device_hash`, `ip_hash` (hashed, not raw). Unique index: a track can be queued once at a time |
+
+#### 31. **talent_show_settings / talent_show_acts / talent_show_votes** (Talent show audience voting)
+**Purpose:** `/talent-show`. Migrations: `supabase/migrations/20261027_01_talent_show_voting.sql`, plus `20261028_01_talent_show_judge_xs.sql` (`judge_xs`). Separate from the
+judges' buzzers (`apps/talent-buzzer`). RLS-on with a deny-all policy; everything goes through API routes using the
+service client.
+
+| Table | Holds |
+|---|---|
+| `talent_show_settings` | One row: `show_name`, `voting_open`, `results_revealed`, `round` (bumped by "Clear votes") |
+| `talent_show_acts` | `name`, `performers`, `description`, `sort_order` (running order), `hidden`, `judge_xs` (0-4, X's lit by the judges' buzzers, typed in by an admin; each counts as 2 votes, `JUDGE_X_POINTS` in `lib/talentShow.server.ts`; reset to 0 by "Clear votes") |
+| `talent_show_votes` | `round`, `act_id`, `device_hash`, `ip_hash` (hashed). Unique `(round, device_hash)`: one vote per device per round, re-voting moves it |
+| `talent_show_vote_totals` (view, `security_invoker`) | `round`, `act_id`, `votes`, so totals never page through every vote |
 
 ---
 
@@ -2786,6 +2868,8 @@ without an auth check, so they must never be reachable on the live site.
 | `/bible-course` | `app/bible-course/page.tsx` | The Bible Course (Bible Society), next event |
 | `/cap-money` | `app/cap-money/page.tsx` | CAP Money Course (Christians Against Poverty), next event. CTAs fall back to `/contact` when nothing is scheduled |
 | `/song-requests` | `app/song-requests/page.tsx` | Guests search Spotify and request clean songs at an event; shows now playing and up next. Not indexed. `components/song-requests/SongRequestsClient.tsx` |
+| `/talent-show` | `app/talent-show/page.tsx` | Talent show audience vote, reached by QR code: tap an act to vote, one vote per phone, changeable while open. Not indexed. `components/talent-show/TalentVoteClient.tsx` |
+| `/talent-show/screen` | `app/talent-show/screen/page.tsx` | Big-screen view: QR code and running vote count, then ranked results once an admin reveals them. Polls every 3s. `components/talent-show/TalentScreenClient.tsx` |
 | `/whats-on` | `app/whats-on/page.tsx` | Events listing — featured-event banner, then upcoming events grouped by month |
 | `/whats-on/[slug]` | `app/whats-on/[slug]/page.tsx` | On-site event page — one per ChurchSuite *series*, with all upcoming sessions, sanitised description, map link, signup and .ics |
 | `/connect-card` | `app/connect-card/page.tsx` | Prayer requests, connection form |
@@ -2809,6 +2893,8 @@ without an auth check, so they must never be reachable on the live site.
 | `/terms` | `app/terms/page.tsx` | Terms of use |
 | `/safeguarding` | `app/safeguarding/page.tsx` | Safeguarding policy |
 | `/data-gdpr` | `app/data-gdpr/page.tsx` | Data & GDPR policy |
+| `/app` | `app/app/page.tsx` | Destiny One landing page: coming 2027, pre-order / pre-register buttons, a one-minute film (`public/img/destiny-one/film.mp4` in `VideoPlayer`, rendered from `apps/campaign-videos` `DestinyOneFilm`; the music credit under it is required by its CC BY licence), features, appearance, safeguarding rules, FAQ. Screens are the real app (web build, sample people) from `public/img/destiny-one/`, in Apple's iPhone 18 Pro frame (`components/devices/DeviceFrames.tsx`; licence note there). Store buttons come from `webStoreLinks()` and read "Coming soon" until `D1_IOS_STORE_URL` / `D1_ANDROID_STORE_URL` are set |
+| `/discover` | `app/discover/page.tsx` | "Behind the build": before/after sliders of the old WordPress site vs the new one (home, visit, what's on, give, alpha, shop, plus the home page on a phone) inside Apple's MacBook Pro and iPhone frames, the Lighthouse numbers, what makes it fast and accessible, how Smart Search works, and the stack. Images in `public/img/discover/` |
 | `/governance` | `app/governance/page.tsx` | Transparency page: charity + company registration details, trustees/directors, charitable objects, five-year financial history and filings. Data comes live from the Charity Commission and Companies House APIs via `lib/governance.server.ts`, cached weekly (`revalidate = 604800`), falling back to a stored snapshot per-regulator when a key is missing or an API is down |
 | `/administration` | `app/administration/page.tsx` | Stale-bookmark redirect to `/admin` |
 | `/auth/callback`, `/auth/confirm` | `app/auth/callback/route.ts`, `app/auth/confirm/route.ts` | Supabase OAuth callback and email-OTP verification route handlers |
@@ -2824,10 +2910,11 @@ Each section requires a specific access-level role (see
 |-------|------|---------|
 | `/login` | `app/login/page.tsx` | Staff sign-in. On success (or on revisiting while already signed in), shows a "choose a system" screen — Admin (`/admin`) and Portal (`/portal`) cards, greyed out for whichever the account can't open (`getSystemAccess` in `lib/staffPortalAuth.ts`) |
 | `/emergency` | `app/emergency/page.tsx` | Break-glass status page, opened only by the emergency sign-in during an outage (see `lib/outage.ts` in Libraries & Utilities). Not indexed |
+| `/login/2fa` | `app/login/2fa/page.tsx` | Two-factor sign-in, the second step for every account with an admin role (middleware sends them here until the session is `aal2`). First time: set up an authenticator app (QR code or typed key), confirm a code, then the 8 backup codes are shown once and must be ticked as saved. After that: a 6-digit code each sign-in, or "Use a backup code". `?next=` goes through `safeNextPath()` (only `/admin…` or `/login`). Signed-out or non-admin visitors go to `/login` |
 | `/admin/forgot-password` | `app/admin/forgot-password/page.tsx` | Password reset request |
 | `/admin/reset-password` | `app/admin/reset-password/page.tsx` | Password reset form. A password Supabase refuses (found in a data breach, or too weak) gets an explanation panel from `passwordRejection()` instead of a raw error |
 | `/admin` | `app/admin/page.tsx` | Admin dashboard home |
-| `/admin/banner` | `app/admin/banner/page.tsx` | Manage site banners |
+| `/admin/banner` | `app/admin/banner/page.tsx` | Manage site banners, with an optional Show from / Hide after window |
 | `/admin/popup` | `app/admin/popup/page.tsx` | Manage pop-ups |
 | `/admin/redirects` | `app/admin/redirects/page.tsx` | Manage URL redirects — click counts and a per-link QR code |
 | `/admin/status` | `app/admin/status/page.tsx` | Status page incidents (Site Admin): post an outage, amber alert or maintenance for chosen parts of the website / Destiny One, add timeline updates, change, resolve, reopen. Shown on status.destinytees.uk |
@@ -2848,6 +2935,7 @@ Each section requires a specific access-level role (see
 | `/admin/links` | `app/admin/links/page.tsx` | Links pages list — 30-day views/clicks per page, create from a theme preset or as a copy, delete (not `main`) (Event Admin) |
 | `/admin/links/[id]` | `app/admin/links/[id]/page.tsx` | The links page editor (`components/admin/links/LinksEditor.tsx`): Blocks, Appearance, Profile, Settings, Responses and Stats tabs beside a live phone preview. `?tab=` deep-links a tab (Event Admin) |
 | `/admin/song-requests` | `app/admin/song-requests/page.tsx` | Connect the church Spotify account, open/close requests, name the event, set limits, remove requests (Event Admin) |
+| `/admin/talent-show` | `app/admin/talent-show/page.tsx` | Add, edit, reorder, hide and delete acts; open/close voting; reveal results on the screen; clear votes after a rehearsal; download the QR code; live totals; a Judges' X's stepper per act (each X adds 2 votes to the score) (Event Admin) |
 | `/admin/hr` | `app/admin/hr/page.tsx` | HR dashboard (staff, leave, jobs, documents, reviews, checklists) (HR Admin) |
 | `/admin/hr/staff` | `app/admin/hr/staff/page.tsx` | Staff directory — searchable list of every staff record, filterable by employment type and status (HR Admin) |
 | `/admin/hr/staff/[id]` | `app/admin/hr/staff/[id]/page.tsx` | Staff record — profile, leave, reviews, documents, live checklists (HR Admin) |
@@ -2857,6 +2945,7 @@ Each section requires a specific access-level role (see
 | `/admin/hr/documents` | `app/admin/hr/documents/page.tsx` | Documents — upload/categorise staff and org-wide files surfaced in `/portal` (HR Admin) |
 | `/admin/hr/reviews` | `app/admin/hr/reviews/page.tsx` | Reviews — schedule and record staff performance/probation reviews (HR Admin) |
 | `/admin/hr/checklists` | `app/admin/hr/checklists/page.tsx` | Onboarding/offboarding checklist templates (HR Admin) |
+| `/portal` (closed) | `app/portal/layout.tsx` | **Closed, coming Summer 2027.** While `PORTAL_OPEN` in `lib/portalStatus.ts` is false, the layout shows a "Coming Summer 2027" panel to everyone (no sign-in needed), every other `/portal/*` path redirects to `/portal`, and `/api/portal/*` answers 404 before any auth. The pages below are kept intact for the relaunch: set the flag to `true` to reopen |
 | `/portal` | `app/portal/page.tsx` | Staff self-service dashboard — holiday balance, onboarding progress, next review, open design requests and document count as cards linking into each section. Separate auth boundary from `/admin`; see [Authorization Layers](#authorization-layers) |
 | `/portal/profile` | `app/portal/profile/page.tsx` | Own profile fields (department, employment, dates) plus account settings — profile picture, email, password |
 | `/portal/team` | `app/portal/team/page.tsx` | Directory of colleagues with a portal login — name, role, department, work email, picture. Searchable client-side; never shows phone or anything else from `hr_staff` |
@@ -2882,6 +2971,7 @@ Each section requires a specific access-level role (see
 | `/admin/store/orders` | `app/admin/store/orders/page.tsx` | Orders list |
 | `/admin/store/orders/[id]` | `app/admin/store/orders/[id]/page.tsx` | Order detail — mark fulfilled/cancelled/refunded |
 | `/admin/users` | `app/admin/users/page.tsx` | Manage admin logins and their access-level roles (Super Admin only) |
+| `/admin/help` | `app/admin/help/page.tsx` | Help: the admin video series. The welcome video for everyone, then one how-to per role the viewer holds (Super Admin sees all; unfilmed ones read "Coming soon"), a link to the test-mode tour and the music credit. The list is `lib/adminHelpVideos.ts`. Open to every admin (`OPEN_PATHS`) |
 | `/admin/onboarding` | `app/admin/onboarding/page.tsx` | What each access level is taught on first sign-in, and the admin previewed from their side (Super Admin only) |
 | `/admin/audit` | `app/admin/audit/page.tsx` | Audit log — everything anyone does in the admin. Ask it in plain English ("who added the Faith Hoodie to the store?") or read it: search, filter by person/area/kind/date, open any entry for the field-by-field before and after. Second tab holds the weekly AI reports (Super Admin only) |
 
@@ -3272,6 +3362,12 @@ through the site's normal nav and the "New Here?" page/link, which were never pa
 - **Polling:** `/api/youtube/live` every 30s, plus an immediate poll on mount and on `visibilitychange` / `focus` / `online`. The mount poll matters: the server render can be a minute stale, and "we went live 40 seconds ago" is exactly when someone opens the page.
 - **Grace period:** `live` does not drop to false until **two consecutive** negative polls (`OFFLINE_GRACE`), so one flaky request doesn't pull a running service off someone's screen. The streak is counted per poll — an earlier version counted it in an effect keyed on `live`, which only re-runs when the boolean flips, so it could never reach two.
 
+#### `components/admin/TwoFactorSettings.tsx`
+The "Two-factor sign-in" card on `/admin/profile`: unused backup code count (with
+a warning at two or fewer) and "Make new backup codes", which confirms first,
+cancels the old codes and shows the new 8 once (copy / download). Calls
+`/api/admin/me/two-factor`.
+
 ### Page-Specific Components
 
 #### Destiny One admin (`components/admin/destinyOne/PeoplePicker.tsx`)
@@ -3344,6 +3440,35 @@ keeps its own brand-coloured hero and CTA buttons rather than going through
 `components/ui/Button` — that component's variants are fixed Tailwind classes, not
 arbitrary hex colours, and each course's colour is a deliberate, already-coordinated brand
 decision (matched to `COURSE_ADMIN_PAGES`'s admin-side accent), not drift to converge.
+
+#### Destiny One page (`components/destiny-one-page/*`)
+
+- `AppScreen.tsx` — one app screenshot (402x812pt, below the status bar) in `IPhoneFrame`, with
+  `dark` for dark-mode captures.
+- `StoreButtons.tsx` — the App Store / Google Play buttons. The site's own pills, not the stores'
+  badges (Apple's pre-order badge is only for a listing that takes pre-orders; swap to the official
+  download badges on launch day). A store with no link yet renders the same shape as an outline,
+  "Coming soon to the App Store".
+- `FeatureRow.tsx` — heading + points on one side, screens on the other, alternating with `flip`.
+
+#### Device frames (`components/devices/DeviceFrames.tsx`)
+
+`IPhoneFrame` (iPhone 18 Pro, silver or black, draws the 62pt status bar as SVG) and `MacBookFrame`
+(MacBook Pro 14", content fills its 1512x982pt screen). Apple's product bezels from Apple Design
+Resources, as WebP in `public/img/frames/`, with the screen openings as percentages so they scale.
+**Licence:** Apple's Design Resources licence covers mock-ups of software that runs only on Apple
+platforms and forbids redistributing the files; Destiny One (also on Android) and the website are
+outside that. The church chose to use them anyway (Nov 2026). To back out, render children without
+the frame.
+
+#### Discover page (`components/discover/*`)
+
+- `BeforeAfterSlider.tsx` (client) — the new image underneath, the old one on top clipped from the
+  left (`clip-path: inset(0 0 0 x%)`), so "After" is left of the handle and "Before" right, like the
+  campaign film. Pointer capture for drag/tap; a visually hidden `<input type="range">` (step 5) for
+  keyboard and screen readers, whose focus ring is drawn on the handle. Takes any `aspect`; `bare` fills a device frame's screen instead.
+- `BeforeAfterGallery.tsx` (client) — WAI-ARIA tabs (arrow keys, Home/End) above one slider, for
+  `/img/discover/<key>-before.webp` and `-after.webp`.
 
 #### Governance (`components/governance/*`)
 
@@ -3580,6 +3705,12 @@ Notes worth knowing before changing it:
 - **A page can own several types.** `/admin/alpha` manages Alpha and Youth Alpha together,
   which is why `types` is a list; the create form only shows the Type selector when there
   is more than one, and each type gets its own banner card and event list.
+- **`href` must be a page that exists.** Youth Alpha has no page of its own — it is the
+  `#youth-alpha` section of `/youth` (`components/youth-alpha/YouthAlphaSection.tsx`), so its
+  href is `/youth#youth-alpha`. It used to be `/youth-alpha`, a 404, and banner rows saved
+  with that link are caught by a redirect in `next.config.ts`.
+- **The banner cards call `/api/admin/banner`**, which Event Admins may use for course types
+  only (`canEditBannerType` in the route); the sitewide banner stays Super Admin only.
 - **Accent colour is applied as inline `rgba()`**, not Tailwind opacity classes, because the
   accent is per-course data and cannot be a compile-time class name. `hexToRgb` reproduces
   the `ACCENT_RGB` constants the pages used to hardcode.
@@ -4026,6 +4157,37 @@ row) to `/portal`; admin roles take priority, so someone who is both lands on
 
 ### Admin API Routes
 
+#### Two-factor sign-in (`/api/auth/mfa/*`, `/api/admin/me/two-factor`, `/api/admin/users/[id]/two-factor`)
+```typescript
+// POST /api/auth/mfa/enroll   → { factorId, qrCode, secret }
+//   Start setting up an authenticator app. Refused (409) once one is confirmed:
+//   replacing it needs a backup code or a Super Admin reset, never a password alone.
+//   Throws away any half-finished set-up first.
+// POST /api/auth/mfa/verify   { factorId, code } → { ok, backupCodes? }
+//   challengeAndVerify on the caller's own cookie session, which Supabase
+//   upgrades to aal2. When the factor wasn't confirmed yet (read from Supabase,
+//   not the request) this finishes set-up and returns the 8 backup codes, once.
+//   Rate-limited per user and per IP on top of Supabase's own limit.
+// POST /api/auth/mfa/recover  { code } → { ok }
+//   Spend a backup code. Removes the authenticator and all backup codes so the
+//   person sets up a new app straight away; emails them; audits success and
+//   failure. 5 wrong codes in 15 minutes → 429 for 15 minutes (admin_mfa_lockouts).
+//
+// AUTHORIZATION: these three sit outside /api/admin on purpose (middleware would
+// refuse a password-only session, and this is how that session does its second
+// step). Each starts from signedInAdmin() in lib/twoFactor.server.ts: signed in
+// AND holds an admin role, else 401. tests/unit/two-factor.spec.ts guards that.
+//
+// GET  /api/admin/me/two-factor → { enabled, backupCodesRemaining }
+// POST /api/admin/me/two-factor → { backupCodes }   (replaces every old code)
+//   OPEN_PATHS (any admin, own account only). POST re-checks aal2 itself.
+// DELETE /api/admin/users/[id]/two-factor
+//   Super Admin only (fail-closed default for /api/admin/users). Removes the
+//   person's authenticator and backup codes; audited; they're emailed. For
+//   someone who has lost both phone and codes.
+```
+
+
 #### `POST /api/admin/sermons/upload`
 ```typescript
 // FormData: title, speaker, notes, youtubeVideoId (all optional except title
@@ -4234,6 +4396,27 @@ GET  /api/admin/analytics/site  // the "Whole site" tab's data
 // GET    /api/admin/song-requests/spotify/callback  → stores refresh token, back to the admin page
 ```
 
+#### `/api/talent-show` — talent show audience voting
+```typescript
+// GET  /api/talent-show[?voter=]      → { voter, showName, open, myVote, acts[] }  sets the httpOnly voter cookie (polled every 15s)
+// POST /api/talent-show               { actId, voter, website } → { ok, myVote, changed } | { error }
+//      voter id = cookie first, then the page's localStorage copy; one vote per device per round (upsert);
+//      honeypot `website`; rate limits per device+IP with a looser per-IP cap (the room shares Wi-Fi); 403 closed, 404 hidden/unknown act
+// GET  /api/talent-show/screen        → { showName, open, revealed, total, actCount, results[] }  results empty until revealed;
+//                                       each result has votes, judgeXs and score (votes + 2 × judgeXs), ranked by score
+```
+
+#### `/api/admin/talent-show/*` — talent show voting (Event Admin)
+```typescript
+// GET    /api/admin/talent-show             → { settings, acts[] (with votes, incl. hidden), total }
+// PUT    /api/admin/talent-show             { showName?, votingOpen?, resultsRevealed? } (audited)
+// POST   /api/admin/talent-show/acts        { name, performers?, description? } (audited)
+// PATCH  /api/admin/talent-show/acts/[id]   { name?, performers?, description?, hidden?, judgeXs? (0-4) } (audited)
+// DELETE /api/admin/talent-show/acts/[id]   deletes the act and its votes (audited)
+// POST   /api/admin/talent-show/reorder     { ids[] } running order
+// POST   /api/admin/talent-show/new-round   round + 1, closes voting, hides results, judges' X's to 0; old votes kept but not counted (audited)
+```
+
 #### `POST /api/links/submit` — public form-block submissions
 ```typescript
 // Body: { blockId, values: { [fieldId]: string | boolean }, website }.
@@ -4372,6 +4555,12 @@ and stamps `long_outage_alerted_at`. Amber alerts and maintenance never email.
 // Rejects popup_active when no event is featured, with a readable message.
 // No revalidatePath — app/layout.tsx reads the popup with noStore().
 ```
+
+#### `GET|PUT /api/admin/banner`, `GET|PUT /api/admin/popup`
+`PUT` accepts optional `starts_at` / `ends_at` (ISO, `""`/`null` clears) through
+`parseWindow()` in `lib/schedule.ts`. Only keys that are sent are written, so a
+save from a page that doesn't know about scheduling leaves an existing window
+alone. An end before the start is a 400.
 
 #### `POST /api/admin/popup/upload`
 ```typescript
@@ -5249,6 +5438,23 @@ as explicit. `songRequests.server.ts` holds the request rules: open/closed, queu
 Spotify lookup (the browser's flag is never trusted), duplicate refusal via a unique partial index, then queue-add
 (the row is removed again if Spotify refuses). Covered by `tests/unit/song-requests.spec.ts`.
 
+### `lib/talentShow.server.ts`
+
+Talent show audience voting: settings, acts, totals (from the `talent_show_vote_totals` view) and `castVote`, which
+upserts on `(round, device_hash)` so a device has one vote it can move. `pickVoterId` takes the cookie before the
+page's stored copy, so clearing one isn't enough to vote twice. `isTalentShowPath` in `lib/linkPages/paths.ts` makes
+the site chrome stand aside. Covered by `tests/unit/talent-show.spec.ts`.
+
+
+### `lib/adminHelpVideos.ts`
+
+The admin help video series shown at `/admin/help`. Onboarding is moving to video: each access level gets a
+how-to on YouTube, and a new admin watches theirs, then practises in the tour's demo mode (`lib/demoMode.ts`),
+where nothing is saved. `WELCOME_VIDEO` is for every admin; `ROLE_VIDEOS` has one entry per role. An entry with
+a `youtubeId` plays as a youtube-nocookie embed behind the media-cookie gate (`MediaEmbed`); one without shows its
+poster (`public/img/admin-help/`) or nothing, marked "Coming soon". The videos are not kept in this repository: they
+are rendered from `apps/campaign-videos` (`AdminWelcome`, and one tutorial per role built on `src/Tutorial.tsx`) and
+handed over as files for YouTube. To publish one, upload it and set its `youtubeId`.
 
 ### `lib/adminNav.ts`
 
@@ -5295,6 +5501,13 @@ Two things to keep in mind when editing it:
 `ADMIN_QUICK_ACTIONS` holds things you *do* rather than places you go ("New
 post", "Clear the cache"). Those hrefs use `?new=1`, which the list pages read
 to open their editor straight away.
+
+### `lib/schedule.ts`
+
+`isWithinWindow()`, `windowState()` (off / scheduled / live / ended) and
+`parseWindow()` for `starts_at`/`ends_at` windows on the banner and popup, plus
+`formatLondon()` / `describeWindow()` to show those times in UK time. Client-safe.
+`components/admin/ScheduleFields.tsx` is the matching Show from / Hide after input pair.
 
 ### `lib/adminTheme.ts`
 
@@ -6153,9 +6366,27 @@ export async function executeTool(name: string, rawArgs: string, ctx: ToolContex
 ```
 
 - `find_products`, `get_weather`, `get_directions` — unchanged from prior behavior (see Components → `FloatingSmartSearch.tsx`).
+- `find_events(query?, from_date?, to_date?)` — the live ChurchSuite calendar (`fetchChurchSuiteEventsResult` → `buildEventIndex` → `serializeEventSeries`, 5-minute revalidate), so visitors can ask "when's the next event?" or "when is Alpha?". Filters each series' occurrences to the London-date range (default from today), matches query words against name/summary/category/location, and sorts by the first *matching* date. Returns up to 40 series (12 with a query) with London-formatted dates, location, summary, sign-up link and `/whats-on/<slug>`; a feed failure returns `available: false` rather than an empty calendar. The website chat renders the first three as `EventResultCards` (`components/smartSearch/ResultCards.tsx`). Shared with Destiny One's DestinyAI, which reaches it through `executeTool` — keep `slug` + `seriesKey` in the result for its `share_event`.
 - `search_web` — Tavily `/search` with `search_depth: "advanced"` (curated chunks, not raw page tops) and the API key sent as an `Authorization: Bearer` header (not in the body). Snippets truncated to `SNIPPET_CHARS` (1200 chars). Every result URL is recorded into `ctx.seenUrls`.
 - `extract_page` — Tavily `/extract`, `extract_depth: "advanced"`. **Only** opens a URL already present in `ctx.seenUrls` for that request — this is the sole guard against the model being prompted (by a visitor or by web content) into fetching an arbitrary URL. Content truncated to `EXTRACT_CHARS` (8000 chars).
 - Deliberately does **not** request Tavily's own `include_answer` summary: it was observed conflating Destiny Church Tees Valley with an unrelated Scottish charity of a similar name and reporting a wrong income figure. The model instead reads raw snippets/page content and is told (via `lib/siteKnowledge.ts`) to cross-check the charity/company number before quoting any figure.
+
+### `lib/twoFactor.ts` / `lib/twoFactor.server.ts` / `lib/backupCodes.ts` — admin two-factor sign-in
+
+- `lib/twoFactor.ts` (edge-safe; middleware imports it): `assuranceLevelOf(token)`
+  decodes `aal` from an already-accepted access token (anything unclear reads as
+  null, which middleware refuses); `hasAuthenticator(user)` (a *verified* TOTP
+  factor); `safeNextPath()` for `/login/2fa?next=`; `TWO_FACTOR_CODES`;
+  `backupCodesFile()` for the download.
+- `lib/backupCodes.ts` (node:crypto, unit tested): generate, normalise, hash and
+  sanity-check backup codes.
+- `lib/twoFactor.server.ts` (server-only): `signedInAdmin()` (the caller's own
+  cookie session, keeping their "keep me signed in" choice, plus roles and
+  current level), `issueBackupCodes`, `spendBackupCode` (atomic single-use, DB
+  lockout), `unusedBackupCodeCount`, `removeTwoFactor` (all factors + codes, via
+  the admin API), and the "backup code used" / "two-factor reset" emails.
+
+See [Two-factor sign-in](#two-factor-sign-in-admins) for the rules.
 
 ### `lib/rateLimit.ts`
 
@@ -6663,6 +6894,13 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
   else. `useTheme()` (`src/theme/tokens.ts`) folds the choice in as `t.send`, `t.onSend`,
   `t.onSendCard` and `t.wall`, so bubbles, the send button, poll bars and the message-actions
   preview all follow it.
+  The screen (redesigned 2026-10-29) leads with a live preview drawn like a real chat (Liquid Glass
+  header and message box over the wallpaper; a new wallpaper cross-fades in and settles, a new send
+  colour pops the sent bubbles), then Theme (four little phones drawn in code,
+  `ThemeModePicker` in `src/components/AppearancePicker.tsx`, shared with first-run Setup), the
+  send colours, and the wallpapers as a Photos / Patterns segmented control over a phone-shaped
+  grid (3 across, 5 on a wide screen). Selection is a ring that springs onto the choice plus a tick
+  (`SelectRing`, `Tick`). Removing your photo and Reset ask first.
 - **The choices are a curated list, not a colour picker** (`src/theme/appearance.ts`, pure data, no
   React Native). A free picker can't promise legibility. Every send colour is chosen so its text is
   at least 4.5:1 and the bubble is at least 3:1 against the page and every wallpaper, in light and
@@ -6677,9 +6915,10 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
   near-zero weight, and each has light and dark colours. Applied to conversations only; list and
   settings screens stay plain so text is always on a known background.
 - **Photo wallpapers** are never uploaded and never touch Supabase. Two sources: ten stock photos
-  shipped in `assets/wallpapers/` (Unsplash licence, free to use, no credit required; 900x1800
-  crops with a 240x480 `-thumb` each so the picker doesn't decode ten full-size images; about
-  3.3 MB added to the app; wired up in `src/theme/photoWallpapers.ts`, ids are `photo:<key>`), and
+  shipped in `assets/wallpapers/` (Unsplash licence, free to use, no credit required; 1290x2796
+  crops, the Pro Max screen at full resolution, with a 450x975 `-thumb` each sized for the
+  3-across picker grid at 3x, so the picker doesn't decode ten full-size images; about 6.3 MB
+  added to the app; source photo ids are listed in `photoWallpapers.ts`; wired up in `src/theme/photoWallpapers.ts`, ids are `photo:<key>`), and
   the person's own photo (`src/lib/customWallpaper.ts`): picked with `expo-image-picker`,
   re-encoded with `expo-image-manipulator` (shorter side 1200 px, JPEG 0.75, which also strips GPS
   and other metadata), then copied into the app's documents folder with `expo-file-system` as
@@ -6694,7 +6933,8 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
   messages" dividers, "This message was deleted", the empty state) goes on a chip in the page colour
   at 90% opacity (`photoChip()` in `MessageBubble.tsx`, `PHOTO_CHIP_ALPHA`). The unit tests check
   that chip against pure black and pure white behind it in both modes (7:1 body, 4.5:1 muted).
-  Fade/Dim and Blur are five-step tap pickers (`src/components/PresetPicker.tsx`: Low, Low-Med,
+  Fade/Dim and Blur are five-step tap pickers (`src/components/PresetPicker.tsx` on the sliding
+  `Segmented` control, `src/components/Segmented.tsx`: Low, Low-Med,
   Med, High-Med, High; `DIM_PRESETS`/`BLUR_PRESETS` in `theme/appearance.ts`), not sliders: a
   dragged slider fought the swipe-back gesture. Stored values stay numeric; an older saved value
   shows as its nearest step (`nearestPreset`). Screen readers get a radio group. `Backdrop` (`Wallpaper.tsx`) draws
@@ -6727,12 +6967,21 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
   while the chat is open spring in (sent ones rise from the composer, received ones from the
   sender's side); poll bars spring to their new share; confirm dialogs spring in. All of it
   drops the movement under Reduce Motion.
+- **Easter eggs** (`src/components/EasterEggs.tsx`): purely cosmetic hidden touches (App Store
+  guideline 2.3.1, listed in the App Review notes). Holding your picture on Profile shows Psalm
+  139:14; the Chats title gets a line on Easter Day, Pentecost and Christmas Day (Easter worked
+  out on the phone with the Anonymous Gregorian algorithm). No server calls, no unlocked features.
 - **Text size**: chrome text (tab labels, chips, badges, reactions) caps its scaling with
   `maxFontSizeMultiplier` and controls use `minHeight`, so large Dynamic Type sizes grow the
   layout instead of clipping it. Body text scales freely.
 - **Pressed states** respond on touch-down with a small spring scale (`PressableScale`), not just an opacity change.
 
 ### `lib/destinyOne/*` — Destiny One backend
+
+`storeLinks.ts` — `IOS_STORE_URL` / `ANDROID_STORE_URL` (env `D1_IOS_STORE_URL`, default TestFlight;
+`D1_ANDROID_STORE_URL`, default the `uk.destinytees.one` Play listing) for the app's update prompt
+(`/one/config`), and `webStoreLinks()` for the `/app` page, which only returns links that were set
+on purpose (https), so the website never links to TestFlight or an unpublished listing.
 
 Part 2 additions: `onboarding.ts` (pure: `onboardingState`, `ONBOARDING_MESSAGES`,
 `adultOnForDecision` — turns an admin's adult/under-18 choice + optional DOB into `adult_on`, and
@@ -6858,6 +7107,43 @@ role enforcement both happen centrally in `middleware.ts`, not in
 `app/admin/layout.tsx` (which is a client component purely responsible for the
 sidebar/header shell; it does not check auth or roles itself).
 
+<a id="two-factor-sign-in-admins"></a>
+**Two-factor sign-in (admins).** A password alone opens nothing in the admin.
+For any account holding at least one admin role, `middleware.ts` requires the
+session's JWT to be `aal2`, which Supabase only issues after a code from the
+account's authenticator app (a Supabase Auth TOTP factor) has been verified.
+It runs after the role lookup and *before* `hasAccess`, so a password-only
+session learns nothing about what it could open:
+
+- `/admin/**` pages redirect to `/login/2fa?next=<path>`.
+- `/api/admin/**` returns 401 with `code: "two_factor_required"` (has an app) or
+  `"two_factor_setup_required"` (hasn't set one up). The D1 Admin desktop app
+  reads these: it asks for the code itself, or tells the person to set up on the
+  website first (setting up and backup codes only happen on the website).
+- The bearer path (D1 Admin desktop, `/api/admin/destiny-one/**`) is checked
+  the same way, against the token `getUser()` just accepted.
+- Accounts with no admin role (Destiny One leaders asking `whoami`) are not asked.
+- `/api/admin/logout`, `/admin/forgot-password` and `/admin/reset-password` stay
+  reachable. Supabase won't change a password from a password-level session once
+  two-factor is on, so `/admin/reset-password` answers `insufficient_aal` with a
+  link to `/login/2fa?next=/admin/reset-password`.
+
+Backup codes: 8 per admin, `XXXX-XXXX-XXXX-XXXX` from a 31-letter alphabet (no
+0/O/1/I/L), about 79 bits each, stored only as SHA-256 hashes
+(`admin_mfa_recovery_codes`). Each works once; using one removes the
+authenticator so a new one is set up on the spot (the usual reason is a lost
+phone), emails the person and writes the audit log. Admins can make new codes on
+`/admin/profile`; a Super Admin can reset someone's two-factor from `/admin/users`.
+Code: `lib/twoFactor.ts` (edge-safe, used by middleware), `lib/twoFactor.server.ts`,
+`lib/backupCodes.ts`.
+
+Supabase has built-in recovery codes behind an experimental client flag
+(`auth.mfa.recoveryCodes`); this uses its own table instead so it doesn't depend
+on a feature that can change. Worth revisiting once that is stable.
+
+The project must have **App Authenticator (TOTP)** enabled under Supabase
+Authentication → Multi-Factor (it is on by default for hosted projects).
+
 **Route → role mapping** (`ROUTE_RULES` in `lib/adminRoles.ts`; `super_admin`
 always passes and isn't repeated per rule; anything under `/admin` or
 `/api/admin` that isn't listed is Super Admin only — fail closed):
@@ -6865,7 +7151,7 @@ always passes and isn't repeated per rule; anything under `/admin` or
 | Role | Admin pages | API routes |
 |---|---|---|
 | `training_admin` | `/admin/training/**` | `/api/admin/training/**` |
-| `event_admin` | Courses (`alpha`, `recovery`, `bible-course`, `cap-money`, `featured-course`) + Announcements except Banner (`popup`, `featured-event`, `event-popup`, `nfc`) | `/api/admin/{alpha-events,events,featured-course,featured-event,popup,nfc}` |
+| `event_admin` | Courses (`alpha`, `recovery`, `bible-course`, `cap-money`, `featured-course`) + Announcements except Banner (`popup`, `featured-event`, `event-popup`, `nfc`) | `/api/admin/{alpha-events,events,featured-course,featured-event,popup,nfc}`, plus `/api/admin/banner` for course banner types only (the course pages' "Show banner" toggles); the handler refuses the sitewide banner to anyone but a Super Admin |
 | `store_admin` | `/admin/store/**` | `/api/admin/{store,shop-hero}/**` |
 | `site_admin` | `/admin/posts`, `/admin/redirects`, `/admin/analytics`, `/admin/status` | `/api/admin/{posts,redirects,analytics,status}/**` |
 | `hr_admin` | `/admin/hr/**` (staff, leave, jobs, applications, documents, reviews, checklists) | `/api/admin/hr/**` |
@@ -6874,7 +7160,8 @@ always passes and isn't repeated per rule; anything under `/admin` or
 
 **`OPEN_PATHS`** — reachable by any authenticated admin regardless of role:
 `/admin` (the dashboard), `/api/admin/logout`, `/api/admin/me`,
-`/api/admin/me/roles` and `/api/admin/search`.
+`/api/admin/me/roles`, `/api/admin/me/two-factor` (the caller's own backup codes)
+and `/api/admin/search`.
 
 The first four are trivially safe: a signed-in admin's own identity and roles
 tell them nothing they don't already have. **`/api/admin/search` is the one that
@@ -7435,6 +7722,16 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 SHOP_TEST_BYPASS=            # leave unset in production — enables /api/store/checkout/bypass
 
+# Error tracking (Sentry, optional — without a DSN nothing is sent). Set up in
+# instrumentation.ts (server/edge), instrumentation-client.ts (browser) and
+# sentry.shared.ts (shared options: errors only, no tracing or replay, all
+# personal-data collection off, email addresses scrubbed from messages).
+SENTRY_DSN=https://...@....ingest.sentry.io/...           # server + edge
+NEXT_PUBLIC_SENTRY_DSN=https://...@....ingest.sentry.io/... # browser (same value)
+SENTRY_ORG=                  # build-time, with SENTRY_AUTH_TOKEN: uploads source maps
+SENTRY_PROJECT=              # so stack traces show real file names
+SENTRY_AUTH_TOKEN=
+
 # GitHub (CI/CD + "Report a Bug" footer form — used by components/report-bug/actions.ts
 # to open issues on SquareMediaGroup/destinychurch via the GitHub REST API)
 GITHUB_TOKEN=ghp_...
@@ -7530,13 +7827,17 @@ ENABLE_SMART_SEARCH=true
 - **CDN** — Automatic global distribution
 - **Analytics** — Built-in performance monitoring
 
+**Rolling back a bad deploy:** see [`docs/deployment-rollback.md`](docs/deployment-rollback.md)
+(Vercel Instant Rollback, telling members via /admin/status, then fixing forwards; migrations
+are not rolled back with the code).
+
 ### Caching Strategy
 
 | Content | Strategy | TTL | Invalidation |
 |---------|----------|-----|--------------|
 | Static assets (`/img`, `/fonts`) | Immutable | 1 year | Filename change |
-| Home page | ISR | 1 hour | `revalidatePath("/")` |
-| Sermon archive | ISR | 4 hours | `revalidatePath("/sermons")` |
+| Home page | ISR | 30 seconds (`revalidate = 30`) | `revalidatePath("/")` |
+| Sermon archive | ISR | 30 minutes (`revalidate = 1800`) | `revalidatePath("/sermons")` |
 | Dynamic pages (`/[slug]`) | ISR | 24 hours | `revalidatePath("/[slug]")` |
 | Redirects | Edge | Infinite | Deploy |
 | API responses | None | - | Fresh on every request |
@@ -7563,6 +7864,8 @@ ENABLE_SMART_SEARCH=true
    - Geography-aware CDN (UK origin)
 
 5. **Monitoring:**
+   - Sentry — server, edge and browser errors (`instrumentation.ts`, `instrumentation-client.ts`,
+     `sentry.shared.ts`); inert until `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` are set
    - Vercel Analytics — tracks Web Vitals
    - Vercel Speed Insights — performance timeline
    - Custom events logged to analytics
@@ -7990,7 +8293,7 @@ same database as the data rather than in a separate Synapse module.
   above the keyboard, passing the page sheet's gap from the top of the screen as the keyboard offset;
   `lib/useKeyboardShown.ts` drops the home-indicator padding under bottom bars while the keyboard is up;
   fixed-height boxes use `minHeight` or a `maxFontSizeMultiplier` cap so the largest Dynamic Type sizes don't clip), `Icon.tsx` (the design's line icons via `react-native-svg`), `MessageBubble.tsx`,
-  `MessageMenu.tsx` (press-and-hold menu drawn in React Native, WhatsApp-style: the message lifts over a dimmed chat, a bar of six quick reactions plus "+" for a full emoji grid sits above it, and a card of Reply / Copy / Report / Block / Delete sits below, both solid sheets in the app's colours rather than Liquid Glass; placed by the pure `lib/menuLayout.ts` so it always fits on screen, tested in `tests/unit/destiny-one-message-menu.spec.ts`. It replaced the SwiftUI context menu, whose hosted bubbles reported the wrong height and made messages and reactions overlap), `Composer.tsx` (its camera button opens the in-app camera, `app/camera.tsx` built on `expo-camera`, with the photo handed back through `lib/camera.ts`; it replaced the system camera screen, which closed and left the app unusable; needs a native build), `NotificationPrompt.tsx` (A10, asked once
+  `MessageMenu.tsx` (press-and-hold menu drawn in React Native, WhatsApp-style: the message lifts over a dimmed chat, a bar of six quick reactions plus "+" for a full emoji grid sits above it, and a card of Reply / Copy / Report / Block / Delete sits below, both solid sheets in the app's colours rather than Liquid Glass; placed by the pure `lib/menuLayout.ts` so it always fits on screen, tested in `tests/unit/destiny-one-message-menu.spec.ts`. It replaced the SwiftUI context menu, whose hosted bubbles reported the wrong height and made messages and reactions overlap), `Composer.tsx` (its + menu, `AttachSheet.tsx`, holds the in-app camera: picking Camera morphs the glass menu into a rounded camera card built on `expo-camera`, with back, shutter and a "more" button that fans out flip and flash, then Retake / Use photo in the same card; it replaced the full-screen `app/camera.tsx` route, which itself replaced the system camera screen that closed and left the app unusable), `NotificationPrompt.tsx` (A10, asked once
   on first group open), `SafetyNotice.tsx`.
 - **Search** (`search` route): groups from the cached list, plus messages via `GET /search/messages`
   (`d1_search_messages`: groups you're in, since you joined, never deleted; since part 10 a blind
@@ -8090,6 +8393,25 @@ same database as the data rather than in a separate Synapse module.
   above), `push.ts` (ask contextually, never on launch).
 - `src/components/GlassSurface.tsx` — Liquid Glass (`expo-glass-effect` `GlassView`) on iOS 26+, a
   translucent solid fallback on Android / older iOS. The one surface primitive for app chrome.
+  On real glass it drops any drop shadow in `style` (the glass draws its own depth), and interactive
+  glass drops a pressed-state `opacity` (it has its own touch response); the fallback keeps both.
+- **iPhone Duo** (Apple HIG "Designing for iPhone Duo", Sept 2026): on the closed (outer) display,
+  and on the open display in landscape, the system puts the status bar, Dynamic Island and tab bar
+  on the **side**, so left/right safe-area insets are no longer always 0.
+  `src/components/ScreenInsets.tsx` handles this. The root stack's `contentStyle` pads every screen
+  by the window's left/right insets (`content()` in `app/_layout.tsx`). The screens that draw edge to
+  edge opt out and inset their own content: the tabs, the chat (its wallpaper stays full-bleed, while
+  messages, the header, the pinned bar and the composer are inset) and the photo viewer (its bars).
+  Each tab screen is wrapped in `withTabBarInsets`, which gives it its own `SafeAreaProvider`. That
+  provider measures the screen's real UIKit safe area, so its insets include the system tab bar on
+  whichever edge it is. `useTabBarClearance` keeps the old fixed bottom padding while the bar is at the
+  bottom, and drops to the home-indicator inset when the bar is on a side. The custom popups
+  (`MessageMenu` via `lib/menuLayout.ts`, `AttachSheet`, `SwitchBanner`) stay inside the side insets.
+  Photo grids use an even column count on wide screens (Group media 6/8, Appearance 4), so a partly
+  folded display splits them cleanly at the fold. On every other iPhone in portrait the side insets
+  are 0, so none of this changes the layout there. Not done yet: a list + chat split view on the
+  open display, keeping custom popups off the fold (React Native doesn't expose `ReservedRegion`
+  yet), and the app's portrait lock.
 - Checks: `npm run typecheck`, `npx expo lint`, `npx expo-doctor`, `npx expo export --platform ios --platform android`. CI runs typecheck and lint (the "Destiny One app" job).
 - GDPR notes (data map, processors, retention, erasure, review audit): `docs/destiny-one-gdpr.md`.
 - Staff guide (approvals, reports, review, takedown, suspension, blocks, settings, out of hours):
@@ -8113,10 +8435,10 @@ A standalone **macOS app** (not part of the website deploy) that captions live a
 A standalone **Node app** (not part of the website deploy) for the Destiny talent show. Four Android tablets are red X buzzers and one is a dedicated golden buzzer. A press fires an Avolites lighting cue, shows an X (or a gold takeover with confetti) on the LED screen, and plays a buzzer/fanfare from the LED screen machine. **LAN only** — no internet, Supabase or accounts, so it survives the building connection dropping.
 - **One app, two roles** (`app.js`, launched by `start.bat` on both machines): a local-only setup page (`setup/setup.html`, `127.0.0.1:8090`, Host-header checked) asks whether this is the LED screen or Avolites machine, saves it to gitignored `machine.json`, and forks `hub/server.js` or `agent/avolites-agent.js` as a child process (restarted on crash; status flows back over IPC). The hub announces itself by UDP broadcast on port 8099 (`lib/discovery.js`, no key in the packet) so the agent finds it without typing IPs.
 - **Hub** (`hub/server.js`, runs on the LED machine): plain `http` static server + `ws` WebSocket at `/ws`. Clients say `hello` with a role (`tablet` + seat, `display`, `control`, `agent`). Show rules live in `lib/state.js` (pure, unit tested): each X latches until Reset, golden fires once until Reset, per-buzzer debounce, Lock ignores all presses. When the last judge buzzes the hub also broadcasts an `all-x` event (display strobes red, optional `cues.allX` playback). Only `control` clients can reset/lock/trigger/test. Optional shared `key` gates every WebSocket for audience-accessible Wi-Fi.
-- **Pages** (`hub/public/`): `tablet.html` (fires on `pointerdown` for latency, auto-reconnect, seat picker when no `?seat=`), `display.html` (sharp extruded 3D SVG X per judge with names underneath, sized in a `--u` unit of `min(1vw, 2.9vh)` so it fits any LED wall height at a fixed width, all-out red strobe, gold takeover, Web Audio playback of `sounds/buzzer.mp3`/`golden.mp3` with synthesised fallbacks; a one-time click arms audio because of browser autoplay rules; `?bg=transparent` for keying), `control.html` (presence per seat, audio-armed state, lighting status + log, Reset/Lock, per-seat Trigger backup, test cue/sound buttons).
+- **Pages** (`hub/public/`): `tablet.html` (fires on `pointerdown` for latency, auto-reconnect, seat picker when no `?seat=`), `display.html` (sharp extruded 3D SVG X per judge with names underneath, sized in a `--u` unit of `min(1vw, 2.9vh)` so it fits any LED wall height at a fixed width, all-out red strobe, gold takeover, Web Audio playback of `sounds/buzzer.mp3`/`all-out.mp3`/`golden.mp3` with synthesised fallbacks, reloaded on a `reload-sounds` message; a one-time click arms audio because of browser autoplay rules; `?bg=transparent` for keying), `control.html` (presence per seat, audio-armed state, lighting status + log, Reset/Lock, per-seat Trigger backup, test sound buttons, an editable **Lighting cues** list (playback number, action Go/Flash/Swop/Fader-level, and N times in S seconds) with per-cue Test that saves to `config.json` via a `set-cues` message validated by `lib/cues.js`, and a **Fire any playback** box with Fire/Off, a **Style** select (`celebrate`, the default: gold X's, chime, confetti burst and an X-TRAORDINARY all-lit party; or `buzzer`: the original red X and alarm; `set-style`, saved as `config.style`, each style with its own sound files in `lib/sounds.js`), judge **name** boxes plus the golden name (`set-names`, 1-40 characters, saved to `config.json` and pushed to every page with a fresh `welcome`), a **Number of judges** select (2 to 4, `set-judges`, validated by `lib/judges.js` and saved as `config.judgeCount`; the hub re-sends `welcome` so display, tablets and control rebuild, and `ShowState.setSeats` makes all-out follow the count), and a **Sounds** box that uploads replacement sounds via `PUT`/`DELETE /api/sound?kind=` (format sniffed and size-capped at 20 MB by `lib/sounds.js`; uploaded files are git-ignored). `lib/cues.js` `planCue` turns a cue into timed on/off steps; the hub runs them as timers that Reset cancels, and the agent maps each step to a Titan URL template (`lib/titan.js` defaults for Flash/ClearFlash/Swop/ClearSwop/SetPlaybackLevel).
 - **Lighting**: `lib/titan.js` calls the Titan Web API (port 4430; URL templates in config, `{userNumber}` filled in; retries once). Default `agent` mode runs `agent/avolites-agent.js` on the Titan PC, which connects *out* to the hub so the lighting PC needs no inbound firewall rule; `direct` mode has the hub call a console's IP itself (hardware consoles). Reset can `KillPlayback` the X/golden cues (`releaseOnReset`).
 - `tools/fake-titan.js` stands in for the console when rehearsing; `npm test` runs the state tests. Setup, tablet kiosk tips, show-day checklist: `apps/talent-buzzer/README.md`.
-- **Download**: `.github/workflows/talent-buzzer-release.yml` runs on pushes to `main` touching the folder (or by hand), runs the tests and uploads a ready-to-run `talent-buzzer.zip` (with `node_modules`) to the `talent-buzzer` GitHub release; the README links straight to `releases/download/talent-buzzer/talent-buzzer.zip`. `start.bat` checks Node.js 20+ is installed and opens nodejs.org if not.
+- **Download**: `.github/workflows/talent-buzzer-release.yml` runs on pushes to `main` touching the folder (or by hand), runs the tests and uploads a ready-to-run `talent-buzzer.zip` (with `node_modules`) to the `talent-buzzer` GitHub release; the README links straight to `releases/download/talent-buzzer/talent-buzzer.zip`. `start.bat` (Windows) and `start.command` (Mac) check Node.js 20+ is installed and open nodejs.org if not.
 
 ### Status page — `apps/status/` (status.destinytees.uk)
 A small **Next.js app deployed as its own Vercel project** (root directory `apps/status`, region `dub1`, not the main site's `lhr1`). It has no Supabase client and no database: every check is a plain HTTP request, so the page keeps rendering when the website, Supabase or London is down. Destiny One's outage message links here.
@@ -8127,6 +8449,19 @@ A small **Next.js app deployed as its own Vercel project** (root directory `apps
 - **Report a problem** (`src/app/ComponentRow.tsx`, `POST /api/report`, `src/lib/report.ts`): every component has a button that opens a short form (what's wrong, optional reply email) and emails the super admins straight through Resend's HTTP API, so reports arrive while the site is down. Recipients are everyone with `super_admin` in `admin_roles`, read at send time from Supabase's REST API with `STATUS_SUPABASE_SECRET_KEY`; if that read fails (Supabase down), the report goes to admin@destinytees.uk with a note saying so. Known component ids only, length caps, a honeypot field, and a soft per-instance limit of 5 reports per address per 10 minutes.
 - **Env** (`.env.example`): `STATUS_SITE_URL` (default `https://destinychurch.vercel.app`, the origin D1's API is served from; destinytees.uk is still the old nginx site that 404s `/api`), `STATUS_SUPABASE_URL`, `STATUS_SUPABASE_PUBLISHABLE_KEY`, and the two secrets `RESEND_API_KEY` and `STATUS_SUPABASE_SECRET_KEY`. Without the publishable key the sign-in check shows "Not checked"; without `RESEND_API_KEY` reports fail with a "Couldn't send that" message; without the secret key they all go to the fallback address.
 - No uptime history or alerting yet: that needs somewhere to store results that isn't Supabase.
+
+### Campaign videos — `apps/campaign-videos/`
+A **Remotion** project (React, rendered to MP4) holding the launch films for the refreshed website and Destiny One. Two compositions share one timeline (`src/Campaign.tsx`) and differ only in the ending: `ComingIn2027` and `DownloadToday` (Apple's official App Store badge, unmodified; iOS only, see below). 1920x1080, 30 fps, 3:30. Both endings point to destinytees.uk/app.
+- **Structure**: "Introducing our new website", why it changed (four plain-language reasons, one per screen), before/after wipes from the old destinytees.uk pages, Lighthouse figures as old-vs-new bar charts, then the home page, Smart Search (typed out, desktop and phone), sermons, What's On, plan your visit, the shop's move from shop.destinytees.uk with on-page checkout, ministries and the little things (accessibility, NFC seats, help, training, governance, links). It ends on the logo, then "Oh, and one more thing" introduces Destiny One (communities, chat, DestinyAI, appearance, safeguarding). Light pages, no glows, one aggressive ease in-out for every move, punch-ins on details.
+- **Device frames** are Apple's iPhone 18 Pro and MacBook Pro 14" product bezels, fetched by `scripts/get-bezels.sh` into the gitignored `public/bezels/`: Apple's licence bans redistributing them and only covers mock-ups of Apple-only software, so the films show Destiny One for iOS only.
+- **Assets are real**: official logos from `public/img/brand`, the app icon from `apps/destiny-one/assets`, screenshots of destinychurch.vercel.app and of Destiny One's Expo web build. `capture/` holds the Playwright scripts that remake them; the Destiny One one feeds the web build sample data (`capture/destiny-one-sample-data.cjs`, made-up people, real events and sermons) by intercepting its API calls, so no account or backend is needed.
+- **Fonts** are local (`public/fonts`, Google Fonts' OFL variable files) so renders don't need fonts.gstatic.com. The campaign films have no music (post-production adds it).
+- **`DestinyOneFilm`** (`src/DestinyOneFilm.tsx`, 1:03): Destiny One on its own for the /app page. A hook line, the icon, then communities, announcements, chat, events, DestinyAI, appearance and the safeguarding rules, ending on "Coming in 2027". It reuses the campaign's app scenes. Music is "Inspired" by Kevin MacLeod (`public/audio/inspired.mp3`, CC BY 4.0, so the credit must appear wherever the film is shown). The web copy lives at `public/img/destiny-one/film.mp4`, re-encoded with faststart (command in the README).
+- **`AdminWelcome`** (`src/AdminWelcome.tsx`, 1:21): video 1 of the admin help series, for YouTube and `/admin/help`. Welcome to Destiny Admin, the sidebar narrowing to one role, every role in a line, the first-sign-in tour, test mode and the Get Started checklist, then the Help page. Screens are the real /admin with an invented admin, captured by `capture/admin.cjs` against a stand-in Supabase (`capture/admin-mock-supabase.cjs`). Same music and credit as `DestinyOneFilm`.
+- **`ShopTutorial`** (`src/ShopTutorial.tsx`, 7:25): video 2 of the admin help series, everything a Store Admin can do. Filmed on the real store pages by `capture/shop-tutorial.cjs`, which drives every action and saves before/after screenshots with cursor targets; the site's API routes run unchanged against a pretend database (`capture/admin-mock-supabase.cjs`, tables and storage in memory, seeded by `capture/shop-seed.cjs` with the shop's real products and invented customers). The composition animates a cursor, clicks and camera moves over those frames. Frames are gitignored (`public/tutorial/shop/`), the step list is committed (`src/tutorials/shop-steps.json`). Listed for Store Admins in `lib/adminHelpVideos.ts`. The admin help videos are rendered to `out/` and handed over for YouTube rather than committed (about 60 MB each). New tutorials reuse `capture/tutorial-kit.cjs` (filming) and `defineTutorial()` in `src/Tutorial.tsx` (the video).
+- **The other role tutorials** (`EventsTutorial`, `SiteTutorial`, `TrainingTutorial`, `HrTutorial`, `DesignTutorial`, `SermonsTutorial`, `SuperTutorial`, `DestinyOneAdminTutorial`, `SafeguardingTutorial`): one per admin role, each filmed by `capture/<id>-tutorial.cjs` against its `capture/<id>-seed.cjs`. Destiny One Admin and Safeguarding Admin answer `/api/admin/destiny-one/*` in the browser from `capture/d1-fake-api.cjs` (invented people and an invented conversation) instead of rebuilding Destiny One's database functions, so no real message is ever opened. Each has a help entry and poster in `lib/adminHelpVideos.ts`.
+- **Stills**: `stills/` holds every screen as a 1920x1080 JPEG plus `stills/before-after/<page>-before.jpg` / `-after.jpg` pairs with identical framing, for sliders. Regenerate with `node scripts/export-stills.mjs` (reads the timeline from `src/Campaign.tsx`; the `Stills` folder in `src/Root.tsx` registers the before/after scenes pinned before or after).
+- CI job `campaign-videos` runs `npm run lint` (eslint + tsc). Videos are rendered locally (`npx remotion render <id>`); `out/` is gitignored and finished renders are committed to `exports/` for download. Setup and caveats: `apps/campaign-videos/README.md`.
 
 - `apps/.gitkeep` keeps the `apps/` directory (for future standalone companion apps) tracked. See `apps/live-caption/README.md` for the full setup and operating guide.
 

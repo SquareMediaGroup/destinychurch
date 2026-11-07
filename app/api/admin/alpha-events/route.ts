@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createServiceClient } from "@/utils/supabase/service";
 import { COURSE_EVENT_META, isCourseEventType } from "@/lib/courseEvents";
 import { humanise } from "@/lib/audit";
 import { recordAudit } from "@/lib/audit.server";
@@ -17,14 +17,9 @@ function formatCourseDate(value: string | null): string {
     : date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function GET() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await createServiceClient()
       .from("alpha_events")
       .select("*")
       .order("start_date", { ascending: true });
@@ -71,7 +66,7 @@ export async function POST(req: Request) {
         ? Math.max(1, Math.floor(Number(custom_interval_days)))
         : null;
 
-    const { data, error } = await supabase
+    const { data, error } = await createServiceClient()
       .from("alpha_events")
       .insert({
         type,

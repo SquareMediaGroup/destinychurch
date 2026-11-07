@@ -13,22 +13,14 @@ import { router } from "expo-router";
 import { AuthScreen } from "@/components/AuthScreen";
 import { Icon } from "@/components/Icon";
 import { Card, FormError, LargeTitle, Lead, PrimaryButton, SectionLabel, TextButton } from "@/components/ui";
-import { ModeSwatch } from "@/app/appearance";
+import { ThemeModePicker } from "@/components/AppearancePicker";
 import { ASKED_KEY } from "@/components/NotificationPrompt";
 import { api } from "@/lib/api";
 import { haptic } from "@/lib/haptics";
 import { registerForPush } from "@/lib/push";
-import { appearance, useAppearance, type ThemeMode } from "@/state/appearance";
 import { markSetupSeen } from "@/state/setupSeen";
 import { errorMessage, useSession } from "@/state/session";
 import { INK, ORANGE, useTheme } from "@/theme/tokens";
-
-const MODES: { key: ThemeMode; label: string }[] = [
-  { key: "system", label: "System" },
-  { key: "light", label: "Light" },
-  { key: "dark", label: "Dark" },
-  { key: "black", label: "True dark" },
-];
 
 const RECEIPT_CHOICES: { on: boolean; title: string; body: string }[] = [
   {
@@ -53,7 +45,6 @@ const LEADS = [
 export default function Setup() {
   const t = useTheme();
   const { me, setMe } = useSession();
-  const current = useAppearance();
   const [receipts, setReceipts] = useState(true);
   const [step, setStep] = useState<0 | 1 | 2>(0);
   const [busy, setBusy] = useState(false);
@@ -118,55 +109,7 @@ export default function Setup() {
       {step === 0 ? (
         <View style={{ marginTop: 28, gap: 8 }}>
           <SectionLabel>Appearance</SectionLabel>
-          <View accessibilityRole="radiogroup" style={{ flexDirection: "row", gap: 12 }}>
-            {MODES.map((o) => {
-              const on = o.key === current.mode;
-              return (
-                <Pressable
-                  key={o.key}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: on }}
-                  accessibilityLabel={o.key === "system" ? "System, matches your phone" : o.label}
-                  onPress={() => {
-                    if (!on) haptic.selection();
-                    appearance.set({ mode: o.key });
-                  }}
-                  style={({ pressed }) => ({
-                    flex: 1,
-                    gap: 6,
-                    alignItems: "center",
-                    transform: [{ scale: pressed ? 0.96 : 1 }],
-                  })}
-                >
-                  <View
-                    style={{
-                      width: "100%",
-                      height: 84,
-                      borderRadius: 16,
-                      overflow: "hidden",
-                      flexDirection: "row",
-                      borderWidth: on ? 3 : 1,
-                      borderColor: on ? t.tint : t.sep,
-                    }}
-                  >
-                    {o.key === "system" || o.key === "light" ? <ModeSwatch look="light" /> : null}
-                    {o.key === "system" || o.key === "dark" ? <ModeSwatch look="dark" /> : null}
-                    {o.key === "black" ? <ModeSwatch look="black" /> : null}
-                  </View>
-                  <Text
-                    maxFontSizeMultiplier={1.3}
-                    style={{
-                      fontSize: 13,
-                      fontWeight: on ? "600" : "400",
-                      color: t.text,
-                    }}
-                  >
-                    {o.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <ThemeModePicker />
         </View>
       ) : step === 1 ? (
         <View style={{ marginTop: 28, gap: 8 }}>

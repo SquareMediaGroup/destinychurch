@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, View, type TextInputInstance } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTabBarClearance } from "@/components/ScreenInsets";
 import { MIN_SEARCH_CHARS, type D1CommunitySummary, type D1GroupSummary, type D1MessageHit } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
 import { EventRow } from "@/components/EventRow";
@@ -49,6 +50,10 @@ export function SearchView({ mode, groupId }: { mode: "tab" | "modal"; groupId?:
   const isTab = mode === "tab";
   const t = useTheme();
   const insets = useSafeAreaInsets();
+  // As a tab, the tab bar can be on the side (iPhone Duo), so clear it on every
+  // edge. As a full-screen modal, the root stack already pads the sides.
+  const tabBottom = useTabBarClearance(120);
+  const side = isTab ? { paddingLeft: insets.left, paddingRight: insets.right } : null;
   const { communities } = useSession();
   const [query, setQuery] = useState("");
   const [allChats, setAllChats] = useState(false);
@@ -119,7 +124,7 @@ export function SearchView({ mode, groupId }: { mode: "tab" | "modal"; groupId?:
   ];
 
   return (
-    <View style={{ flex: 1, backgroundColor: t.bg, paddingTop: insets.top + (isTab ? 52 : 6) }}>
+    <View style={[{ flex: 1, backgroundColor: t.bg, paddingTop: insets.top + (isTab ? 52 : 6) }, side]}>
       {isTab ? <LargeTitle style={{ paddingHorizontal: 20, paddingTop: 2, paddingBottom: 10 }}>Search</LargeTitle> : null}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16 }}>
         <Field
@@ -173,7 +178,7 @@ export function SearchView({ mode, groupId }: { mode: "tab" | "modal"; groupId?:
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         stickySectionHeadersEnabled={false}
-        contentContainerStyle={{ paddingTop: 18, paddingBottom: isTab ? 120 : 40 }}
+        contentContainerStyle={{ paddingTop: 18, paddingBottom: isTab ? tabBottom : 40 }}
         renderSectionHeader={({ section }) => (
           <Text style={{ paddingHorizontal: 20, paddingBottom: 6, paddingTop: section.title === "Messages" && groups.length ? 14 : 0, fontSize: 13, fontWeight: "600", color: t.muted }}>{section.title}</Text>
         )}

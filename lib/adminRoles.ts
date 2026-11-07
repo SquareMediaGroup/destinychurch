@@ -99,6 +99,12 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
   { pattern: /^\/api\/admin\/alpha-events(\/|$)/, roles: ["event_admin"] },
   { pattern: /^\/api\/admin\/events(\/|$)/, roles: ["event_admin"] },
   { pattern: /^\/api\/admin\/featured-course(\/|$)/, roles: ["event_admin"] },
+  // The "Show banner" toggles on the course pages above write each course's
+  // own banner row. Without this every toggle read as off and saving failed
+  // with Forbidden for an Event Admin. The handler still keeps the sitewide
+  // banner (any non-course type) Super Admin only — see
+  // app/api/admin/banner/route.ts.
+  { pattern: /^\/api\/admin\/banner(\/|$)/, roles: ["event_admin"] },
 
   // Event admin — announcements, except the sitewide banner
   { pattern: /^\/admin\/popup(\/|$)/, roles: ["event_admin"] },
@@ -114,6 +120,9 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
   // Event song requests (/song-requests).
   { pattern: /^\/admin\/song-requests(\/|$)/, roles: ["event_admin"] },
   { pattern: /^\/api\/admin\/song-requests(\/|$)/, roles: ["event_admin"] },
+  // Talent show audience voting (/talent-show).
+  { pattern: /^\/admin\/talent-show(\/|$)/, roles: ["event_admin"] },
+  { pattern: /^\/api\/admin\/talent-show(\/|$)/, roles: ["event_admin"] },
 
   // Store
   { pattern: /^\/admin\/store(\/|$)/, roles: ["store_admin"] },
@@ -167,6 +176,9 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
 const OPEN_PATHS = [
   /^\/admin$/,
   /^\/admin\/profile$/,
+  // The help videos — the series is the same for everyone; the page filters
+  // the role videos to the caller's roles itself.
+  /^\/admin\/help$/,
   /^\/api\/admin\/logout$/,
   /^\/api\/admin\/me$/,
   /^\/api\/admin\/me\/roles$/,
@@ -174,6 +186,9 @@ const OPEN_PATHS = [
   // caller's own admin_roles row, keyed off their session, same as
   // /api/admin/me itself.
   /^\/api\/admin\/me\/avatar$/,
+  // Every admin's own two-factor status and "new backup codes" — only ever
+  // the caller's own, keyed off their session (app/api/admin/me/two-factor).
+  /^\/api\/admin\/me\/two-factor$/,
   /^\/api\/admin\/search$/,
   // The dashboard's summary numbers — the route only queries the sections the
   // caller's roles cover, same as search.

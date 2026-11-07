@@ -12,3 +12,10 @@ export function isSongRequestsPath(pathname: string | null | undefined): boolean
   if (!pathname) return false;
   return pathname === "/song-requests" || pathname.startsWith("/song-requests/");
 }
+
+// /talent-show (audience voting, reached by QR code) and its big-screen
+// results page are the whole interface too.
+export function isTalentShowPath(pathname: string | null | undefined): boolean {
+  if (!pathname) return false;
+  return pathname === "/talent-show" || pathname.startsWith("/talent-show/");
+}

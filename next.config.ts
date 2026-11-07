@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 const nextConfig: NextConfig = {
   // Shared workspace package ships raw TypeScript; Next must transpile it.
@@ -62,6 +63,14 @@ const nextConfig: NextConfig = {
         // so existing links land somewhere useful rather than on a 404.
         source: "/annual-report-2025",
         destination: "/governance",
+        permanent: true,
+      },
+      {
+        // There has never been a /youth-alpha page — Youth Alpha is a section
+        // of /youth — but the course banner linked here, so banners already
+        // saved with this link (and anything printed from them) still land.
+        source: "/youth-alpha",
+        destination: "/youth",
         permanent: true,
       },
       {
@@ -176,4 +185,14 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Source maps go to Sentry (so stack traces show real file names) only when
+// SENTRY_AUTH_TOKEN is set in the build environment; otherwise this wrapper
+// just leaves the build as it was.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+  telemetry: false,
+});

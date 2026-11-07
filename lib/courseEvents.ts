@@ -54,7 +54,9 @@ export const COURSE_EVENT_META: Record<CourseEventType, CourseEventMeta> = {
   },
   youth_alpha: {
     label: "Youth Alpha",
-    href: "/youth-alpha",
+    // A section of /youth, not a page of its own: "/youth-alpha" was a 404
+    // (next.config.ts redirects it for links already out there).
+    href: "/youth#youth-alpha",
     color: "#b81313",
     hint: "11–18 course",
     eventsLabel: "Youth Alpha Events",

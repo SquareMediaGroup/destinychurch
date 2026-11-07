@@ -64,6 +64,7 @@ const ROUTE_SLUGS = [
   "visit",
   "volunteer",
   "song-requests",
+  "talent-show",
   "whats-on",
   "young-adults",
   "youth",

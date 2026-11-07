@@ -75,9 +75,9 @@ test("quick actions point at paths their role can reach", () => {
 
 /* ── Role filtering ──────────────────────────────────────────────────────── */
 
-test("a user with no roles sees only the dashboard", () => {
+test("a user with no roles sees only the dashboard and help", () => {
   const items = visibleItems(NO_ROLES);
-  expect(items.map((i) => i.href)).toEqual(["/admin"]);
+  expect(items.map((i) => i.href)).toEqual(["/admin", "/admin/help"]);
 });
 
 test("a store admin sees the store and nothing else", () => {
@@ -235,8 +235,8 @@ test("the tabs cover exactly the pages the sidebar shows", () => {
 
 test("a single-role user gets a short bar", () => {
   const tabs = tabsFor(roles("store_admin"));
-  // Dashboard plus their own section — nothing else, and few enough to fit.
-  expect(tabs.map((t) => t.key)).toEqual(["/admin", "Store"]);
+  // Dashboard, Help and their own section — nothing else, and few enough to fit.
+  expect(tabs.map((t) => t.key)).toEqual(["/admin", "/admin/help", "Store"]);
 });
 
 test("a group with one visible item collapses to a link, not a sheet", () => {

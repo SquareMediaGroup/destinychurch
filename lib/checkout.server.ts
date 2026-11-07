@@ -289,20 +289,35 @@ export async function finalizeOrderPaid(orderDbId: string): Promise<boolean> {
     `✅ Order ${order.order_number} paid (${formatPrice(order.total_pennies)})`,
   );
 
+  // Resend reports a rejected send in its response rather than by throwing,
+  // so each result is checked: otherwise a customer who never got their
+  // confirmation looks exactly like one who did. Both go out even if one
+  // fails, and neither failure undoes the paid order.
   try {
     const summary = buildOrderSummaryHtml(items, order.total_pennies);
-    await resend.emails.send({
-      from: FROM,
-      to: order.customer_email,
-      subject: `Order confirmed — ${order.order_number}`,
-      html: buildCustomerEmail(order.customer_name, order.order_number, summary),
-    });
-    await resend.emails.send({
-      from: FROM,
-      to: NOTIFY,
-      subject: `New shop order: ${order.order_number} (${order.customer_name})`,
-      html: buildChurchEmail(order, summary),
-    });
+    const [customerSend, churchSend] = await Promise.all([
+      resend.emails.send({
+        from: FROM,
+        to: order.customer_email,
+        subject: `Order confirmed — ${order.order_number}`,
+        html: buildCustomerEmail(order.customer_name, order.order_number, summary),
+      }),
+      resend.emails.send({
+        from: FROM,
+        to: NOTIFY,
+        subject: `New shop order: ${order.order_number} (${order.customer_name})`,
+        html: buildChurchEmail(order, summary),
+      }),
+    ]);
+    if (customerSend.error) {
+      console.error(
+        `📧 Order ${order.order_number} customer confirmation not sent:`,
+        customerSend.error,
+      );
+    }
+    if (churchSend.error) {
+      console.error(`📧 Order ${order.order_number} church notification not sent:`, churchSend.error);
+    }
   } catch (err) {
     console.error("Order confirmation email failed:", err);
   }

@@ -12,6 +12,12 @@ export interface ResetPasswordState {
   error?: string;
   /** Supabase refused the password: too weak, or found in a data breach (leaked password protection). */
   rejection?: PasswordRejection;
+  /**
+   * The account has two-factor sign-in, and Supabase won't change its
+   * password from a session that hasn't passed it (a reset link is password-
+   * level only). The page links to /login/2fa, which comes back here.
+   */
+  needsTwoFactor?: boolean;
 }
 
 export async function resetPassword(
@@ -41,6 +47,14 @@ export async function resetPassword(
 
     if (isAuthWeakPasswordError(error)) {
       return { success: false, rejection: passwordRejection(error.reasons, MIN_LENGTH) };
+    }
+
+    if (error?.code === "insufficient_aal") {
+      return {
+        success: false,
+        needsTwoFactor: true,
+        error: "Your account has two-factor sign-in, so confirm it's you with your authenticator app first.",
+      };
     }
 
     if (error) {

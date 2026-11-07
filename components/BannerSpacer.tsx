@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { isLinksPagePath, isSongRequestsPath } from "@/lib/linkPages/paths";
+import { isLinksPagePath, isSongRequestsPath, isTalentShowPath } from "@/lib/linkPages/paths";
 import { useBannerBars } from "@/lib/useBannerBars";
 
 export default function BannerSpacer() {
@@ -10,7 +10,7 @@ export default function BannerSpacer() {
 
   if (pathname === "/") return null;
   // Chrome-free pages show no banners, so there is nothing to make room for.
-  if (isLinksPagePath(pathname) || isSongRequestsPath(pathname)) return null;
+  if (isLinksPagePath(pathname) || isSongRequestsPath(pathname) || isTalentShowPath(pathname)) return null;
   if (bars === 0) return null;
 
   return (

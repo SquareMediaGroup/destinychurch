@@ -12,10 +12,14 @@ const path = require('node:path');
 const { WebSocketServer } = require('ws');
 const { ShowState } = require('../lib/state');
 const titanApi = require('../lib/titan');
+const { normaliseCue, applyCueEdit, offStep, planCue } = require('../lib/cues');
+const { SOUND_FILES, SOUND_KINDS, MAX_SOUND_BYTES, checkSound } = require('../lib/sounds');
+const { parseJudgeCount, parseStyle, normaliseJudges, applyNameEdit, activeJudges } = require('../lib/judges');
 const discovery = require('../lib/discovery');
 
 const APP_DIR = path.join(__dirname, '..');
 const PUBLIC_DIR = path.join(__dirname, 'public');
+const SOUNDS_DIR = path.join(PUBLIC_DIR, 'sounds');
 
 // ---------- config ----------
 
@@ -26,8 +30,9 @@ function loadConfig() {
   if (!file) throw new Error('No config.json found');
   if (file.endsWith('config.example.json')) log('⚠️ ', 'No config.json yet, using config.example.json (copy it to config.json to customise)');
   const config = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const savedHubPort = config.hubPort;
   if (process.env.PORT) config.hubPort = Number(process.env.PORT);
-  return { config, file };
+  return { config, file, savedHubPort };
 }
 
 function log(icon, ...msg) {
@@ -35,8 +40,33 @@ function log(icon, ...msg) {
   console.log(`[${t}] ${icon}`, ...msg);
 }
 
-const { config, file: configFile } = loadConfig();
-const seats = config.judges.map((j) => String(j.seat));
+const { config, file: configFile, savedHubPort } = loadConfig();
+
+// Saves cue changes made on the control page. Never writes over
+// config.example.json: the first save creates config.json next to it.
+function saveConfig() {
+  const target = configFile.endsWith('config.example.json') ? path.join(APP_DIR, 'config.json') : configFile;
+  const tmp = `${target}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify({ ...config, hubPort: savedHubPort }, null, 2) + '\n');
+  fs.renameSync(tmp, target);
+  return target;
+}
+try {
+  Object.assign(config, normaliseJudges(config.judges, config.judgeCount));
+} catch (err) {
+  log('🔥', `config.json judgeCount is not valid: ${err.message}`);
+  process.exit(1);
+}
+if (!['celebrate', 'buzzer'].includes(config.style)) config.style = 'celebrate';
+const allSeats = config.judges.map((j) => j.seat);
+let seats = activeJudges(config).map((j) => j.seat);
+// Old configs hold bare playback numbers; turn them into full cues once here.
+try {
+  config.cues = applyCueEdit({ ...config.cues }, { ...config.cues, x: { ...(config.cues.x ?? {}) } }, allSeats);
+} catch (err) {
+  log('🔥', `config.json cues are not valid: ${err.message}`);
+  process.exit(1);
+}
 const state = new ShowState({ seats, debounceMs: config.debounceMs });
 const lightingMode = config.lighting?.mode ?? 'agent'; // agent | direct | off
 
@@ -60,6 +90,10 @@ const server = http.createServer((req, res) => {
   let filePath;
   try {
     const url = new URL(req.url, 'http://x');
+    if (url.pathname === '/api/sound') {
+      soundRequest(req, res, url);
+      return;
+    }
     const pathname = ROUTES[url.pathname] ?? url.pathname;
     filePath = path.join(PUBLIC_DIR, path.normalize(decodeURIComponent(pathname)));
   } catch {
@@ -80,6 +114,68 @@ const server = http.createServer((req, res) => {
     res.end(data);
   });
 });
+
+// ---------- sounds (uploaded from the control page) ----------
+
+// Which sounds have an uploaded file, for the current style.
+function customSounds() {
+  return Object.fromEntries(Object.entries(SOUND_FILES[config.style]).map(([kind, file]) => [kind, fs.existsSync(path.join(SOUNDS_DIR, file))]));
+}
+
+// PUT /api/sound?kind=x with the file as the body replaces that sound;
+// DELETE goes back to the built-in one. Same access key as the WebSocket.
+function soundRequest(req, res, url) {
+  const reply = (status, body) => res.writeHead(status, { 'Content-Type': 'application/json' }).end(JSON.stringify(body));
+  if (config.key && url.searchParams.get('key') !== config.key) return reply(403, { error: 'Wrong or missing access key' });
+  const kind = url.searchParams.get('kind');
+  if (!SOUND_KINDS.includes(kind)) return reply(400, { error: 'Unknown sound' });
+  const target = path.join(SOUNDS_DIR, SOUND_FILES[config.style][kind]);
+  if (req.method === 'DELETE') {
+    fs.rm(target, { force: true }, (err) => {
+      if (err) return reply(500, { error: err.message });
+      log('🔊', `Sound "${kind}" back to the built-in one`);
+      soundsChanged();
+      reply(200, { sounds: customSounds() });
+    });
+    return;
+  }
+  if (req.method !== 'PUT') return reply(405, { error: 'Use PUT or DELETE' });
+  const chunks = [];
+  let size = 0;
+  req.on('data', (chunk) => {
+    size += chunk.length;
+    if (size > MAX_SOUND_BYTES) {
+      reply(413, { error: `The file is too big (the limit is ${MAX_SOUND_BYTES / 1024 / 1024} MB)` });
+      req.destroy();
+    } else chunks.push(chunk);
+  });
+  req.on('end', () => {
+    if (size > MAX_SOUND_BYTES) return;
+    const buf = Buffer.concat(chunks);
+    let format;
+    try {
+      format = checkSound(kind, buf);
+    } catch (err) {
+      return reply(400, { error: err.message });
+    }
+    const tmp = `${target}.tmp`;
+    try {
+      fs.writeFileSync(tmp, buf);
+      fs.renameSync(tmp, target);
+    } catch (err) {
+      return reply(500, { error: err.message });
+    }
+    const name = String(url.searchParams.get('name') ?? '').slice(0, 80);
+    log('🔊', `New "${kind}" sound uploaded${name ? ` (${name})` : ''}: ${format}, ${Math.round(buf.length / 1024)} KB`);
+    soundsChanged();
+    reply(200, { sounds: customSounds() });
+  });
+}
+
+function soundsChanged() {
+  broadcast({ type: 'sounds', sounds: customSounds() }, ['control']);
+  broadcast({ type: 'reload-sounds' }, ['display']);
+}
 
 // ---------- websocket ----------
 
@@ -127,9 +223,12 @@ function pushState() {
 function welcome() {
   return {
     type: 'welcome',
-    judges: config.judges.map((j) => ({ seat: String(j.seat), name: j.name })),
+    judges: activeJudges(config).map((j) => ({ seat: j.seat, name: j.name, category: j.category ?? '' })),
+    style: config.style,
+    judgeCount: config.judgeCount,
     golden: { name: config.golden?.name ?? 'Golden Buzzer' },
     cues: config.cues,
+    sounds: customSounds(),
   };
 }
 
@@ -224,12 +323,17 @@ function handleMessage(client, msg) {
       state.reset();
       log('🔄', 'Reset');
       broadcast({ type: 'event', kind: 'reset' });
+      stopPendingSteps();
       if (config.cues.releaseOnReset) {
-        for (const n of new Set([...Object.values(config.cues.x ?? {}), config.cues.golden, config.cues.allX].filter((n) => n != null))) {
-          fireLighting(n, 'Release', 'release');
+        const done = new Set();
+        for (const cue of [...seats.map((s) => config.cues.x?.[s]), config.cues.golden, config.cues.allX]) {
+          if (!cue || done.has(`${cue.userNumber}/${cue.action}`)) continue;
+          done.add(`${cue.userNumber}/${cue.action}`);
+          const off = offStep(cue.action);
+          fireLighting(cue.userNumber, 'Release', off.action, off.level);
         }
       }
-      if (config.cues.reset != null) fireLighting(config.cues.reset, 'Reset');
+      if (config.cues.reset) runCue(config.cues.reset, 'Reset');
       pushState();
       break;
     }
@@ -240,10 +344,111 @@ function handleMessage(client, msg) {
       pushState();
       break;
     }
-    case 'test-lighting': {
+    case 'test-cue':
+    case 'cue-off': {
       if (client.role !== 'control') return;
-      const n = Number(msg.userNumber);
-      if (Number.isFinite(n)) fireLighting(n, `Test ${msg.label ?? ''}`.trim());
+      let cue;
+      try {
+        cue = normaliseCue(msg.cue);
+      } catch (err) {
+        send(client.ws, { type: 'cues-error', error: err.message });
+        return;
+      }
+      if (!cue) return;
+      const label = String(msg.label ?? 'Manual').slice(0, 60);
+      if (msg.type === 'test-cue') runCue(cue, `Test ${label}`);
+      else {
+        const off = offStep(cue.action);
+        fireLighting(cue.userNumber, `Off ${label}`, off.action, off.level);
+      }
+      break;
+    }
+    case 'set-cues': {
+      if (client.role !== 'control') return;
+      let next;
+      try {
+        next = applyCueEdit(config.cues, msg.cues ?? {}, allSeats);
+      } catch (err) {
+        send(client.ws, { type: 'cues-error', error: err.message });
+        return;
+      }
+      config.cues = next;
+      let savedTo = null;
+      try {
+        savedTo = saveConfig();
+      } catch (err) {
+        log('⚠️ ', `Cues changed but could not be saved: ${err.message}`);
+      }
+      log('🎛️ ', `Lighting cues changed${savedTo ? ` (saved to ${path.basename(savedTo)})` : ' (NOT saved, lost on restart)'}: ${JSON.stringify(next)}`);
+      broadcast({ type: 'cues', cues: next, saved: Boolean(savedTo) }, ['control']);
+      break;
+    }
+    case 'set-judges': {
+      if (client.role !== 'control') return;
+      let count;
+      try {
+        count = parseJudgeCount(msg.count);
+      } catch (err) {
+        send(client.ws, { type: 'judges-error', error: err.message });
+        return;
+      }
+      config.judgeCount = count;
+      seats = activeJudges(config).map((j) => j.seat);
+      state.setSeats(seats);
+      stopPendingSteps();
+      let savedTo = null;
+      try {
+        savedTo = saveConfig();
+      } catch (err) {
+        log('⚠️ ', `Judges changed but could not be saved: ${err.message}`);
+      }
+      log('👥', `Number of judges set to ${count}${savedTo ? '' : ' (NOT saved, lost on restart)'}; buzzers cleared`);
+      broadcast(welcome(), ['display', 'control', 'tablet', 'unknown']);
+      broadcast({ type: 'event', kind: 'reset' }, ['display']);
+      pushState();
+      break;
+    }
+    case 'set-names': {
+      if (client.role !== 'control') return;
+      let next;
+      try {
+        next = applyNameEdit(config.judges, config.golden ?? { name: 'Golden Buzzer' }, msg.names ?? {});
+      } catch (err) {
+        send(client.ws, { type: 'judges-error', error: err.message });
+        return;
+      }
+      config.judges = next.judges;
+      config.golden = next.golden;
+      let savedTo = null;
+      try {
+        savedTo = saveConfig();
+      } catch (err) {
+        log('⚠️ ', `Names changed but could not be saved: ${err.message}`);
+      }
+      log('🏷️ ', `Names changed${savedTo ? '' : ' (NOT saved, lost on restart)'}: ${activeJudges(config).map((j) => `${j.name}${j.category ? ` (${j.category})` : ''}`).join(', ')}, ${config.golden.name}`);
+      broadcast(welcome(), ['display', 'control', 'tablet', 'unknown']);
+      send(client.ws, { type: 'names-saved', saved: Boolean(savedTo) });
+      pushState();
+      break;
+    }
+    case 'set-style': {
+      if (client.role !== 'control') return;
+      try {
+        config.style = parseStyle(msg.style);
+      } catch (err) {
+        send(client.ws, { type: 'judges-error', error: err.message });
+        return;
+      }
+      let savedTo = null;
+      try {
+        savedTo = saveConfig();
+      } catch (err) {
+        log('⚠️ ', `Style changed but could not be saved: ${err.message}`);
+      }
+      log('🎨', `Style set to ${config.style}${savedTo ? '' : ' (NOT saved, lost on restart)'}`);
+      broadcast(welcome(), ['display', 'control', 'tablet', 'unknown']);
+      soundsChanged();
+      pushState();
       break;
     }
     case 'test-sound': {
@@ -263,11 +468,11 @@ function judgePress(seat, source) {
   log('❌', `X from judge ${seat} (${source})`);
   broadcast({ type: 'event', kind: 'x', seat, at: Date.now() });
   const cue = config.cues.x?.[seat];
-  if (cue != null) fireLighting(cue, `X judge ${seat}`);
+  if (cue) runCue(cue, `X judge ${seat}`);
   if (state.allX()) {
     log('🚨', 'All judges have buzzed');
     broadcast({ type: 'event', kind: 'all-x', at: Date.now() });
-    if (config.cues.allX != null) fireLighting(config.cues.allX, 'All X');
+    if (config.cues.allX) runCue(config.cues.allX, 'All X');
   }
   pushState();
 }
@@ -280,7 +485,7 @@ function goldenPress(source) {
   }
   log('🌟', `GOLDEN BUZZER (${source})`);
   broadcast({ type: 'event', kind: 'golden', at: Date.now() });
-  if (config.cues.golden != null) fireLighting(config.cues.golden, 'Golden');
+  if (config.cues.golden) runCue(config.cues.golden, 'Golden');
   pushState();
 }
 
@@ -294,10 +499,35 @@ function recordFire(label, userNumber, ok, error) {
   pushState();
 }
 
-function fireLighting(userNumber, label, action = 'fire') {
+// Runs a cue's on/off steps (see planCue). Later steps are timers so Reset
+// can stop a repeat that is still going.
+const pendingSteps = new Set();
+
+function runCue(cue, label) {
+  for (const step of planCue(cue)) {
+    const go = () => fireLighting(cue.userNumber, label, step.action, step.level);
+    if (step.at === 0) {
+      go();
+      continue;
+    }
+    const timer = setTimeout(() => {
+      pendingSteps.delete(timer);
+      go();
+    }, step.at);
+    pendingSteps.add(timer);
+  }
+}
+
+function stopPendingSteps() {
+  for (const timer of pendingSteps) clearTimeout(timer);
+  pendingSteps.clear();
+}
+
+function fireLighting(userNumber, label, action = 'fire', level = 100) {
   if (lightingMode === 'off') return;
+  if (!['fire', 'release'].includes(action)) label = `${label} (${action === 'level' ? `fader ${level}%` : action})`;
   if (lightingMode === 'direct') {
-    titanApi.fireCue(config.titan, userNumber, action).then(
+    titanApi.fireCue(config.titan, userNumber, action, level).then(
       () => recordFire(label, userNumber, true),
       (err) => recordFire(label, userNumber, false, err.message),
     );
@@ -308,7 +538,7 @@ function fireLighting(userNumber, label, action = 'fire') {
     recordFire(label, userNumber, false, 'Avolites agent not connected');
     return;
   }
-  for (const a of agents) send(a.ws, { type: 'fire', userNumber, label, action });
+  for (const a of agents) send(a.ws, { type: 'fire', userNumber, label, action, level });
 }
 
 if (lightingMode === 'direct') {
@@ -374,7 +604,7 @@ server.listen(config.hubPort, () => {
       links: [
         { name: 'Control', url: `${base}/control${k ? `?${k}` : ''}` },
         { name: 'Display', url: `${base}/display${k ? `?${k}` : ''}` },
-        ...config.judges.map((j) => ({ name: j.name, url: `${base}/tablet?${q(`seat=${j.seat}`)}` })),
+        ...activeJudges(config).map((j) => ({ name: j.name, url: `${base}/tablet?${q(`seat=${j.seat}`)}` })),
         { name: config.golden?.name ?? 'Golden Buzzer', url: `${base}/tablet?${q('seat=gold')}` },
       ],
     });

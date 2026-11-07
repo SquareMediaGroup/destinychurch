@@ -60,11 +60,11 @@ async function reportHealth() {
   }
 }
 
-async function fire(userNumber, label, action) {
+async function fire(userNumber, label, action, level) {
   const started = Date.now();
   try {
-    await titanApi.fireCue(titan, userNumber, action);
-    log('💡', `${label}: playback ${userNumber} ${action === 'release' ? 'released' : 'fired'} (${Date.now() - started} ms)`);
+    await titanApi.fireCue(titan, userNumber, action, level);
+    log('💡', `${label}: playback ${userNumber} ${action}${action === 'level' ? ` ${level}%` : ''} (${Date.now() - started} ms)`);
     send({ type: 'fire-result', ok: true, userNumber, label });
   } catch (err) {
     log('🔥', `${label}: playback ${userNumber} FAILED: ${err.message}`);
@@ -100,7 +100,7 @@ function connect() {
       log('⚙️ ', `Titan Web API at http://${titan.host}:${titan.port}`);
       reportHealth();
     } else if (msg.type === 'fire' && titan) {
-      fire(msg.userNumber, msg.label, msg.action === 'release' ? 'release' : 'fire');
+      fire(msg.userNumber, msg.label, titanApi.TITAN_ACTIONS.includes(msg.action) ? msg.action : 'fire', msg.level);
     }
   });
 

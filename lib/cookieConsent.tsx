@@ -30,14 +30,26 @@ const safeParse = (raw: string | null): CookieConsentState | null => {
   return null;
 };
 
+// Storage access throws (SecurityError) when the browser blocks site data —
+// Safari's "Block all cookies", some embedded webviews. This provider wraps
+// every page, so an unguarded throw here took the whole site down; without
+// storage the banner simply asks again next visit.
 const readConsent = (): CookieConsentState | null => {
   if (typeof window === "undefined") return null;
-  return safeParse(window.localStorage.getItem(STORAGE_KEY));
+  try {
+    return safeParse(window.localStorage.getItem(STORAGE_KEY));
+  } catch {
+    return null;
+  }
 };
 
 const writeConsent = (value: CookieConsentState) => {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+  } catch {
+    // Not persisted — the choice still applies for this page view.
+  }
 };
 
 type CookieConsentContextValue = {

@@ -549,7 +549,6 @@ that hasn't had the migration yet.
 **Used By:**
 - `app/layout.tsx` fetches active banner on every request
 - Admin dashboard to edit banners (`/admin/banner` has Show from / Hide after fields)
-- DestinyAI's banner tools (`lib/adminAgent/tools/banner.server.ts`)
 
 ---
 
@@ -797,7 +796,6 @@ CREATE TABLE site_popup (
 
 **Used By:**
 - `app/layout.tsx` fetches active pop-up (outside its window it reads as off)
-- DestinyAI's popup tools (`lib/adminAgent/tools/popup.server.ts`)
 - Displayed by `SitePopup.tsx` component
 - Admin dashboard to manage pop-ups
 
@@ -1486,39 +1484,6 @@ CREATE TABLE training_posts (
 - `app/api/training/unlock` to verify a sub-group password
 - `app/api/training/posts/[id]/timer` to enforce `min_read_seconds` before a post can be marked complete (HMAC-signed read timer; see Training API)
 - `app/api/admin/training/{categories,subgroups,folders,posts}` CRUD, admin dashboard
-
----
-
-#### **admin_agent_plans** / **admin_agent_actions** (DestinyAI in Destiny Admin)
-**Migration:** `supabase/migrations/20261105_01_admin_destinyai.sql`
-
-**Purpose:** What DestinyAI proposed, waiting for an admin to confirm, and what
-it ran. The model never changes the site itself: write tools are assessed and
-saved here as `pending`, and only Confirm runs them.
-
-```sql
-admin_agent_plans (
-  id uuid PK, actor_id uuid, actor_email text,
-  prompt text,          -- what the admin asked for (quoted in the audit entry)
-  summary text,         -- DestinyAI's reply
-  status text,          -- pending | executed | partial | failed | cancelled
-  created_at, expires_at (created + 30 min), decided_at
-)
-admin_agent_actions (
-  id uuid PK, plan_id uuid FK → admin_agent_plans ON DELETE CASCADE, position int,
-  tool text, args jsonb,
-  follow_ups jsonb,     -- [{label, changes, on_by_default}] — switches on the plan card
-  risk text,            -- write | destructive — decided by the server, never the model
-  label, detail text, warnings jsonb,
-  status text,          -- pending | executed | failed | skipped | undone
-  before jsonb, after jsonb,  -- for Undo and its "changed since?" check
-  error text, executed_at, undone_at
-)
-```
-
-**RLS:** enabled with no policies, and `anon`/`authenticated` revoked. Service role only.
-
-**Used By:** `lib/adminAgent/plans.server.ts` (via `/api/admin/assistant/**`).
 
 ---
 
@@ -2945,7 +2910,6 @@ Each section requires a specific access-level role (see
 | `/admin/reset-password` | `app/admin/reset-password/page.tsx` | Password reset form. A password Supabase refuses (found in a data breach, or too weak) gets an explanation panel from `passwordRejection()` instead of a raw error |
 | `/admin` | `app/admin/page.tsx` | Admin dashboard home |
 | `/admin/banner` | `app/admin/banner/page.tsx` | Manage site banners, with an optional Show from / Hide after window |
-| `/admin/assistant` | `app/admin/assistant/page.tsx` | DestinyAI: ask for admin jobs in plain English. Answers come back as a plan card to confirm (see [DestinyAI in Destiny Admin](#libadminagent--destinyai-in-destiny-admin)). Open to every admin; listed in the nav for Event Admins, Site Admins and Super Admins (`shownTo`), since its tools cover announcements and posts |
 | `/admin/popup` | `app/admin/popup/page.tsx` | Manage pop-ups |
 | `/admin/redirects` | `app/admin/redirects/page.tsx` | Manage URL redirects — click counts and a per-link QR code |
 | `/admin/status` | `app/admin/status/page.tsx` | Status page incidents (Site Admin): post an outage, amber alert or maintenance for chosen parts of the website / Destiny One, add timeline updates, change, resolve, reopen. Shown on status.destinytees.uk |
@@ -4561,34 +4525,6 @@ and stamps `long_outage_alerted_at`. Amber alerts and maintenance never email.
 // partial update) and DELETE, each audited the same way.
 ```
 
-#### DestinyAI — `/api/admin/assistant/**`
-```typescript
-// POST /api/admin/assistant  { messages: [{role, content}] }
-//   → { reply, question: {question, options[], allow_free_text} | null, plan: Plan | null }
-//   One turn. Read tools run; write tools only propose. Proposals are saved as
-//   one pending plan (earlier pending plans for this admin are cancelled).
-//   A question and a plan never come back together. maxDuration 60.
-// GET  /api/admin/assistant/plans/[id] → { plan }   (own plans only)
-// POST /api/admin/assistant/plans/[id]
-//   { decision: "confirm"|"cancel", include?: {actionId: bool},
-//     follow_ups?: {actionId: number[]}, acknowledged?: actionId[] }
-//   Confirm re-assesses every step against the live site first. Any step that is
-//   destructive now and isn't in `acknowledged` → 409 { needs_acknowledgement, plan },
-//   nothing runs. Otherwise the plan is claimed (conditional status flip, so it
-//   runs once) and steps run in order; the first failure skips the rest.
-//   Records one audit entry ("Confirmed a DestinyAI plan …", section site,
-//   metadata.via = "DestinyAI", the prompt and every step's outcome).
-// POST /api/admin/assistant/actions/[id]/undo → { plan }
-//   Within 24h, by the same admin or a Super Admin. Refused (409) if the thing
-//   has been changed since. Audited.
-//
-// AUTHORIZATION: OPEN_PATHS in lib/adminRoles.ts (every admin), because access
-// is per tool: each tool calls its area's admin route handler in-process via
-// callRoute(), which first runs hasAccess() for that handler's path, exactly as
-// middleware would, and the handler keeps its own checks (the banner's
-// "sitewide is Super Admin only").
-```
-
 #### `GET /api/admin/events`
 ```typescript
 // Event picker feed for /admin/featured-event.
@@ -5549,82 +5485,11 @@ Two things to keep in mind when editing it:
 post", "Clear the cache"). Those hrefs use `?new=1`, which the list pages read
 to open their editor straight away.
 
-### `lib/adminAgent/*` — DestinyAI in Destiny Admin
-
-The admin's own DestinyAI (`/admin/assistant`), separate from the member-facing
-one in Destiny One (`lib/destinyOne/assistant.server.ts`). It does admin jobs from
-one message ("a maintenance notice for 12–3pm tomorrow, live in 2 hours"), asks
-when something is ambiguous, suggests follow-ups, and never changes anything
-until an admin confirms.
-
-**Model:** Claude (`anthropic/claude-sonnet-5.5`, override with
-`DESTINYAI_ADMIN_MODEL`) through the Vercel AI Gateway with the AI SDK
-(`generateText`, up to 12 steps, stops on `ask_user`). Member DestinyAI and
-Smart Search stay on OpenAI.
-
-**The rules it is built around:**
-1. **The model proposes, the server executes.** Read tools (`get_*`, `find_*`)
-   run during the turn. Write tools only run `assess()`, which checks the
-   request against the live site and returns a label, warnings and a **risk**.
-   The proposals become one pending plan (`admin_agent_plans`/`_actions`).
-2. **Risk is the server's call.** `destructive` = removes or replaces something
-   live (or scheduled), deletes something, or blocks the site (`sitewide`
-   banner). Those need a second confirmation in a dialog. On Confirm every step is
-   assessed again, and one that has *become* destructive since is sent back
-   rather than run.
-3. **No new way to write.** Tools call the same route handlers the admin pages
-   use, in-process (`callRoute()` in `context.server.ts`), after the same
-   `hasAccess()` check middleware would make. Validation, role checks,
-   revalidation and the field-level audit entry all come from the handler. The
-   actor headers are still in scope, so the audit log attributes each change to
-   the confirming admin, with path `/api/admin/assistant/...`.
-   `tests/unit/admin-assistant.spec.ts` fails if a tool file writes to the
-   database directly.
-4. **UK time.** The prompt carries the current London time with its offset.
-   Tools only accept ISO times with an explicit offset and refuse past times when
-   proposing (`checkFutureTime`, `resolveWindow` in `time.ts`). Everything shown
-   to a person is formatted back in London time.
-5. **Proactive follow-ups.** A write tool call can carry `follow_ups`
-   (`{label, changes, on_by_default}`), shown as switches on the plan card. They
-   are kept only if the merged arguments still validate (`validFollowUps`), and
-   switched-on ones are merged in at Confirm (`argsWithFollowUps` in `gating.ts`).
-6. **Undo.** Each executed step stores `before`/`after`. Undo restores `before`
-   through the same handler, within 24h, unless `after` no longer matches the
-   live state. Replaced popup or featured-event images can't come back, because
-   the routes delete them, and that is warned about up front.
-7. **No model HTML.** Post bodies are plain-text sections escaped by
-   `buildBody()` (`postBody.ts`).
-
-| File | What it holds |
-|---|---|
-| `types.ts` | Client-safe shapes: `Plan`, `PlanAction`, `AssistantReply`, `PlanDecision` |
-| `time.ts` | London formatting/offsets, `checkFutureTime`, `resolveWindow` |
-| `prompt.ts` | `buildSystemPrompt()` |
-| `tool.ts` | `readTool` / `writeTool` shapes, `sameFields` (undo's "changed since?") |
-| `gating.ts` | `argsWithFollowUps`, `unacknowledgedDestructive` |
-| `postBody.ts` | `buildBody()` |
-| `context.server.ts` | `currentActor()`, `callRoute()`, `requireAccess()`, `AgentError` |
-| `tools/*.server.ts` | banner (`get_banner`, `set_banner`, `clear_banner`), popup, featured event (`find_events`, `feature_event`, `stop_featured_event`), posts (`find_posts`, `create_post`, `schedule_post`, `unpublish_post`, `bin_post`) |
-| `registry.server.ts` | `AGENT_TOOLS`. Add an area by adding its tools file and listing it here |
-| `plans.server.ts` | `createPlan`, `decidePlan`, `undoAction` |
-| `agent.server.ts` | `runTurn()` |
-
-**UI:** `components/admin/assistant/AssistantChat.tsx` (conversation kept in
-localStorage as a convenience; pending plans are re-read on load) and
-`PlanCard.tsx`. Ask-user options render as chips. The composer is `fixed` above
-the mobile tab bar, because the admin `<main>` is `overflow-auto` without a height,
-so `sticky` has nothing to stick to.
-
-**Adding a tool:** write it in `tools/<area>.server.ts` with `readTool`/`writeTool`.
-Read state through the area's GET handler. Make `assess()` decide the risk from
-live state and return `before`. Make `execute()` call the PUT/POST/PATCH handler
-and return `after`. Add `undo()` if it can be reversed. List it in
-`registry.server.ts` and describe the area in `prompt.ts`.
-
 ### `lib/schedule.ts`
 
 `isWithinWindow()`, `windowState()` (off / scheduled / live / ended) and
-`parseWindow()` for `starts_at`/`ends_at` windows on the banner and popup. Client-safe.
+`parseWindow()` for `starts_at`/`ends_at` windows on the banner and popup, plus
+`formatLondon()` / `describeWindow()` to show those times in UK time. Client-safe.
 `components/admin/ScheduleFields.tsx` is the matching Show from / Hide after input pair.
 
 ### `lib/adminTheme.ts`
@@ -7777,12 +7642,6 @@ PLAYBOOK_ORG_SLUG=dctv                                             # optional; d
 
 # OpenAI (for Smart Search chat — gpt-4.1-mini, tool-calling)
 OPENAI_API_KEY=sk-...
-
-# Vercel AI Gateway (DestinyAI in Destiny Admin — Claude via the AI SDK).
-# On Vercel the deployment's OIDC token is used and no key is needed; locally,
-# create a key in the Vercel dashboard (AI Gateway → API keys) or `vercel env pull`.
-AI_GATEWAY_API_KEY=
-DESTINYAI_ADMIN_MODEL=                           # optional; defaults to anthropic/claude-sonnet-5.5
 
 # Regulator APIs for /governance (optional — page falls back to a stored snapshot without them)
 COMPANIES_HOUSE_API_KEY=                         # HTTP Basic, key as username + blank password

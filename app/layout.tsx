@@ -128,7 +128,8 @@ async function getActiveBanner() {
   try {
     const supabase = createServiceClient();
     // `*` rather than a column list: starts_at/ends_at only exist once
-    // 20261105_01_admin_destinyai.sql is applied, and naming a missing column
+    // 20261105_01_admin_destinyai.sql is applied (the migration that added banner
+    // and popup windows), and naming a missing column
     // would fail the whole query and take every banner down with it.
     const { data: rows } = await supabase
       .from("site_banner")

@@ -189,7 +189,7 @@ destinychurch/
 │   │   ├── featured-course/       # Choose the What's On featured course
 │   │   ├── store/                 # Shop admin (products, orders, hero)
 │   │   ├── hr/                    # HR admin (staff, leave, jobs, docs, reviews, checklists) — hr_admin
-│   │   └── onboarding/            # Super-admin preview of each role's onboarding tour
+│   │   └── onboarding/            # Super-admin preview of each role's onboarding (videos and sandbox)
 │   ├── portal/                    # Staff self-service — dashboard, profile, team, reviews, leave, documents (linked hr_staff)
 │   │   ├── layout.tsx             # Portal shell (separate auth boundary from /admin)
 │   │   ├── page.tsx               # Profile + leave balance overview
@@ -207,7 +207,7 @@ destinychurch/
 │   │   │   ├── redirects/         # CRUD redirects
 │   │   │   ├── popup/             # CRUD pop-ups
 │   │   │   ├── revalidate/        # ISR cache invalidation
-│   │   │   ├── onboarding/        # Per-admin tour progress
+│   │   │   ├── onboarding/        # Per-admin onboarding progress
 │   │   │   ├── posts/, training/, alpha-events/, featured-course/, hr/, store/, shop-hero/
 │   │   │   │                      #   hr/ includes checklists/ + checklist-templates/
 │   │   │   └── ...
@@ -348,7 +348,7 @@ destinychurch/
 │       ├── 20260712_02_featured_course.sql # Featured course (What's On)
 │       ├── 20260728_featured_event.sql   # Featured ChurchSuite event + its popup
 │       ├── 20260807_alpha_events_cap_type.sql # CAP Money Course
-│       ├── 20260821_admin_onboarding.sql # Per-admin onboarding/tour progress (admin_onboarding)
+│       ├── 20260821_admin_onboarding.sql # Per-admin onboarding progress (admin_onboarding)
 │       ├── 20260822_hr_admin_role.sql  # `hr_admin` access level on admin_roles
 │       ├── 20260824_hr_review_reminders.sql # hr_reviews.reminder_sent_at for the daily digest
 │       ├── 20260825_hr_checklists.sql  # Onboarding/offboarding checklists (hr_checklist_* tables)
@@ -988,24 +988,24 @@ having a linked `hr_staff` row, not by an `admin_roles` flag.
 ```sql
 CREATE TABLE admin_onboarding (
   auth_user_id uuid PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
-  completed_steps text[] NOT NULL DEFAULT '{}',  -- TourSection ids from lib/adminOnboarding.ts
-  gate_seen boolean NOT NULL DEFAULT false,      -- welcome modal answered (started or skipped)
-  dismissed boolean NOT NULL DEFAULT false,      -- checklist hidden by the user
+  completed_steps text[] NOT NULL DEFAULT '{}',  -- launcher tasks done: videos, sandbox, finish (older rows also hold retired tour section ids; ignored)
+  gate_seen boolean NOT NULL DEFAULT false,      -- welcome answered (started or skipped)
+  dismissed boolean NOT NULL DEFAULT false,      -- launcher hidden (Finish, or "Hide checklist")
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
 -- RLS: Service role only (deny-all "service only" policy, mirroring admin_roles)
 ```
 
-Created lazily by the API's upsert — there is no backfill, and super admins
-simply never grow a row since `toursFor()` returns nothing for them. See
+Created lazily by the API's upsert — there is no backfill. Every admin, super
+admins included, is now offered the welcome on their first visit. See
 [`lib/adminOnboarding.ts`](#libadminonboardingts--libonboardingprogressts--libdemomodets).
 
 **Used By:**
 - `app/api/admin/onboarding` — the only reader/writer, keyed off the caller's
   own cookie session
-- `lib/onboardingProgress.ts` — the client cache read by the welcome gate, the
-  checklist and the running tour
+- `lib/onboardingProgress.ts` — the client cache read by the onboarding dialog,
+  the launcher and the sandbox bar
 
 > **Not yet applied.** This migration
 > (`supabase/migrations/20260821_admin_onboarding.sql`) has not been run against
@@ -1203,7 +1203,7 @@ role and filters explicitly in the route.
 ---
 
 #### 13b. **hr_checklist_templates / hr_checklist_template_items / hr_checklist_items**
-**Purpose:** New-hire onboarding and leaver offboarding paperwork (contract, DBS/safeguarding checks, induction, equipment return) — **distinct from and unrelated to** the admin-dashboard product tour (`admin_onboarding`, `lib/demoMode.ts`), which is a UI walkthrough. The `hr_checklist_*` naming keeps that separation explicit. Migration: `supabase/migrations/20260825_hr_checklists.sql`.
+**Purpose:** New-hire onboarding and leaver offboarding paperwork (contract, DBS/safeguarding checks, induction, equipment return) — **distinct from and unrelated to** admin onboarding (`admin_onboarding`, `lib/demoMode.ts`), the videos and sandbox. The `hr_checklist_*` naming keeps that separation explicit. Migration: `supabase/migrations/20260825_hr_checklists.sql`.
 
 ```sql
 CREATE TABLE hr_checklist_templates (       -- reusable named lists
@@ -2990,8 +2990,8 @@ Each section requires a specific access-level role (see
 | `/admin/store/orders` | `app/admin/store/orders/page.tsx` | Orders list |
 | `/admin/store/orders/[id]` | `app/admin/store/orders/[id]/page.tsx` | Order detail — mark fulfilled/cancelled/refunded |
 | `/admin/users` | `app/admin/users/page.tsx` | Manage admin logins and their access-level roles (Super Admin only) |
-| `/admin/help` | `app/admin/help/page.tsx` | Help: the admin video series. The welcome video for everyone, then one how-to per role the viewer holds (Super Admin sees all; unfilmed ones read "Coming soon"), a link to the test-mode tour and the music credit. The list is `lib/adminHelpVideos.ts`. Open to every admin (`OPEN_PATHS`) |
-| `/admin/onboarding` | `app/admin/onboarding/page.tsx` | What each access level is taught on first sign-in, and the admin previewed from their side (Super Admin only) |
+| `/admin/help` | `app/admin/help/page.tsx` | Help: the admin video series. The welcome video for everyone, then one how-to per role the viewer holds (Super Admin sees all; unfilmed ones read "Coming soon"), links to the sandbox and a full re-run of onboarding, and the music credit. The list is `lib/adminHelpVideos.ts`. Open to every admin (`OPEN_PATHS`) |
+| `/admin/onboarding` | `app/admin/onboarding/page.tsx` | What each access level gets (welcome, videos, sandbox), open the sandbox or their videos as that role, and the admin previewed from their side (Super Admin only) |
 | `/admin/audit` | `app/admin/audit/page.tsx` | Audit log — everything anyone does in the admin. Ask it in plain English ("who added the Faith Hoodie to the store?") or read it: search, filter by person/area/kind/date, open any entry for the field-by-field before and after. Second tab holds the weekly AI reports (Super Admin only) |
 
 #### Admin navigation, search and keyboard shortcuts
@@ -3590,48 +3590,42 @@ carried a `lib/popupGate.ts` zustand flag that both popups checked before arming
 gate was deleted along with the overlay.
 
 #### Onboarding (`components/admin/onboarding/*`)
-Role-based guided tours for `/admin`. See
+Four-stage onboarding for `/admin`: **Welcome, Videos, Sandbox, Finish**. Any
+stage can be reached from any other at any time. See
 [`lib/adminOnboarding.ts`](#libadminonboardingts--libonboardingprogressts--libdemomodets)
-for the registry and the "nothing is saved" guarantee this whole surface exists
-to keep.
+for the registry and the "nothing is saved" guarantee the sandbox exists to keep.
+(This replaced the spotlight tour; `TourSpotlight` and `WelcomeGate` are gone.)
 
 - `OnboardingProvider.tsx` — **Client.** Mounted in `app/admin/layout.tsx`
-  inside `AdminCommandProvider`. Owns the state machine: which section a step
-  belongs to, navigating to a step's route, polling for its `data-tour` anchor
-  (the page it lands on is usually still fetching), and switching demo mode on
-  for the whole run — not just the sandbox steps, because a tour where only
-  some buttons are safe is a tour nobody trusts. Exposes `useOnboardingTour()`
-  (`sections`, `completed`, `running`, `start`, `startRole`, `stop`) to the rest
-  of the tree.
-- `WelcomeGate.tsx` — Full-screen modal on a person's first `/admin` visit,
-  naming the access levels they hold and how long their tour takes. "Skip for
-  now" (or Escape) is a real answer and is recorded as one — this is a gate,
-  not a wall. It only marks the gate seen: the Get Started checklist stays, so
-  "later" has somewhere to happen. Focus is trapped while it is open.
+  inside `AdminCommandProvider`. Owns which stage is showing, switches demo mode
+  on for exactly as long as the Sandbox is open (and off for every other stage,
+  Finish included), and opens a stage from `?onboarding=<welcome|videos|sandbox|finish>`
+  on any admin URL (the legacy `?tour=1` opens the sandbox). The welcome opens by
+  itself on a first visit. Leaving the sandbox sends you to `/admin` so nothing
+  real is edited on top of a page still showing phantom rows. Exposes
+  `useOnboardingFlow()` (`stage`, `completed`, `go`, `startRole`, `close`).
+- `OnboardingDialog.tsx` — The modal for Welcome, Videos and Finish, with a
+  stepper (1 Welcome, 2 Videos, 3 Sandbox, 4 Finish) that doubles as navigation.
+  Welcome names the access levels held. Videos lists the welcome video then one
+  per held role (`videosFor`), each expandable into a player; unpublished ones
+  read "Coming soon". Finish says nothing was saved and offers "watch the videos
+  again" / "back to the sandbox". Escape, the close button and "Skip for now" are
+  all "not now" and never trap anyone. Focus is trapped while it is open.
+- `SandboxBar.tsx` — The sticky orange bar across the top while the sandbox is
+  open: says nothing is saved, with "Watch videos" and "Finish when you're ready".
+  The sandbox itself is the real admin, not a modal.
 - `OnboardingChecklist.tsx` — The persistent "Get Started" launcher
-  (bottom-right, remaining-count badge) and its expanding panel — percent bar,
-  tickable sections, "Hide checklist" (with a note on how to bring it back).
-  Picking a section closes the panel before the tour starts. Reuses `<BorderBeam size="pulse-inner">`
-  (`border-beam`) as the attention cue while anything is left to do. The
-  collapsed launcher pill is mounted for the whole `/admin` session (not just
-  while the panel is open), so its beam is explicitly `active={left > 0}` —
-  it stops running once the checklist is actually done, rather than pulsing
-  forever in the background.
-- `TourSpotlight.tsx` — The overlay itself: four scrim rectangles frame the
-  anchored element rather than a clip-path, so the real element stays fully
-  clickable — the sandbox steps depend on that. An orange ring lights the
-  target; the tooltip card carries Back/Next/Exit (and Left/Right arrow keys
-  when focus isn't in a field), shows the section name and position within it
-  plus a whole-run progress bar, and picks whichever side of the anchor
-  actually has room, measured against the card's real height. With no anchor
-  it centres on screen; below 720px it docks full-width to the bottom, or the
-  top when the anchor is down there (the tab bar). A click-to-continue step
-  shows Next anyway if its anchor never appeared, so the tour can't strand
-  anyone. `super_admin` "Run this tour" also switches the role preview on, so
-  the sidebar the tour points at is the one that role actually gets.
+  (bottom-right, remaining-count badge). Opens a panel of three tasks (videos,
+  sandbox, finish), each a button that jumps straight to that stage, plus "Hide
+  checklist". Shown after the welcome has been answered until Finish is pressed
+  or it is hidden. Reuses `<BorderBeam size="pulse-inner">` as the attention cue
+  while anything is left, stopping when nothing is.
+- `VideoPlayer.tsx` — One help video: the YouTube embed behind the media-cookie
+  gate, or its poster marked "coming soon". Shared with `/admin/help`.
 - `RolePreviewBar.tsx` — Sticky bar shown while a super admin is previewing
   another access level (from `/admin/onboarding`). States plainly that this is
-  presentation only — middleware still knows they're a super admin.
+  presentation only — middleware still knows they're a super admin. Replaced by
+  `SandboxBar` while the sandbox is open.
 
 #### Admin Components (`components/admin/*`)
 - `AdminSidebar.tsx` — Admin navigation. A group with its own overview page (Destiny One, HR — `groupLanding()` in `lib/adminNav.ts`, the item named the same as the group) makes the group heading the link to it, with the chevron beside it as the expand/collapse control, instead of repeating the name as the first child. At `md`+ the full sidebar; below `md` only a slim top bar (logo, breadcrumbs, ⌘K, theme toggle, account sheet), with navigation itself handed to `AdminTabBar`
@@ -5467,9 +5461,9 @@ the site chrome stand aside. Covered by `tests/unit/talent-show.spec.ts`.
 
 ### `lib/adminHelpVideos.ts`
 
-The admin help video series shown at `/admin/help`. Onboarding is moving to video: each access level gets a
-how-to on YouTube, and a new admin watches theirs, then practises in the tour's demo mode (`lib/demoMode.ts`),
-where nothing is saved. `WELCOME_VIDEO` is for every admin; `ROLE_VIDEOS` has one entry per role. An entry with
+The admin help video series shown at `/admin/help`. Onboarding is video-first: each access level gets a
+how-to on YouTube, and a new admin watches theirs (in the onboarding dialog or on `/admin/help`), then practises in the sandbox (`lib/demoMode.ts`),
+where nothing is saved. `videosFor(roles)` picks the ones a person is owed. `WELCOME_VIDEO` is for every admin; `ROLE_VIDEOS` has one entry per role. An entry with
 a `youtubeId` plays as a youtube-nocookie embed behind the media-cookie gate (`MediaEmbed`); one without shows its
 poster (`public/img/admin-help/`) or nothing, marked "Coming soon". The videos are not kept in this repository: they
 are rendered from `apps/campaign-videos` (`AdminWelcome`, and one tutorial per role built on `src/Tutorial.tsx`) and
@@ -5543,56 +5537,44 @@ preference in this codebase, not a database column.
 
 ### `lib/adminOnboarding.ts` / `lib/onboardingProgress.ts` / `lib/demoMode.ts`
 
-Role-based onboarding for `/admin`. Same idea as `lib/adminNav.ts`: one
-registry, everything derives from it.
+Onboarding for `/admin`, in four stages a person can repeat at will:
 
-**`lib/adminOnboarding.ts`** holds every tour, keyed by access level. A tour is
-sections, a section is steps, and a step names a `route`, a `data-tour` anchor,
-a title and a body. `toursFor(roles)` returns the tours a person is owed —
-someone with three roles is taught three tours back to back — and
-`checklistFor(roles)` prefixes them with the shared Orientation section.
+1. **Welcome** — who you are in the admin and which access levels you hold.
+2. **Videos** — the welcome video, then one how-to per role you hold
+   (`lib/adminHelpVideos.ts`, `videosFor(roles)`; super admins get all of them).
+3. **Sandbox** — the real admin pages with every save switched off (demo mode,
+   below), so you can try what the videos showed.
+4. **Finish** — "when you're ready". Hides the Get Started launcher.
 
-`super_admin` deliberately has no tour: it can reach everything, so "the super
-admin tour" would be every tour at once. Super admins preview a single role from
-`/admin/onboarding` instead.
+**`lib/adminOnboarding.ts`** is the small registry: `STAGES`, the launcher's
+`TASKS` (videos, sandbox, finish — progress is counted in these three),
+`ONBOARDED_ROLES` (every access level except `super_admin`), `ROLE_ICONS`,
+`heldRoles()`, and `stageFromParam()` for `?onboarding=`. There is no guided tour
+any more; the old per-role step lists and `data-tour` spotlight are gone. The
+`data-tour` attributes still on the `AdminUI` primitives and a few pages are
+unused and can be deleted.
 
-Progress is counted in **sections**, not steps. "Add a product" is the unit a
-person recognises, and step ids churn every time a tour is reworded.
-`tests/unit/admin-onboarding.spec.ts` asserts every step's route actually passes
-`hasAccess()` for its own role — the same drift guard `admin-nav.spec.ts`
-applies to the sidebar, and for the same reason: a tour that bounces someone to
-`?forbidden=1` is worse than no tour.
+`super_admin` previews a single role from `/admin/onboarding` (sandbox as that
+role, that role's videos, or just the narrowed interface). Previews never write
+progress.
 
-**Anchors must exist on the page.** A step whose `data-tour` anchor isn't
-rendered falls back to a centred card after 2.5s (and keeps looking for up to
-10s, jumping onto the anchor if the page catches up). Pages that don't use
-`PageHeader` (Shop Hero, the course pages, Featured Course/Event, Popup, NFC,
-the product editor) carry `data-tour="page-header"` on their own header block
-for that reason. Other anchors: `page-action`, `list-toolbar`, `list-search`
-(shared `AdminUI` primitives), `modal` (the shared `Modal` panel, used by the
-training tour's practice category), `redirect-form`, `popup-save`,
-`product-name` / `product-submit`, `sidebar` / `tabbar`, `command-trigger`. A
-step can list several anchors (`anchor: ["sidebar", "tabbar"]`); the first one
-on screen wins, which is how Orientation works on phones.
-
-**Restarting.** The command palette's "Take the admin tour" quick action opens
-`/admin?tour=1`; `OnboardingProvider` picks up the parameter on any admin page,
-brings a hidden checklist back (clearing it first if everything was already
-done) and starts the tour. Super admins are sent to `/admin/onboarding`. It is
-the only way back to a hidden or finished checklist, so the welcome gate, the
-checklist footer and the tour's closing card all point to it.
+**Re-entering.** `?onboarding=welcome|videos|sandbox|finish` on any admin URL
+opens that stage and is then stripped. The command palette has "Restart
+onboarding", "Watch the onboarding videos" and "Open the sandbox"; `/admin/help`
+links to the sandbox and to a full re-run. They are the way back once Finish has
+hidden the launcher.
 
 **`lib/onboardingProgress.ts`** is the client half — the module-scope cached
-promise pattern from `lib/useAdminSession.ts`, so the welcome gate, the
-checklist and the running tour share one request. **It fails open**: if
+promise pattern from `lib/useAdminSession.ts`, so the dialog, the launcher and the
+sandbox share one request. **It fails open**: if
 `/api/admin/onboarding` can't be read it resolves to "gate already seen,
 checklist already dismissed". A welcome modal that gates the dashboard must
 never be able to lock someone out because a table is missing.
 
-**`lib/demoMode.ts`** is the guarantee that nothing done inside a tour is real.
-Teaching "add a product" must not add a product, and building a parallel set of
+**`lib/demoMode.ts`** is the guarantee that nothing done in the sandbox is real.
+Practising "add a product" must not add a product, and building a parallel set of
 fake admin screens would have drifted from the real ones within a month — so
-the tour drives the real pages and this cuts the wire.
+the sandbox is the real pages and this cuts the wire.
 
 It works because every write in `/admin` goes through `window.fetch` to
 `/api/admin/*`: there are no server actions under `app/admin` except the two
@@ -5608,15 +5590,15 @@ not a best-effort one.
   answered with a synthesised `Response` in the shape the real route returns.
 - **`*/upload`** is answered with an object URL for the file the user picked, so
   the preview looks right and nothing reaches storage.
-- A GET for a `demo-` id is answered from memory, so the editor the tour
-  navigates into after "create" doesn't 404 on a row that was never real.
+- A GET for a `demo-` id is answered from memory, so the editor you land in
+  after "create" doesn't 404 on a row that was never real.
 
 **Two independent layers.** Entering demo mode also sets a `dc-demo-mode`
 cookie, and `middleware.ts` rejects every non-GET to `/api/admin/*` while it is
 present. The interceptor means the request never gets that far; the cookie is
 what catches it if the interceptor is ever bypassed. The cookie is cleared on
-exit, on `beforeunload`, and again on every admin mount where no tour is
-running — a tab closed mid-tour must not leave an admin unable to save.
+exit, on `beforeunload`, and again on every admin mount where no sandbox is
+open — a tab closed mid-sandbox must not leave an admin unable to save.
 
 ### `lib/useAdminList.ts`
 
@@ -7253,7 +7235,7 @@ and the roles the actor held at the time.
 **What it doesn't:** reads. Nobody is logged for *opening* a page, running a ⌘K
 search or asking the audit assistant a question — the admin doesn't log reads
 anywhere, and logging questions about the log would feed it its own traffic.
-Onboarding-tour progress is exempt for the same reason (it fires several times a
+Onboarding progress is exempt for the same reason (it fires several times a
 minute and touches nothing). Free-text HR values — leave reasons, one-to-one
 notes, staff notes — are recorded as *changed* but their contents are redacted,
 the same instinct that keeps HR out of the ⌘K search.

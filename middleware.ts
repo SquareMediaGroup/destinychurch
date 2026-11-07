@@ -186,10 +186,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Onboarding demo mode — the second of two layers that stop a tour from
+  // Onboarding demo mode — the second of two layers that stop the sandbox from
   // writing anything. lib/demoMode.ts already answers these requests inside the
   // browser so they never get here; this is what catches it if that interceptor
-  // is ever bypassed. Reads are untouched, so the tour still shows real data.
+  // is ever bypassed. Reads are untouched, so the sandbox still shows real data.
   if (
     request.method !== "GET" &&
     request.method !== "HEAD" &&
@@ -197,7 +197,7 @@ export async function middleware(request: NextRequest) {
     request.cookies.get("dc-demo-mode")?.value === "1"
   ) {
     return NextResponse.json(
-      { error: "Nothing is saved while an onboarding tour is running." },
+      { error: "Nothing is saved while the onboarding sandbox is open." },
       { status: 403 },
     );
   }

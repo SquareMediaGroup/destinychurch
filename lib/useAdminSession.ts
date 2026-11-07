@@ -22,8 +22,8 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { NO_ROLES, type RoleFlags } from "@/lib/adminRoles";
 import type { OnboardedRole } from "@/lib/adminOnboarding";
 
-// Preview is offered only for roles that have a tour to preview — see
-// lib/adminOnboarding.ts.
+// Preview is offered for every access level except super_admin, which holds all
+// of them — see lib/adminOnboarding.ts.
 export type PreviewRole = OnboardedRole;
 
 export interface AdminSession {

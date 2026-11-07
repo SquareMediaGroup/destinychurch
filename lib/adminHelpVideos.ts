@@ -1,15 +1,16 @@
 // The admin help video series, shown at /admin/help.
 //
-// Onboarding is moving to video: each access level gets a how-to video on
-// YouTube, and a new admin watches theirs, then practises in the tour's demo
-// mode (lib/demoMode.ts), where nothing is saved. This list is the series.
+// Onboarding is video-first: each access level gets a how-to video on YouTube,
+// and a new admin watches theirs (in the onboarding dialog, or here), then
+// practises in the sandbox (lib/demoMode.ts), where nothing is saved. This list
+// is the series.
 //
 // The videos themselves live on YouTube, not in this repository (they're made in
 // apps/campaign-videos and handed over as files). To publish one: upload it, then
 // set its `youtubeId` (the 11 characters after `v=`). Until then its card shows
 // the poster, if it has one, and "Coming soon".
 
-import type { AdminRole } from "@/lib/adminRoles";
+import type { AdminRole, RoleFlags } from "./adminRoles";
 
 export interface AdminHelpVideo {
   id: string;
@@ -145,4 +146,13 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
 /** Whether a video has anything to play yet. */
 export function isPublished(video: AdminHelpVideo): boolean {
   return Boolean(video.youtubeId);
+}
+
+/**
+ * The how-to videos a person is owed: one per role they hold, in sidebar order.
+ * Super admins hold every role, so they get the lot. The welcome video is
+ * separate (WELCOME_VIDEO) because it is for everyone.
+ */
+export function videosFor(roles: RoleFlags): AdminHelpVideo[] {
+  return ROLE_VIDEOS.filter((v) => roles.super_admin || (v.role !== null && roles[v.role]));
 }

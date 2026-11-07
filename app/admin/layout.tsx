@@ -28,10 +28,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // AdminCommandProvider owns ⌘K, the "g"-prefixed jumps and the recents log,
   // so it has to sit above both the chrome and the page.
   //
-  // OnboardingProvider sits inside it and outside the shell: the tours spotlight
-  // the sidebar, the header and the mobile tab bar as well as the page, and a
-  // super admin previewing another access level needs the navigation itself to
-  // narrow.
+  // OnboardingProvider sits inside it and outside the shell: the sandbox bar
+  // sits above the whole shell, and a super admin previewing another access
+  // level needs the navigation itself to narrow.
   return (
     <AdminCommandProvider>
       <OnboardingProvider>

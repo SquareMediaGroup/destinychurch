@@ -24,8 +24,12 @@ export interface AdminHelpVideo {
   length?: string;
 }
 
+/** The whole series on YouTube ("Tutorials | Destiny Admin"). */
+export const PLAYLIST_URL = "https://www.youtube.com/playlist?list=PLIubvuhfWydo";
+
 export const WELCOME_VIDEO: AdminHelpVideo = {
   id: "welcome",
+  youtubeId: "XDNVdqo2r8E",
   title: "Welcome to Destiny Admin",
   description: "What the admin is, what each role looks after, and where to come back to when you get stuck.",
   role: null,
@@ -55,6 +59,7 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
   },
   {
     id: "events",
+    youtubeId: "eTaY2pgeTAo",
     title: "Event Admin: courses, events and announcements",
     description:
       "Course dates and banners, the site popup, the featured event, NFC tiles, links pages, song requests, talent show voting and DestinyAI.",
@@ -64,6 +69,7 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
   },
   {
     id: "training",
+    youtubeId: "xQW7y4kxZoo",
     title: "Training Admin: training for every team",
     description:
       "Categories, sub-groups and passwords, folders, writing and publishing posts, and what the team sees.",
@@ -73,6 +79,7 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
   },
   {
     id: "store",
+    youtubeId: "dH5233CZYj4",
     title: "Store Admin: running the shop",
     description:
       "Adding products, photos, sizes and stock, publishing, orders from paid to collected, and the shop's hero slides.",

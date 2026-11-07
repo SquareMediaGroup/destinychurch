@@ -9,7 +9,7 @@ import Link from "next/link";
 import { PageHeader, PageLoading } from "@/components/admin/AdminUI";
 import MediaEmbed from "@/components/missions/MediaEmbed";
 import { useAdminSession } from "@/lib/useAdminSession";
-import { PLAYLIST_URL, ROLE_VIDEOS, WELCOME_VIDEO, isPublished, type AdminHelpVideo } from "@/lib/adminHelpVideos";
+import { PLAYLISTS, ROLE_VIDEOS, WELCOME_VIDEO, isPublished, type AdminHelpVideo } from "@/lib/adminHelpVideos";
 
 const CARD =
   "rounded-3xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/8 dark:bg-destiny-grey-800";
@@ -114,10 +114,12 @@ export default function AdminHelpPage() {
         </Link>
       </section>
 
-      <p className="mt-8 text-sm">
-        <a href={PLAYLIST_URL} className="font-bold text-destiny-blue hover:underline" target="_blank" rel="noopener noreferrer">
-          All the videos on YouTube
-        </a>
+      <p className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+        {PLAYLISTS.map((p) => (
+          <a key={p.url} href={p.url} className="font-bold text-destiny-blue hover:underline" target="_blank" rel="noopener noreferrer">
+            {p.label}
+          </a>
+        ))}
       </p>
 
       <p className="mt-3 text-xs text-destiny-grey/50 dark:text-white/40">

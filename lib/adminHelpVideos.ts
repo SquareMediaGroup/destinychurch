@@ -24,8 +24,11 @@ export interface AdminHelpVideo {
   length?: string;
 }
 
-/** The whole series on YouTube ("Tutorials | Destiny Admin"). */
-export const PLAYLIST_URL = "https://www.youtube.com/playlist?list=PLIubvuhfWydo";
+/** The series on YouTube: the website admin, and Destiny One (its two roles), in two playlists. */
+export const PLAYLISTS = [
+  { label: "Destiny Admin videos on YouTube", url: "https://www.youtube.com/playlist?list=PLIubvuhfWydo" },
+  { label: "Destiny One Admin videos on YouTube", url: "https://www.youtube.com/playlist?list=PLdAFmnhoHWYI" },
+];
 
 export const WELCOME_VIDEO: AdminHelpVideo = {
   id: "welcome",
@@ -41,6 +44,7 @@ export const WELCOME_VIDEO: AdminHelpVideo = {
 export const ROLE_VIDEOS: AdminHelpVideo[] = [
   {
     id: "destiny-one",
+    youtubeId: "ONJsirAx31E",
     title: "Destiny One Admin: looking after the members' app",
     description:
       "Approving access requests, invites, app members and leader roles, communities and groups and the 3-people, 2-adults rule, feedback and app settings.",
@@ -50,6 +54,7 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
   },
   {
     id: "safeguarding",
+    youtubeId: "PBdhkHP5ANM",
     title: "Safeguarding Admin: keeping Destiny One safe",
     description:
       "The queue, reported messages, reviewing a conversation (recorded in the audit log), removing a message, pausing a group and blocks.",
@@ -89,6 +94,7 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
   },
   {
     id: "sermons",
+    youtubeId: "BcMHBGF9As4",
     title: "Sermon Admin: sermons on the podcast",
     description: "Publishing sermon audio to the podcast, linking it to YouTube, series and speakers.",
     role: "sermon_admin",
@@ -97,6 +103,7 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
   },
   {
     id: "design",
+    youtubeId: "TgL2Nmmd5ys",
     title: "Design Admin: from request to finished design",
     description: "Reading the brief, claiming a ticket, delivering files and video links, and notes.",
     role: "design_admin",
@@ -105,6 +112,7 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
   },
   {
     id: "hr",
+    youtubeId: "suwGd46AEN4",
     title: "HR Admin: looking after the team",
     description:
       "The staff directory and portal logins, approving leave, reviews, documents, joining and leaving checklists, jobs and applications.",
@@ -114,6 +122,7 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
   },
   {
     id: "site",
+    youtubeId: "XNVPYXekfsw",
     title: "Site Admin: pages, links and the status page",
     description:
       "Writing, scheduling and publishing pages, history and the Bin, short links and QR codes, the status page and analytics.",
@@ -123,6 +132,7 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
   },
   {
     id: "super",
+    youtubeId: "D8dXuZzIYfE",
     title: "Super Admin: running the whole admin",
     description:
       "Adding admins and choosing their roles, two-factor resets, the audit log, the sitewide banner, clearing the cache and previewing other roles.",

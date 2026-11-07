@@ -2970,6 +2970,7 @@ Each section requires a specific access-level role (see
 | `/admin/store/orders` | `app/admin/store/orders/page.tsx` | Orders list |
 | `/admin/store/orders/[id]` | `app/admin/store/orders/[id]/page.tsx` | Order detail — mark fulfilled/cancelled/refunded |
 | `/admin/users` | `app/admin/users/page.tsx` | Manage admin logins and their access-level roles (Super Admin only) |
+| `/admin/help` | `app/admin/help/page.tsx` | Help: the admin video series. The welcome video for everyone, then one how-to per role the viewer holds (Super Admin sees all; unfilmed ones read "Coming soon"), a link to the test-mode tour and the music credit. The list is `lib/adminHelpVideos.ts`. Open to every admin (`OPEN_PATHS`) |
 | `/admin/onboarding` | `app/admin/onboarding/page.tsx` | What each access level is taught on first sign-in, and the admin previewed from their side (Super Admin only) |
 | `/admin/audit` | `app/admin/audit/page.tsx` | Audit log — everything anyone does in the admin. Ask it in plain English ("who added the Faith Hoodie to the store?") or read it: search, filter by person/area/kind/date, open any entry for the field-by-field before and after. Second tab holds the weekly AI reports (Super Admin only) |
 
@@ -5442,6 +5443,16 @@ upserts on `(round, device_hash)` so a device has one vote it can move. `pickVot
 page's stored copy, so clearing one isn't enough to vote twice. `isTalentShowPath` in `lib/linkPages/paths.ts` makes
 the site chrome stand aside. Covered by `tests/unit/talent-show.spec.ts`.
 
+
+### `lib/adminHelpVideos.ts`
+
+The admin help video series shown at `/admin/help`. Onboarding is moving to video: each access level gets a
+how-to on YouTube, and a new admin watches theirs, then practises in the tour's demo mode (`lib/demoMode.ts`),
+where nothing is saved. `WELCOME_VIDEO` is for every admin; `ROLE_VIDEOS` has one entry per role. An entry with
+a `youtubeId` plays as a youtube-nocookie embed behind the media-cookie gate (`MediaEmbed`); one without shows its
+poster (`public/img/admin-help/`) or nothing, marked "Coming soon". The videos are not kept in this repository: they
+are rendered from `apps/campaign-videos` (`AdminWelcome`, and one tutorial per role built on `src/Tutorial.tsx`) and
+handed over as files for YouTube. To publish one, upload it and set its `youtubeId`.
 
 ### `lib/adminNav.ts`
 
@@ -8396,6 +8407,9 @@ A **Remotion** project (React, rendered to MP4) holding the launch films for the
 - **Assets are real**: official logos from `public/img/brand`, the app icon from `apps/destiny-one/assets`, screenshots of destinychurch.vercel.app and of Destiny One's Expo web build. `capture/` holds the Playwright scripts that remake them; the Destiny One one feeds the web build sample data (`capture/destiny-one-sample-data.cjs`, made-up people, real events and sermons) by intercepting its API calls, so no account or backend is needed.
 - **Fonts** are local (`public/fonts`, Google Fonts' OFL variable files) so renders don't need fonts.gstatic.com. The campaign films have no music (post-production adds it).
 - **`DestinyOneFilm`** (`src/DestinyOneFilm.tsx`, 1:03): Destiny One on its own for the /app page. A hook line, the icon, then communities, announcements, chat, events, DestinyAI, appearance and the safeguarding rules, ending on "Coming in 2027". It reuses the campaign's app scenes. Music is "Inspired" by Kevin MacLeod (`public/audio/inspired.mp3`, CC BY 4.0, so the credit must appear wherever the film is shown). The web copy lives at `public/img/destiny-one/film.mp4`, re-encoded with faststart (command in the README).
+- **`AdminWelcome`** (`src/AdminWelcome.tsx`, 1:21): video 1 of the admin help series, for YouTube and `/admin/help`. Welcome to Destiny Admin, the sidebar narrowing to one role, every role in a line, the first-sign-in tour, test mode and the Get Started checklist, then the Help page. Screens are the real /admin with an invented admin, captured by `capture/admin.cjs` against a stand-in Supabase (`capture/admin-mock-supabase.cjs`). Same music and credit as `DestinyOneFilm`.
+- **`ShopTutorial`** (`src/ShopTutorial.tsx`, 7:25): video 2 of the admin help series, everything a Store Admin can do. Filmed on the real store pages by `capture/shop-tutorial.cjs`, which drives every action and saves before/after screenshots with cursor targets; the site's API routes run unchanged against a pretend database (`capture/admin-mock-supabase.cjs`, tables and storage in memory, seeded by `capture/shop-seed.cjs` with the shop's real products and invented customers). The composition animates a cursor, clicks and camera moves over those frames. Frames are gitignored (`public/tutorial/shop/`), the step list is committed (`src/tutorials/shop-steps.json`). Listed for Store Admins in `lib/adminHelpVideos.ts`. The admin help videos are rendered to `out/` and handed over for YouTube rather than committed (about 60 MB each). New tutorials reuse `capture/tutorial-kit.cjs` (filming) and `defineTutorial()` in `src/Tutorial.tsx` (the video).
+- **The other role tutorials** (`EventsTutorial`, `SiteTutorial`, `TrainingTutorial`, `HrTutorial`, `DesignTutorial`, `SermonsTutorial`, `SuperTutorial`, `DestinyOneAdminTutorial`, `SafeguardingTutorial`): one per admin role, each filmed by `capture/<id>-tutorial.cjs` against its `capture/<id>-seed.cjs`. Destiny One Admin and Safeguarding Admin answer `/api/admin/destiny-one/*` in the browser from `capture/d1-fake-api.cjs` (invented people and an invented conversation) instead of rebuilding Destiny One's database functions, so no real message is ever opened. Each has a help entry and poster in `lib/adminHelpVideos.ts`.
 - **Stills**: `stills/` holds every screen as a 1920x1080 JPEG plus `stills/before-after/<page>-before.jpg` / `-after.jpg` pairs with identical framing, for sliders. Regenerate with `node scripts/export-stills.mjs` (reads the timeline from `src/Campaign.tsx`; the `Stills` folder in `src/Root.tsx` registers the before/after scenes pinned before or after).
 - CI job `campaign-videos` runs `npm run lint` (eslint + tsc). Videos are rendered locally (`npx remotion render <id>`); `out/` is gitignored and finished renders are committed to `exports/` for download. Setup and caveats: `apps/campaign-videos/README.md`.
 

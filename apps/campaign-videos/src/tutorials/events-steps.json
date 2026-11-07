@@ -1,0 +1,1720 @@
+{
+ "viewport": {
+  "w": 1600,
+  "h": 900,
+  "dsf": 1.6
+ },
+ "steps": [
+  {
+   "chapter": "Finding your way",
+   "caption": "Signed in as an Event Admin, the dashboard shows your courses and announcements at a glance.",
+   "target": null,
+   "kind": "none",
+   "before": "s001.jpg",
+   "frames": [],
+   "after": "s001.jpg",
+   "zoom": 1,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Finding your way",
+   "caption": "Your sections are in the sidebar: Announcements for events and the site’s pop-ups, and Courses.",
+   "target": {
+    "x": 0,
+    "y": 0,
+    "w": 0.14,
+    "h": 1.5860416666666666
+   },
+   "kind": "point",
+   "before": "s002.jpg",
+   "frames": [],
+   "after": "s002.jpg",
+   "zoom": 1.3,
+   "hold": 3.4,
+   "nav": false
+  },
+  {
+   "chapter": "Finding your way",
+   "caption": "Open Courses to see each course’s page.",
+   "target": {
+    "x": 0.037509765625,
+    "y": 0.36666666666666664,
+    "w": 0.06435546875,
+    "h": 0.022222222222222223
+   },
+   "kind": "click",
+   "before": "s003.jpg",
+   "frames": [],
+   "after": "s004.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Courses",
+   "caption": "Each course has its own page. Start with Alpha.",
+   "target": {
+    "x": 0.03,
+    "y": 0.5311111111111111,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s005.jpg",
+   "frames": [],
+   "after": "s006.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": true
+  },
+  {
+   "chapter": "Courses",
+   "caption": "Promote courses: each switch shows that course’s banner across the top of the website.",
+   "target": {
+    "x": 0.240625,
+    "y": 0.25666666666666665,
+    "w": 0.52875,
+    "h": 0.03111111111111111
+   },
+   "kind": "point",
+   "before": "s007.jpg",
+   "frames": [],
+   "after": "s007.jpg",
+   "zoom": 1.4,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Courses",
+   "caption": "Turn Youth Alpha’s banner on. Both can run at once; they stack.",
+   "target": {
+    "x": 0.73125,
+    "y": 0.3638888888888889,
+    "w": 0.0275,
+    "h": 0.02666666666666667
+   },
+   "kind": "click",
+   "before": "s008.jpg",
+   "frames": [],
+   "after": "s009.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Courses",
+   "caption": "To add a date, fill in Add event. The quickest way is to copy it from ChurchSuite.",
+   "target": {
+    "x": 0.240625,
+    "y": 0.5094444444444445,
+    "w": 0.52875,
+    "h": 0.022222222222222223
+   },
+   "kind": "point",
+   "before": "s010.jpg",
+   "frames": [],
+   "after": "s010.jpg",
+   "zoom": 1.3,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Courses",
+   "caption": "Fill from ChurchSuite event lists what’s coming up in ChurchSuite…",
+   "target": {
+    "x": 0.24875,
+    "y": 0.5638888888888889,
+    "w": 0.1105078125,
+    "h": 0.02666666666666667
+   },
+   "kind": "click",
+   "before": "s011.jpg",
+   "frames": [],
+   "after": "s012.jpg",
+   "zoom": 1.4,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Courses",
+   "caption": "…pick one, and its date and sign-up link are filled in for you.",
+   "target": {
+    "x": 0.24875,
+    "y": 0.855,
+    "w": 0.5125,
+    "h": 0.06
+   },
+   "kind": "click",
+   "before": "s013.jpg",
+   "frames": [],
+   "after": "s014.jpg",
+   "zoom": 1.3,
+   "hold": 2.8,
+   "nav": false
+  },
+  {
+   "chapter": "Courses",
+   "caption": "Or type them in. Choose which course it’s for…",
+   "target": {
+    "x": 0.240625,
+    "y": 0.6534375,
+    "w": 0.259375,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s015.jpg",
+   "frames": [],
+   "after": "s016.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Courses",
+   "caption": "…the first date…",
+   "target": {
+    "x": 0.51,
+    "y": 0.6534375,
+    "w": 0.259375,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s017.jpg",
+   "frames": [],
+   "after": "s018.jpg",
+   "zoom": 1.7,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Courses",
+   "caption": "…how often it meets…",
+   "target": {
+    "x": 0.240625,
+    "y": 0.7423263888888889,
+    "w": 0.259375,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s019.jpg",
+   "frames": [],
+   "after": "s020.jpg",
+   "zoom": 1.7,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Courses",
+   "caption": "…and the ChurchSuite sign-up link.",
+   "target": {
+    "x": 0.240625,
+    "y": 0.8289930555555556,
+    "w": 0.52875,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s021.jpg",
+   "frames": [
+    "s022.jpg",
+    "s023.jpg",
+    "s024.jpg"
+   ],
+   "after": "s025.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Courses",
+   "caption": "In-person or Online. Online asks for the Zoom or Meet details instead of a place.",
+   "target": {
+    "x": 0.321865234375,
+    "y": 0.9234375,
+    "w": 0.06521484375,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s026.jpg",
+   "frames": [],
+   "after": "s027.jpg",
+   "zoom": 1.6,
+   "hold": 2.8,
+   "nav": false
+  },
+  {
+   "chapter": "Courses",
+   "caption": "Back to In-person, and say where.",
+   "target": {
+    "x": 0.24375,
+    "y": 0.9234375,
+    "w": 0.078115234375,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s028.jpg",
+   "frames": [],
+   "after": "s029.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Courses",
+   "caption": "Create event adds it to the list, and to the course page on the website.",
+   "target": {
+    "x": 0.689619140625,
+    "y": 0.47788194444444443,
+    "w": 0.079755859375,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s030.jpg",
+   "frames": [],
+   "after": "s031.jpg",
+   "zoom": 1.5,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Courses",
+   "caption": "Dates are listed by course, soonest first.",
+   "target": {
+    "x": 0.240625,
+    "y": 0.8578819444444444,
+    "w": 0.52875,
+    "h": 0.022222222222222223
+   },
+   "kind": "point",
+   "before": "s032.jpg",
+   "frames": [],
+   "after": "s032.jpg",
+   "zoom": 1.4,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Courses",
+   "caption": "The switch hides a date without deleting it.",
+   "target": {
+    "x": 0.724375,
+    "y": 0.8689930555555555,
+    "w": 0.0225,
+    "h": 0.022222222222222223
+   },
+   "kind": "click",
+   "before": "s033.jpg",
+   "frames": [],
+   "after": "s034.jpg",
+   "zoom": 1.8,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Courses",
+   "caption": "The bin deletes it.",
+   "target": {
+    "x": 0.749375,
+    "y": 0.8623263888888889,
+    "w": 0.02,
+    "h": 0.035555555555555556
+   },
+   "kind": "click",
+   "before": "s035.jpg",
+   "frames": [],
+   "after": "s036.jpg",
+   "zoom": 1.6,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Courses",
+   "caption": "It asks first. Here we’ll keep it.",
+   "target": {
+    "x": 0.524814453125,
+    "y": 0.5226388888888889,
+    "w": 0.0481640625,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s037.jpg",
+   "frames": [],
+   "after": "s038.jpg",
+   "zoom": 1.4,
+   "hold": 1.8,
+   "nav": false
+  },
+  {
+   "chapter": "Courses",
+   "caption": "The other courses work the same way: Destiny 12:2, the Bible Course and CAP Money.",
+   "target": {
+    "x": 0.03,
+    "y": 0.48,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s039.jpg",
+   "frames": [],
+   "after": "s040.jpg",
+   "zoom": 1.4,
+   "hold": 2.8,
+   "nav": true
+  },
+  {
+   "chapter": "Courses",
+   "caption": "Featured Course picks which course headlines the What’s On page.",
+   "target": {
+    "x": 0.03,
+    "y": 0.3333333333333333,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s041.jpg",
+   "frames": [],
+   "after": "s042.jpg",
+   "zoom": 1,
+   "hold": 2.4,
+   "nav": true
+  },
+  {
+   "chapter": "Courses",
+   "caption": "Choose one…",
+   "target": {
+    "x": 0.305,
+    "y": 0.22666666666666666,
+    "w": 0.26,
+    "h": 0.10888888888888888
+   },
+   "kind": "click",
+   "before": "s043.jpg",
+   "frames": [],
+   "after": "s044.jpg",
+   "zoom": 1.4,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Courses",
+   "caption": "…and Save changes.",
+   "target": {
+    "x": 0.305,
+    "y": 0.49777777777777776,
+    "w": 0.08455078125,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s045.jpg",
+   "frames": [],
+   "after": "s046.jpg",
+   "zoom": 1.6,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "The site popup",
+   "caption": "Popup is the box that greets first-time visitors to the website.",
+   "target": {
+    "x": 0.03,
+    "y": 0.3511111111111111,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s047.jpg",
+   "frames": [],
+   "after": "s048.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": true
+  },
+  {
+   "chapter": "The site popup",
+   "caption": "Turn on Show popup.",
+   "target": {
+    "x": 0.601875,
+    "y": 0.2388888888888889,
+    "w": 0.0275,
+    "h": 0.02666666666666667
+   },
+   "kind": "click",
+   "before": "s049.jpg",
+   "frames": [],
+   "after": "s050.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The site popup",
+   "caption": "Show once per session means people see it once, not on every page.",
+   "target": {
+    "x": 0.240625,
+    "y": 0.31777777777777777,
+    "w": 0.17833984375,
+    "h": 0.022222222222222223
+   },
+   "kind": "point",
+   "before": "s051.jpg",
+   "frames": [],
+   "after": "s051.jpg",
+   "zoom": 1.6,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "The site popup",
+   "caption": "Set times to run it for a while: it appears and disappears on its own.",
+   "target": {
+    "x": 0.240625,
+    "y": 0.42777777777777776,
+    "w": 0.189375,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s052.jpg",
+   "frames": [],
+   "after": "s053.jpg",
+   "zoom": 1.5,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "The site popup",
+   "caption": "Add an image…",
+   "target": {
+    "x": 0.405791015625,
+    "y": 0.6688888888888889,
+    "w": 0.05841796875,
+    "h": 0.022222222222222223
+   },
+   "kind": "click",
+   "before": "s054.jpg",
+   "frames": [],
+   "after": "s055.jpg",
+   "zoom": 1.3,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "The site popup",
+   "caption": "…a title…",
+   "target": {
+    "x": 0.240625,
+    "y": 0.5484722222222222,
+    "w": 0.38875,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s056.jpg",
+   "frames": [
+    "s057.jpg",
+    "s058.jpg",
+    "s059.jpg"
+   ],
+   "after": "s060.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The site popup",
+   "caption": "…a short message…",
+   "target": {
+    "x": 0.240625,
+    "y": 0.6418055555555555,
+    "w": 0.38875,
+    "h": 0.11333333333333333
+   },
+   "kind": "type",
+   "before": "s061.jpg",
+   "frames": [
+    "s062.jpg",
+    "s063.jpg",
+    "s064.jpg"
+   ],
+   "after": "s065.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The site popup",
+   "caption": "…and a button with where it goes.",
+   "target": {
+    "x": 0.240625,
+    "y": 0.8110763888888889,
+    "w": 0.189375,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s066.jpg",
+   "frames": [
+    "s067.jpg",
+    "s068.jpg",
+    "s069.jpg"
+   ],
+   "after": "s070.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The site popup",
+   "caption": "Save changes, and it’s live.",
+   "target": {
+    "x": 0.56044921875,
+    "y": 0.9121875,
+    "w": 0.08455078125,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s071.jpg",
+   "frames": [],
+   "after": "s072.jpg",
+   "zoom": 1.6,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "Featured event",
+   "caption": "Featured Event promotes one ChurchSuite event: a wide banner on What’s On and the first card on the homepage.",
+   "target": {
+    "x": 0.03,
+    "y": 0.3933333333333333,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s073.jpg",
+   "frames": [],
+   "after": "s074.jpg",
+   "zoom": 1,
+   "hold": 3.4,
+   "nav": true
+  },
+  {
+   "chapter": "Featured event",
+   "caption": "Find the event…",
+   "target": {
+    "x": 0.258134765625,
+    "y": 0.2722222222222222,
+    "w": 0.388740234375,
+    "h": 0.022222222222222223
+   },
+   "kind": "type",
+   "before": "s075.jpg",
+   "frames": [
+    "s076.jpg",
+    "s077.jpg",
+    "s078.jpg"
+   ],
+   "after": "s079.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Featured event",
+   "caption": "…and pick it. Its name, picture and dates come from ChurchSuite.",
+   "target": {
+    "x": 0.225,
+    "y": 0.32666666666666666,
+    "w": 0.4325,
+    "h": 0.09111111111111111
+   },
+   "kind": "click",
+   "before": "s080.jpg",
+   "frames": [],
+   "after": "s081.jpg",
+   "zoom": 1.3,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Featured event",
+   "caption": "Tick Promote this event. It stops by itself once the event has finished.",
+   "target": {
+    "x": 0.690625,
+    "y": 0.2833333333333333,
+    "w": 0.01,
+    "h": 0.017777777777777778
+   },
+   "kind": "click",
+   "before": "s082.jpg",
+   "frames": [],
+   "after": "s083.jpg",
+   "zoom": 1.6,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Featured event",
+   "caption": "Leave the rest blank to use ChurchSuite’s own wording, or write your own headline, blurb, picture and button.",
+   "target": {
+    "x": 0.690625,
+    "y": 0.47888888888888886,
+    "w": 0.21125,
+    "h": 0.017777777777777778
+   },
+   "kind": "point",
+   "before": "s084.jpg",
+   "frames": [],
+   "after": "s084.jpg",
+   "zoom": 1.4,
+   "hold": 3.6,
+   "nav": false
+  },
+  {
+   "chapter": "Featured event",
+   "caption": "Save.",
+   "target": {
+    "x": 0.690625,
+    "y": 0.8239930555555556,
+    "w": 0.21125,
+    "h": 0.04888888888888889
+   },
+   "kind": "click",
+   "before": "s085.jpg",
+   "frames": [],
+   "after": "s086.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Featured event",
+   "caption": "Event Popup is a pop-up that advertises the featured event.",
+   "target": {
+    "x": 0.03,
+    "y": 0.2544444444444444,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s087.jpg",
+   "frames": [],
+   "after": "s088.jpg",
+   "zoom": 1,
+   "hold": 2.4,
+   "nav": true
+  },
+  {
+   "chapter": "Featured event",
+   "caption": "Turn it on. It shows once per visit.",
+   "target": {
+    "x": 0.388125,
+    "y": 0.29888888888888887,
+    "w": 0.01,
+    "h": 0.017777777777777778
+   },
+   "kind": "click",
+   "before": "s089.jpg",
+   "frames": [],
+   "after": "s090.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Featured event",
+   "caption": "Blank fields fall back to the featured event’s own headline, blurb and link.",
+   "target": {
+    "x": 0.388125,
+    "y": 0.35888888888888887,
+    "w": 0.36375,
+    "h": 0.017777777777777778
+   },
+   "kind": "point",
+   "before": "s091.jpg",
+   "frames": [],
+   "after": "s091.jpg",
+   "zoom": 1.4,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Featured event",
+   "caption": "Save.",
+   "target": {
+    "x": 0.388125,
+    "y": 0.7984375,
+    "w": 0.36375,
+    "h": 0.04888888888888889
+   },
+   "kind": "click",
+   "before": "s092.jpg",
+   "frames": [],
+   "after": "s093.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The NFC page",
+   "caption": "NFC Page is what people see when they tap their phone on the tag on the seat in front.",
+   "target": {
+    "x": 0.03,
+    "y": 0.4066666666666667,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s094.jpg",
+   "frames": [],
+   "after": "s095.jpg",
+   "zoom": 1,
+   "hold": 3,
+   "nav": true
+  },
+  {
+   "chapter": "The NFC page",
+   "caption": "Connect Card and Giving are always there. Everything below is yours to change.",
+   "target": {
+    "x": 0.238125,
+    "y": 0.15666666666666668,
+    "w": 0.45375,
+    "h": 0.017777777777777778
+   },
+   "kind": "point",
+   "before": "s096.jpg",
+   "frames": [],
+   "after": "s096.jpg",
+   "zoom": 1.4,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "The NFC page",
+   "caption": "New tile adds one.",
+   "target": {
+    "x": 0.6281640625,
+    "y": 0.044444444444444446,
+    "w": 0.0768359375,
+    "h": 0.04888888888888889
+   },
+   "kind": "click",
+   "before": "s097.jpg",
+   "frames": [],
+   "after": "s098.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The NFC page",
+   "caption": "Choose what tapping it does: sign up for an event, open a form, or show details with a button.",
+   "target": {
+    "x": 0.240625,
+    "y": 0.7066666666666667,
+    "w": 0.44875,
+    "h": 0.017777777777777778
+   },
+   "kind": "point",
+   "before": "s099.jpg",
+   "frames": [],
+   "after": "s099.jpg",
+   "zoom": 1.3,
+   "hold": 3.6,
+   "nav": false
+  },
+  {
+   "chapter": "The NFC page",
+   "caption": "This one shows details.",
+   "target": {
+    "x": 0.54478515625,
+    "y": 0.7311111111111112,
+    "w": 0.144580078125,
+    "h": 0.1
+   },
+   "kind": "click",
+   "before": "s100.jpg",
+   "frames": [],
+   "after": "s101.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The NFC page",
+   "caption": "Give it a title…",
+   "target": {
+    "x": 0.240625,
+    "y": 0.8777777777777778,
+    "w": 0.219375,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s102.jpg",
+   "frames": [
+    "s103.jpg",
+    "s104.jpg",
+    "s105.jpg"
+   ],
+   "after": "s106.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The NFC page",
+   "caption": "…a line underneath…",
+   "target": {
+    "x": 0.47,
+    "y": 0.8777777777777778,
+    "w": 0.219375,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s107.jpg",
+   "frames": [
+    "s108.jpg",
+    "s109.jpg",
+    "s110.jpg"
+   ],
+   "after": "s111.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The NFC page",
+   "caption": "…an icon…",
+   "target": {
+    "x": 0.403125,
+    "y": 0.9511111111111111,
+    "w": 0.0275,
+    "h": 0.04888888888888889
+   },
+   "kind": "click",
+   "before": "s112.jpg",
+   "frames": [],
+   "after": "s113.jpg",
+   "zoom": 1.8,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The NFC page",
+   "caption": "…the details…",
+   "target": {
+    "x": 0.240625,
+    "y": 0.6144444444444445,
+    "w": 0.44875,
+    "h": 0.11333333333333333
+   },
+   "kind": "type",
+   "before": "s114.jpg",
+   "frames": [
+    "s115.jpg",
+    "s116.jpg",
+    "s117.jpg"
+   ],
+   "after": "s118.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The NFC page",
+   "caption": "…and a button.",
+   "target": {
+    "x": 0.240625,
+    "y": 0.7828819444444445,
+    "w": 0.219375,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s119.jpg",
+   "frames": [
+    "s120.jpg",
+    "s121.jpg",
+    "s122.jpg"
+   ],
+   "after": "s123.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The NFC page",
+   "caption": "Add tile.",
+   "target": {
+    "x": 0.629150390625,
+    "y": 0.8828819444444445,
+    "w": 0.060224609375,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s124.jpg",
+   "frames": [],
+   "after": "s125.jpg",
+   "zoom": 1.6,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "The NFC page",
+   "caption": "Arrows change the order people see.",
+   "target": {
+    "x": 0.566875,
+    "y": 0.62,
+    "w": 0.02,
+    "h": 0.035555555555555556
+   },
+   "kind": "click",
+   "before": "s126.jpg",
+   "frames": [],
+   "after": "s127.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The NFC page",
+   "caption": "The switch hides a tile for now…",
+   "target": {
+    "x": 0.616875,
+    "y": 0.3511111111111111,
+    "w": 0.0275,
+    "h": 0.02666666666666667
+   },
+   "kind": "click",
+   "before": "s128.jpg",
+   "frames": [],
+   "after": "s129.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "The NFC page",
+   "caption": "…the pencil edits it, and the bin deletes it.",
+   "target": {
+    "x": 0.651875,
+    "y": 0.3466666666666667,
+    "w": 0.02,
+    "h": 0.035555555555555556
+   },
+   "kind": "point",
+   "before": "s130.jpg",
+   "frames": [],
+   "after": "s130.jpg",
+   "zoom": 1.7,
+   "hold": 2.8,
+   "nav": false
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "Links Pages are mini sites for Instagram bios, QR codes and NFC tags, at destinytees.uk/links.",
+   "target": {
+    "x": 0.03,
+    "y": 0.44333333333333336,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s131.jpg",
+   "frames": [],
+   "after": "s132.jpg",
+   "zoom": 1,
+   "hold": 3.2,
+   "nav": true
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "Each shows how many views and clicks it’s had.",
+   "target": {
+    "x": 0.70521484375,
+    "y": 0.18911458333333334,
+    "w": 0.01736328125,
+    "h": 0.01954861111111111
+   },
+   "kind": "point",
+   "before": "s133.jpg",
+   "frames": [],
+   "after": "s133.jpg",
+   "zoom": 1.7,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "New page.",
+   "target": {
+    "x": 0.801171875,
+    "y": 0.06666666666666667,
+    "w": 0.068828125,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s134.jpg",
+   "frames": [],
+   "after": "s135.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "Name it. The address is made for you.",
+   "target": {
+    "x": 0.355625,
+    "y": 0.16333333333333333,
+    "w": 0.28875,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s136.jpg",
+   "frames": [
+    "s137.jpg",
+    "s138.jpg",
+    "s139.jpg"
+   ],
+   "after": "s140.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "Start from a theme or a ready-made page. New pages start as drafts.",
+   "target": {
+    "x": 0.355625,
+    "y": 0.36944444444444446,
+    "w": 0.28875,
+    "h": 0.044444444444444446
+   },
+   "kind": "point",
+   "before": "s141.jpg",
+   "frames": [],
+   "after": "s141.jpg",
+   "zoom": 1.5,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "Create page.",
+   "target": {
+    "x": 0.566923828125,
+    "y": 0.4672222222222222,
+    "w": 0.077451171875,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s142.jpg",
+   "frames": [],
+   "after": "s143.jpg",
+   "zoom": 1.5,
+   "hold": 2.6,
+   "nav": true
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "The editor: your blocks on the left, a live preview of the phone on the right.",
+   "target": null,
+   "kind": "none",
+   "before": "s144.jpg",
+   "frames": [],
+   "after": "s144.jpg",
+   "zoom": 1,
+   "hold": 3.4,
+   "nav": false
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "Add a block.",
+   "target": {
+    "x": 0.19,
+    "y": 0.4111111111111111,
+    "w": 0.5025,
+    "h": 0.06222222222222222
+   },
+   "kind": "click",
+   "before": "s145.jpg",
+   "frames": [],
+   "after": "s146.jpg",
+   "zoom": 1.4,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "Links, headings, text, images, dividers, ChurchSuite events, videos and maps, and forms.",
+   "target": {
+    "x": 0.20625,
+    "y": 0.5422222222222223,
+    "w": 0.093486328125,
+    "h": 0.018333333333333333
+   },
+   "kind": "point",
+   "before": "s147.jpg",
+   "frames": [],
+   "after": "s147.jpg",
+   "zoom": 1.1,
+   "hold": 3.6,
+   "nav": false
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "A link…",
+   "target": {
+    "x": 0.20625,
+    "y": 0.5422222222222223,
+    "w": 0.093486328125,
+    "h": 0.018333333333333333
+   },
+   "kind": "click",
+   "before": "s148.jpg",
+   "frames": [],
+   "after": "s149.jpg",
+   "zoom": 1.4,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "…with its button text…",
+   "target": {
+    "x": 0.200625,
+    "y": 0.37732638888888886,
+    "w": 0.48125,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s150.jpg",
+   "frames": [
+    "s151.jpg",
+    "s152.jpg",
+    "s153.jpg"
+   ],
+   "after": "s154.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "…and where it goes.",
+   "target": {
+    "x": 0.200625,
+    "y": 0.5551041666666666,
+    "w": 0.48125,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s155.jpg",
+   "frames": [
+    "s156.jpg",
+    "s157.jpg",
+    "s158.jpg"
+   ],
+   "after": "s159.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "Add an event block: it shows ChurchSuite events and keeps itself up to date.",
+   "target": {
+    "x": 0.19,
+    "y": 0.8928819444444445,
+    "w": 0.5025,
+    "h": 0.06222222222222222
+   },
+   "kind": "click",
+   "before": "s160.jpg",
+   "frames": [],
+   "after": "s161.jpg",
+   "zoom": 1.3,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "Appearance: colours, fonts and the button style, with the preview changing as you go.",
+   "target": {
+    "x": 0.25533203125,
+    "y": 0.08888888888888889,
+    "w": 0.083193359375,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s162.jpg",
+   "frames": [],
+   "after": "s163.jpg",
+   "zoom": 1.2,
+   "hold": 3.4,
+   "nav": false
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "Profile: the picture, name, short bio and social links at the top.",
+   "target": {
+    "x": 0.341025390625,
+    "y": 0.08888888888888889,
+    "w": 0.062294921875,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s164.jpg",
+   "frames": [],
+   "after": "s165.jpg",
+   "zoom": 1.2,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "Settings: the address, the title Google shows, and Published.",
+   "target": {
+    "x": 0.4058203125,
+    "y": 0.08888888888888889,
+    "w": 0.069013671875,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s166.jpg",
+   "frames": [],
+   "after": "s167.jpg",
+   "zoom": 1.2,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "Save.",
+   "target": {
+    "x": 0.900888671875,
+    "y": 0.0077777777777777776,
+    "w": 0.049111328125,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s168.jpg",
+   "frames": [],
+   "after": "s169.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "Back on the list, open the Sunday page.",
+   "target": {
+    "x": 0.318125,
+    "y": 0.23578125,
+    "w": 0.37708984375,
+    "h": 0.04621527777777778
+   },
+   "kind": "click",
+   "before": "s170.jpg",
+   "frames": [],
+   "after": "s171.jpg",
+   "zoom": 1.4,
+   "hold": 2.2,
+   "nav": true
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "Responses holds whatever people send through its forms.",
+   "target": {
+    "x": 0.477333984375,
+    "y": 0.25333333333333335,
+    "w": 0.0795703125,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s172.jpg",
+   "frames": [],
+   "after": "s173.jpg",
+   "zoom": 1.3,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Links pages",
+   "caption": "Stats shows views and the most-clicked links.",
+   "target": {
+    "x": 0.559404296875,
+    "y": 0.25333333333333335,
+    "w": 0.056748046875,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s174.jpg",
+   "frames": [],
+   "after": "s175.jpg",
+   "zoom": 1.3,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Song requests",
+   "caption": "Song Requests lets people at an event ask for songs, straight into the church Spotify queue.",
+   "target": {
+    "x": 0.03,
+    "y": 0.5622222222222222,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s176.jpg",
+   "frames": [],
+   "after": "s177.jpg",
+   "zoom": 1,
+   "hold": 3.2,
+   "nav": true
+  },
+  {
+   "chapter": "Song requests",
+   "caption": "It plays through the church’s Spotify account on the hall speaker. Connect Spotify signs in to it.",
+   "target": {
+    "x": 0.520546875,
+    "y": 0.2584375,
+    "w": 0.049013671875,
+    "h": 0.017777777777777778
+   },
+   "kind": "point",
+   "before": "s178.jpg",
+   "frames": [],
+   "after": "s178.jpg",
+   "zoom": 1.5,
+   "hold": 3.6,
+   "nav": false
+  },
+  {
+   "chapter": "Song requests",
+   "caption": "Name the night…",
+   "target": {
+    "x": 0.358125,
+    "y": 0.4957638888888889,
+    "w": 0.423740234375,
+    "h": 0.042222222222222223
+   },
+   "kind": "type",
+   "before": "s179.jpg",
+   "frames": [
+    "s180.jpg",
+    "s181.jpg",
+    "s182.jpg"
+   ],
+   "after": "s183.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Song requests",
+   "caption": "…set how many songs can wait at once, and how many each person can ask for, and Save settings.",
+   "target": {
+    "x": 0.64728515625,
+    "y": 0.5824305555555556,
+    "w": 0.07439453125,
+    "h": 0.042222222222222223
+   },
+   "kind": "click",
+   "before": "s184.jpg",
+   "frames": [],
+   "after": "s185.jpg",
+   "zoom": 1.5,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Song requests",
+   "caption": "Open requests when the night starts. Explicit songs are always blocked.",
+   "target": {
+    "x": 0.704755859375,
+    "y": 0.4415451388888889,
+    "w": 0.077119140625,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s186.jpg",
+   "frames": [],
+   "after": "s187.jpg",
+   "zoom": 1.6,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Song requests",
+   "caption": "Remove takes a song off the list. If Spotify already has it queued, skip it on the device.",
+   "target": {
+    "x": 0.754541015625,
+    "y": 0.8375347222222222,
+    "w": 0.027333984375,
+    "h": 0.017777777777777778
+   },
+   "kind": "click",
+   "before": "s188.jpg",
+   "frames": [],
+   "after": "s189.jpg",
+   "zoom": 1.6,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Talent show voting",
+   "caption": "Talent Show Voting: the audience scans a QR code and votes for their favourite act.",
+   "target": {
+    "x": 0.03,
+    "y": 0.6044444444444445,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s190.jpg",
+   "frames": [],
+   "after": "s191.jpg",
+   "zoom": 1,
+   "hold": 3,
+   "nav": true
+  },
+  {
+   "chapter": "Talent show voting",
+   "caption": "Add each act: its name…",
+   "target": {
+    "x": 0.325625,
+    "y": 0.7481944444444445,
+    "w": 0.240625,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s192.jpg",
+   "frames": [
+    "s193.jpg",
+    "s194.jpg",
+    "s195.jpg"
+   ],
+   "after": "s196.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Talent show voting",
+   "caption": "…who’s in it, and what they’re doing.",
+   "target": {
+    "x": 0.57375,
+    "y": 0.7481944444444445,
+    "w": 0.240625,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s197.jpg",
+   "frames": [
+    "s198.jpg",
+    "s199.jpg",
+    "s200.jpg"
+   ],
+   "after": "s201.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Talent show voting",
+   "caption": "Add act.",
+   "target": {
+    "x": 0.325625,
+    "y": 0.8926388888888889,
+    "w": 0.0501171875,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s202.jpg",
+   "frames": [],
+   "after": "s203.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Talent show voting",
+   "caption": "Acts are in running order. Arrows move them, the eye hides one, the pencil edits, the bin deletes.",
+   "target": {
+    "x": 0.734375,
+    "y": 0.5171006944444444,
+    "w": 0.02,
+    "h": 0.035555555555555556
+   },
+   "kind": "point",
+   "before": "s204.jpg",
+   "frames": [],
+   "after": "s204.jpg",
+   "zoom": 1.6,
+   "hold": 3.6,
+   "nav": false
+  },
+  {
+   "chapter": "Talent show voting",
+   "caption": "Open voting when the first act starts.",
+   "target": {
+    "x": 0.6665625,
+    "y": 0.2811111111111111,
+    "w": 0.06724609375,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s205.jpg",
+   "frames": [],
+   "after": "s206.jpg",
+   "zoom": 1.6,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "Talent show voting",
+   "caption": "Put the QR code on a slide, or print it. One vote per phone, which they can change until voting closes.",
+   "target": {
+    "x": 0.456875,
+    "y": 0.6995486111111111,
+    "w": 0.112724609375,
+    "h": 0.051111111111111114
+   },
+   "kind": "point",
+   "before": "s207.jpg",
+   "frames": [],
+   "after": "s207.jpg",
+   "zoom": 1.4,
+   "hold": 3.6,
+   "nav": false
+  },
+  {
+   "chapter": "Talent show voting",
+   "caption": "The judges’ X’s: press plus after each act. Each X counts as two votes.",
+   "target": {
+    "x": 0.629375,
+    "y": 0.48265625,
+    "w": 0.02,
+    "h": 0.035555555555555556
+   },
+   "kind": "click",
+   "before": "s208.jpg",
+   "frames": [],
+   "after": "s209.jpg",
+   "zoom": 1.8,
+   "hold": 2.8,
+   "nav": false
+  },
+  {
+   "chapter": "Talent show voting",
+   "caption": "Open results screen goes on the projector. It shows the vote count while voting is open.",
+   "target": {
+    "x": 0.574599609375,
+    "y": 0.11732638888888888,
+    "w": 0.11849609375,
+    "h": 0.051111111111111114
+   },
+   "kind": "click",
+   "before": "s210.jpg",
+   "frames": [],
+   "after": "s211.jpg",
+   "zoom": 1.5,
+   "hold": 1.4,
+   "nav": true
+  },
+  {
+   "chapter": "Talent show voting",
+   "caption": "The results screen, ready for the big reveal.",
+   "target": null,
+   "kind": "none",
+   "before": "s212.jpg",
+   "frames": [],
+   "after": "s212.jpg",
+   "zoom": 1,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Talent show voting",
+   "caption": "Reveal results when you’re ready. The screen shows the winner.",
+   "target": {
+    "x": 0.73880859375,
+    "y": 0.24,
+    "w": 0.07556640625,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s213.jpg",
+   "frames": [],
+   "after": "s214.jpg",
+   "zoom": 1.6,
+   "hold": 2.8,
+   "nav": false
+  },
+  {
+   "chapter": "Talent show voting",
+   "caption": "Clear votes and start again resets it all, ready for another round.",
+   "target": {
+    "x": 0.325625,
+    "y": 0.4766666666666667,
+    "w": 0.105458984375,
+    "h": 0.022222222222222223
+   },
+   "kind": "click",
+   "before": "s215.jpg",
+   "frames": [],
+   "after": "s216.jpg",
+   "zoom": 1.6,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Talent show voting",
+   "caption": "It asks first. Here we’ll keep tonight’s votes.",
+   "target": {
+    "x": 0.52689453125,
+    "y": 0.22777777777777777,
+    "w": 0.0481640625,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s217.jpg",
+   "frames": [],
+   "after": "s218.jpg",
+   "zoom": 1.4,
+   "hold": 1.8,
+   "nav": false
+  },
+  {
+   "chapter": "DestinyAI",
+   "caption": "DestinyAI does admin jobs for you in plain English.",
+   "target": {
+    "x": 0.0075,
+    "y": 0.19333333333333333,
+    "w": 0.124375,
+    "h": 0.04888888888888889
+   },
+   "kind": "click",
+   "before": "s219.jpg",
+   "frames": [],
+   "after": "s220.jpg",
+   "zoom": 1,
+   "hold": 2.8,
+   "nav": true
+  },
+  {
+   "chapter": "DestinyAI",
+   "caption": "Ask for something like a banner for tomorrow, or to feature the next event. It suggests a plan, and nothing changes until you confirm it.",
+   "target": {
+    "x": 0.365625,
+    "y": 0.9233333333333333,
+    "w": 0.37875,
+    "h": 0.044444444444444446
+   },
+   "kind": "point",
+   "before": "s221.jpg",
+   "frames": [],
+   "after": "s221.jpg",
+   "zoom": 1.3,
+   "hold": 4.6,
+   "nav": false
+  }
+ ]
+}

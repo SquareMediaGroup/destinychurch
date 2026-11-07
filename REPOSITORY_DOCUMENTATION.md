@@ -296,6 +296,7 @@ destinychurch/
 │   ├── cn.ts                      # className joiner (no Tailwind conflict resolution)
 │   ├── openaiClient.ts            # OpenAI client + SMART_SEARCH_MODEL constant
 │   ├── siteKnowledge.ts           # AI search knowledge base
+│   ├── team.ts                    # pastors and team: single source for /about, the AI prompt and person cards
 │   ├── serviceStatus.ts           # Smart Search health / kill-switch state (service_status table)
 │   ├── smartSearchAlertEmail.ts   # Resend email on Smart Search down/recovered transitions
 │   ├── rateLimit.ts               # Rate limiting
@@ -3940,7 +3941,7 @@ stay: they're consent and legal, not chrome.
 - `MagnifySection.tsx` — the church's guiding pillars, rendered from a local `pillars` list.
 - `BeliefsSection.tsx` — a summary of core beliefs, linking through to `/beliefs`.
 - `MeetPastorsSection.tsx` — the lead pastors introduction on a dark gradient panel.
-- `TeamSection.tsx` — the staff/leadership grid, built from a local team list (name, role, photo, email); cards are off-white by default and pick up colour on hover.
+- `TeamSection.tsx` — the staff/leadership grid, built from `lib/team.ts` (name, role, photo, email); cards are off-white by default and pick up colour on hover.
 - `AboutGovernanceNote.tsx` — a short governance/transparency note pointing to `/governance`.
 
 #### Visit (`components/visit/*`)
@@ -6169,6 +6170,10 @@ export function cooldownAnswer(): SmartSearchResult {
 3. **Fallback answers** — If service unavailable, still show a friendly response (never "error")
 
 ---
+
+### `lib/team.ts`
+
+Single source of truth for pastors and team (id, name, aliases such as "NK", role, group, photo, email, optional bio, what they lead). `TeamSection.tsx` renders the Lead Team and Department Heads from it, `lib/siteKnowledge.ts` builds its leadership prose from `teamKnowledgeLines()`, and `findTeamMembers(query)` matches by name, alias, role or ministry for the person cards. `bio` is optional on purpose: the assistant must never invent one, so a person without a bio renders as role and ministry only. Edit people here and nowhere else.
 
 ### `lib/siteKnowledge.ts`
 

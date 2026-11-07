@@ -1,19 +1,6 @@
 import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
-
-const leadTeam = [
-  { name: "Faith Moradi", role: "Associate Pastor", photo: "/img/brand/Team/FH.webp", email: "faith@destinytees.uk" },
-  { name: "Tracy Reddy", role: "Small Groups", photo: "/img/brand/Team/TR.webp", email: "tracy@destinytees.uk" },
-  { name: "Deveshin Reddy", role: "Finance & Facilities", photo: "/img/brand/Team/DR.webp", email: "deveshin@destinytees.uk" },
-  { name: "Nkereuwem Ekanem", role: "Creativity & Innovation", photo: "/img/brand/Team/NE.webp", email: "nk@destinytees.uk" },
-];
-
-const departmentHeads = [
-  { name: "Funke Awojide", role: "Kids Pastor", photo: "/img/brand/Team/FA.webp", email: "funke@destinytees.uk" },
-  { name: "Adebowale Awojide", role: "Prayer Team", photo: "/img/brand/Team/Debo.webp", email: "debo@destinytees.uk" },
-  { name: "George Krezner", role: "Administration", photo: "/img/brand/Team/GK.webp", email: "george@destinytees.uk" },
-  { name: "Louise Sheekey", role: "Recovery Pastor", photo: "/img/brand/Team/LS.webp", email: "louise@destinytees.uk" },
-];
+import { DEPARTMENT_HEADS as departmentHeads, LEAD_TEAM as leadTeam } from "@/lib/team";
 
 function TeamCard({ name, role, photo, cardBg, email }: { name: string; role: string; photo: string | null; cardBg: string; email?: string | null }) {
   const initials = name.split(" ").map((n) => n[0]).join("");

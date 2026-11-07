@@ -112,7 +112,9 @@ export function useSmartSearchChat() {
         let appended = false;
 
         const hasCards = () =>
-          Boolean(cards.products || cards.sermons || cards.weather || cards.directions || cards.web);
+          Boolean(
+            cards.products || cards.sermons || cards.events || cards.weather || cards.directions || cards.web,
+          );
 
         const liveMessage = (): ChatMessage => ({
           role: "assistant",

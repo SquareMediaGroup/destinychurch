@@ -6,6 +6,7 @@ import {
   SCHEDULE,
   VISIT_FACTS,
 } from "@/lib/churchInfo";
+import { teamKnowledgeLines } from "@/lib/team";
 
 // ── Smart Search knowledge base ──────────────────────────────────────────────
 // Single source of truth for everything the Smart Search assistant is allowed to
@@ -139,24 +140,12 @@ SUNDAY SERVICES:
 - ${BUS_NOTE}
 - LIVESTREAM: Watch live online every Sunday at 11:00am on our YouTube channel (youtube.com/destinychurchteesvalley)
 
-LEAD PASTORS:
-- Jonathan Harris — Senior Pastor. Has led Destiny for over 25 years. Passionate about building team and unleashing potential in others.
-- Catherine (Cath) Harris — Community & Care Pastor. She with Jonathan have been at Destiny for over 25 years. Heart for teaching, training, and leading the Community and Care Team. Serves the town.
-- Together they are "Jonathan & Cath Harris, Lead Pastors"
+LEAD PASTORS (individual details are in the leadership list below):
+- Together Jonathan and Cath are "Jonathan & Cath Harris, Lead Pastors"
 - Daughters: Faith Moradi (Associate Pastor) and Nadine Harris (Life Church Bradford — not at Destiny but part of the family)
 
-FULL LEADERSHIP TEAM:
-Lead Team:
-- Jonathan Harris — Senior Pastor
-- Cath Harris — Community & Care Pastor
-- Faith Moradi — Associate Pastor (faith@destinytees.uk)
-- Tracy Reddy — Small Groups (tracy@destinytees.uk)
-- Deveshin Reddy — Finance & Facilities (deveshin@destinytees.uk)
-- Nkereuwem (NK) Ekanem — Creativity & Innovation (nk@destinytees.uk)
-
-Department Leaders:
-- Funke Awojide — Kids Pastor (funke@destinytees.uk)
-- Adebowale (Debo) Awojide — Prayer Team (debo@destinytees.uk)
+FULL LEADERSHIP TEAM (from lib/team.ts):
+${teamKnowledgeLines()}
 
 GIVING / BANK DETAILS:
 - Account Name: Destiny Church Tees Valley

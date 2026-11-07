@@ -271,7 +271,7 @@ destinychurch/
 │   ├── buzzsprout.server.ts       # Publishes sermon audio to Buzzsprout (admin upload flow)
 │   ├── youtube.ts                 # YouTube API client
 │   ├── smartSearch.ts             # AI search logic (parseAnswer, fallbacks)
-│   ├── smartSearch/tools.ts       # Smart Search tool-calling tools (products, sermons, weather, maps, web)
+│   ├── smartSearch/tools.ts       # Smart Search tool-calling tools (products, sermons, events, weather, maps, web)
 │   ├── embedLoading.ts            # Stage timings for the embed loading overlay
 │   ├── pageContent.ts             # Dynamic page editing
 │   ├── posts.ts                   # Post types + hero styles (postTemplates.ts: starter layouts; postPreview.server.ts: signed draft previews)
@@ -2434,9 +2434,9 @@ no auth user, no ChurchSuite record; hidden from the directory and `d1_admin_mem
   attachment), mentioning the asker so they're notified even if the group is muted.
 `d1_post_assistant_message` (service_role only) is the only way to post as DestinyAI. The answering itself
 is `lib/destinyOne/assistant.server.ts`, run from `after()` in `POST groups/[id]/messages`: the same model
-and tools as Smart Search (`lib/smartSearch/tools.ts`, `CHURCH_FACTS`), plus `find_events` (the live
-ChurchSuite calendar, via `upcomingEventSeries()` in `lib/destinyOne/events.server.ts`) and `share_event`
-(attaches one event card to the answer). It broadcasts "DestinyAI is typing…" while it works, is limited to
+and tools as Smart Search (`lib/smartSearch/tools.ts`, `CHURCH_FACTS` — including its `find_events`, the live
+ChurchSuite calendar), plus `share_event` (attaches one event card to the answer, taking the `slug` +
+`seriesKey` from a `find_events` result). It broadcasts "DestinyAI is typing…" while it works, is limited to
 6 questions a minute per member, has a safeguarding section in its prompt (999, Childline, Samaritans,
 the Safeguarding Lead), and says sorry in the chat rather than going quiet if anything fails. In its own
 chat it re-reads the last 16 messages for follow-ups, and only reads text (the composer is text-only there).
@@ -6447,6 +6447,7 @@ export async function executeTool(name: string, rawArgs: string, ctx: ToolContex
 ```
 
 - `find_products`, `get_weather`, `get_directions` — unchanged from prior behavior (see Components → `FloatingSmartSearch.tsx`).
+- `find_events(query?, from_date?, to_date?)` — the live ChurchSuite calendar (`fetchChurchSuiteEventsResult` → `buildEventIndex` → `serializeEventSeries`, 5-minute revalidate), so visitors can ask "when's the next event?" or "when is Alpha?". Filters each series' occurrences to the London-date range (default from today), matches query words against name/summary/category/location, and sorts by the first *matching* date. Returns up to 40 series (12 with a query) with London-formatted dates, location, summary, sign-up link and `/whats-on/<slug>`; a feed failure returns `available: false` rather than an empty calendar. The website chat renders the first three as `EventResultCards` (`components/smartSearch/ResultCards.tsx`). Shared with Destiny One's DestinyAI, which reaches it through `executeTool` — keep `slug` + `seriesKey` in the result for its `share_event`.
 - `search_web` — Tavily `/search` with `search_depth: "advanced"` (curated chunks, not raw page tops) and the API key sent as an `Authorization: Bearer` header (not in the body). Snippets truncated to `SNIPPET_CHARS` (1200 chars). Every result URL is recorded into `ctx.seenUrls`.
 - `extract_page` — Tavily `/extract`, `extract_depth: "advanced"`. **Only** opens a URL already present in `ctx.seenUrls` for that request — this is the sole guard against the model being prompted (by a visitor or by web content) into fetching an arbitrary URL. Content truncated to `EXTRACT_CHARS` (8000 chars).
 - Deliberately does **not** request Tavily's own `include_answer` summary: it was observed conflating Destiny Church Tees Valley with an unrelated Scottish charity of a similar name and reporting a wrong income figure. The model instead reads raw snippets/page content and is told (via `lib/siteKnowledge.ts`) to cross-check the charity/company number before quoting any figure.

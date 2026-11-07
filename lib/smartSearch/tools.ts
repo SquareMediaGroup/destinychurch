@@ -10,6 +10,10 @@ import { ADDRESS_ONE_LINE } from "@/lib/churchInfo";
 import { buildEventIndex, fetchChurchSuiteEventsResult } from "@destiny/shared";
 import { serializeEventSeries } from "@/lib/appSerializers";
 import { RESERVED_EVENT_SLUGS } from "@/lib/events";
+import type { ChurchCardSet, InfoCardData } from "@destiny/shared";
+import { findMinistries, type MinistryTopic } from "@/lib/ministries";
+import { matchesCourse, personCards, summarizeCards, visitCard } from "@/lib/churchCards";
+import { courseCards, givingCard, jobCards, liveCard } from "@/lib/churchCards.server";
 
 // ── Smart Search tools ─────────────────────────────────────────────────────
 // Tool-calling tools the /api/chat route exposes to the model. Each network
@@ -148,6 +152,67 @@ export const TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
         type: "object",
         properties: {},
       },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "find_person",
+      description:
+        "Look up a Destiny pastor or team member and show a profile card (photo, role, bio, email). Use it whenever someone asks who a person is, who leads or runs something (e.g. 'who runs kids?'), or who the pastors or team are. Pass the name, nickname (e.g. 'NK') or role. Never describe a person from memory.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "A name, nickname, role or what they lead, e.g. 'NK', 'Cath', 'kids pastor', 'prayer'." },
+        },
+        required: ["query"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "find_ministry",
+      description:
+        "Show an info card for a Destiny ministry (Kids, Youth, Young Adults, Prayer, Recovery), Connect Groups, serving or volunteering, a next step (baptism, child dedication), a mission partner, or a course such as Alpha (with upcoming dates and sign-up). Use it for any 'what is / when is / how do I join' question about these.",
+      parameters: {
+        type: "object",
+        properties: {
+          topic: {
+            type: "string",
+            enum: ["ministry", "serve", "connect", "next-step", "mission", "course"],
+            description: "Kind of thing, if clear. Omit if unsure.",
+          },
+          query: { type: "string", description: "What they asked about, in a few words, e.g. 'kids', 'baptism', 'alpha', 'volunteer'." },
+        },
+        required: ["query"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "church_info",
+      description:
+        "Show a card for practical church info: 'visit' (Sunday times, address, parking, access), 'giving' (online, bank transfer, text-to-give details with copy buttons) or 'live' (is the service live now, where to watch). Use it for those questions instead of quoting the details yourself.",
+      parameters: {
+        type: "object",
+        properties: {
+          topic: { type: "string", enum: ["visit", "giving", "live"] },
+        },
+        required: ["topic"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "find_jobs",
+      description: "Show cards for Destiny's currently open job and internship roles. Use when someone asks about working at Destiny, jobs, vacancies or internships.",
+      parameters: { type: "object", properties: {}, additionalProperties: false },
     },
   },
   {
@@ -655,9 +720,79 @@ async function runExtractPage(args: { url: string }, ctx: ToolContext): Promise<
   }
 }
 
+// ── Church cards: find_person, find_ministry, church_info, find_jobs ────────
+// These return a card set for the UI plus a `summary` for the model. The model
+// sees only the summary (see modelPayload), so the card's photo paths and
+// button links cost no tokens.
+
+export interface ChurchCardsResult {
+  available: boolean;
+  reason?: string;
+  /** Plain-text facts for the model. */
+  summary?: string;
+  /** What the UI renders. Not sent to the model. */
+  cards?: ChurchCardSet;
+}
+
+const NO_CARD_NOTE = "That lookup didn't find anything.";
+
+async function runFindPerson(args: { query: string }): Promise<ChurchCardsResult> {
+  const people = personCards(args.query ?? "");
+  if (!people.length) return { available: false, reason: "No one on the team matches that. Don't guess: say you don't have that detail and suggest contacting the church." };
+  const cards = { people };
+  return { available: true, cards, summary: summarizeCards(cards) };
+}
+
+async function runFindMinistry(args: { topic?: string; query: string }): Promise<ChurchCardsResult> {
+  const query = args.query ?? "";
+  const topic = args.topic as MinistryTopic | "course" | undefined;
+  let info: InfoCardData[] = [];
+  try {
+    if (topic === "course") info = await courseCards(query);
+    else {
+      info = findMinistries(query, topic);
+      if (!info.length && !topic && matchesCourse(query)) info = await courseCards(query);
+    }
+  } catch (err) {
+    console.error("[smartSearch] runFindMinistry failed:", err);
+    return { available: false, reason: "That lookup isn't working right now." };
+  }
+  if (!info.length) return { available: false, reason: NO_CARD_NOTE + " Say you don't have that detail and suggest contacting the church." };
+  const cards = { info };
+  return { available: true, cards, summary: summarizeCards(cards) };
+}
+
+async function runChurchInfo(args: { topic: string }): Promise<ChurchCardsResult> {
+  try {
+    const card = args.topic === "giving" ? await givingCard() : args.topic === "live" ? await liveCard() : args.topic === "visit" ? visitCard() : null;
+    if (!card) return { available: false, reason: "Unknown topic." };
+    const cards = { info: [card] };
+    return { available: true, cards, summary: summarizeCards(cards) };
+  } catch (err) {
+    console.error("[smartSearch] runChurchInfo failed:", err);
+    return { available: false, reason: "That lookup isn't working right now." };
+  }
+}
+
+async function runFindJobs(): Promise<ChurchCardsResult> {
+  try {
+    const info = await jobCards();
+    if (!info.length) return { available: true, summary: "There are no open roles at the moment. Suggest checking /jobs again later." };
+    const cards = { info };
+    return { available: true, cards, summary: summarizeCards(cards) };
+  } catch (err) {
+    console.error("[smartSearch] runFindJobs failed:", err);
+    return { available: false, reason: "The jobs lookup isn't working right now." };
+  }
+}
+
 // ── dispatch ────────────────────────────────────────────────────────────────
 
 export type ToolResult =
+  | { name: "find_person"; data: ChurchCardsResult }
+  | { name: "find_ministry"; data: ChurchCardsResult }
+  | { name: "church_info"; data: ChurchCardsResult }
+  | { name: "find_jobs"; data: ChurchCardsResult }
   | { name: "find_products"; data: FindProductsResult }
   | { name: "find_sermons"; data: FindSermonsResult }
   | { name: "find_events"; data: FindEventsResult }
@@ -665,6 +800,28 @@ export type ToolResult =
   | { name: "get_directions"; data: DirectionsToolResult }
   | { name: "search_web"; data: SearchWebResult }
   | { name: "extract_page"; data: ExtractPageResult };
+
+const CARD_SHOWN_NOTE =
+  "A card with these details is already shown to the visitor, so don't list every detail again: answer in one or two short sentences, and never add numbers or contact details that aren't in this summary.";
+
+/**
+ * What the model is told about a tool result. The church-card tools are cut
+ * down to their summary (the card itself goes to the UI only); every other
+ * tool's result goes through unchanged.
+ */
+export function modelPayload(result: ToolResult): unknown {
+  switch (result.name) {
+    case "find_person":
+    case "find_ministry":
+    case "church_info":
+    case "find_jobs":
+      return result.data.cards
+        ? { available: result.data.available, summary: result.data.summary, note: CARD_SHOWN_NOTE }
+        : { available: result.data.available, reason: result.data.reason, summary: result.data.summary };
+    default:
+      return result.data;
+  }
+}
 
 /** Execute a single tool call by name, parsing its JSON argument string. */
 export async function executeTool(name: string, rawArgs: string, ctx: ToolContext): Promise<ToolResult> {
@@ -703,6 +860,14 @@ export async function executeTool(name: string, rawArgs: string, ctx: ToolContex
           to_date: args.to_date as string | undefined,
         }),
       };
+    case "find_person":
+      return { name, data: await runFindPerson({ query: (args.query as string) ?? "" }) };
+    case "find_ministry":
+      return { name, data: await runFindMinistry({ topic: args.topic as string | undefined, query: (args.query as string) ?? "" }) };
+    case "church_info":
+      return { name, data: await runChurchInfo({ topic: (args.topic as string) ?? "" }) };
+    case "find_jobs":
+      return { name, data: await runFindJobs() };
     case "get_weather":
       return { name, data: await runGetWeather({ location: args.location as string | undefined, date: args.date as string }) };
     case "get_directions":

@@ -340,6 +340,10 @@ export function contentPreview(content: D1MessageContent | null | undefined): st
   if (content?.kind === "poll") return `Poll: ${content.poll.question}`;
   if (content?.kind === "event") return `Event: ${content.event.name}`;
   if (content?.kind === "sermon") return `Sermon: ${content.sermon.title}`;
+  if (content?.kind === "card") {
+    const first = content.cards.people?.[0]?.name ?? content.cards.info?.[0]?.title;
+    return first ? `Info: ${first}` : null;
+  }
   return null;
 }
 

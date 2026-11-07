@@ -6,6 +6,7 @@ import TextToGiveCTA from "@/components/give/TextToGiveCTA";
 import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
 import { createServiceClient } from "@/utils/supabase/service";
 import Button from "@/components/ui/Button";
+import { resolveGiveContent } from "@/lib/giving";
 
 export const revalidate = 60;
 
@@ -18,9 +19,9 @@ async function getGiveContent() {
       .eq("page", "give");
     const map: Record<string, string> = {};
     for (const row of data ?? []) map[row.key] = row.value;
-    return map;
+    return resolveGiveContent(map);
   } catch {
-    return {};
+    return resolveGiveContent({});
   }
 }
 
@@ -179,9 +180,9 @@ export default async function GivePage() {
           <AnimateIn delay={100}>
             <div className="grid gap-4 sm:grid-cols-2">
               {[
-                { label: "Account Name",   value: content.account_name   ?? "Destiny Church Tees Valley" },
-                { label: "Sort Code",      value: content.sort_code      ?? "08-92-99" },
-                { label: "Account Number", value: content.account_number ?? "67397646" },
+                { label: "Account Name",   value: content.account_name },
+                { label: "Sort Code",      value: content.sort_code },
+                { label: "Account Number", value: content.account_number },
                 { label: "Reference",      value: "Your full name" },
               ].map(({ label, value }) => (
                 <div key={label} className="rounded-2xl bg-white p-5 shadow-sm">
@@ -213,7 +214,7 @@ export default async function GivePage() {
                   <p className="mb-2 text-xs font-bold uppercase tracking-widest text-destiny-orange">Step 1</p>
                   <span className="material-symbols-rounded mb-3 block text-4xl text-destiny-grey/40" aria-hidden="true">edit</span>
                   <p className="text-sm font-bold text-destiny-grey">Text the keyword</p>
-                  <p className="mt-1 text-2xl font-black text-destiny-orange">{content.text_keyword ?? "DCTEES"}</p>
+                  <p className="mt-1 text-2xl font-black text-destiny-orange">{content.text_keyword}</p>
                 </div>
                 <div className="text-center">
                   <p className="mb-2 text-xs font-bold uppercase tracking-widest text-destiny-orange">Step 2</p>
@@ -225,7 +226,7 @@ export default async function GivePage() {
                   <p className="mb-2 text-xs font-bold uppercase tracking-widest text-destiny-orange">Step 3</p>
                   <span className="material-symbols-rounded mb-3 block text-4xl text-destiny-grey/40" aria-hidden="true">send</span>
                   <p className="text-sm font-bold text-destiny-grey">Send to</p>
-                  <p className="mt-1 text-2xl font-black text-destiny-orange">{content.text_number ?? "07380 307 800"}</p>
+                  <p className="mt-1 text-2xl font-black text-destiny-orange">{content.text_number}</p>
                 </div>
               </div>
               <p className="mt-6 text-center text-xs text-subtle">
@@ -236,8 +237,8 @@ export default async function GivePage() {
 
           <AnimateIn delay={200}>
             <TextToGiveCTA
-              keyword={content.text_keyword ?? "DCTEES"}
-              number={content.text_number ?? "07380 307 800"}
+              keyword={content.text_keyword}
+              number={content.text_number}
             />
           </AnimateIn>
         </div>

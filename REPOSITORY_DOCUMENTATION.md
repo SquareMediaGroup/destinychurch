@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.18  
-**Last Updated:** October 10, 2026  
+**Version:** 1.0.19  
+**Last Updated:** November 7, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -318,7 +318,7 @@ destinychurch/
 │   └── ...
 │
 ├── supabase/                      # Supabase configuration
-│   └── migrations/                # Database schema migrations (49 files) — selected highlights:
+│   └── migrations/                # Database schema migrations (124 files) — selected highlights:
 │       ├── 001_redirects.sql      # URL redirect table
 │       ├── 002_hidden_videos.sql  # Hidden sermon videos (feature since removed)
 │       ├── 003_content.sql        # Site banner & page content
@@ -389,6 +389,17 @@ destinychurch/
 │       │                                   # (needs_approval → access request; groups joined on approval)
 │       ├── 20260927_01_destiny_one_admin.sql # Destiny One part 2: staff verification, d1_invites,
 │       │                                  # d1_settings, d1_admin_* functions, destiny_one_admin role
+│       ├── 20261010_01_destiny_one_archived_chats.sql # d1_group_members.archived_at: per-person chat archive
+│       ├── 20261011_01..03_destiny_one_restriction*.sql # timed posting restrictions + report escalation
+│       ├── 20261017_01_bug_fixes.sql      # Repo-wide bug sweep (incl. enforce_last_super_admin firing again)
+│       ├── 20261019_01_status_incidents.sql # Notices for status.destinytees.uk (posted from /admin/status)
+│       ├── 20261020_02..04_posts_*.sql    # Posts admin: view counts, revisions, editing locks, templates
+│       ├── 20261020_05_destiny_one_update_prompt.sql # Optional "update available" prompt (latest version + notes)
+│       ├── 20261027_01_talent_show_voting.sql, 20261028_01_talent_show_judge_xs.sql # /talent-show (§31)
+│       ├── 20261031_01_hire_enquiries_church_member.sql # Hire form: "are you a church member?"
+│       ├── 20261104_01_admin_two_factor.sql # Admin two-factor backup codes + lockouts (§10d)
+│       ├── 20261105_01_admin_destinyai.sql # admin_agent_plans/actions — the feature was removed in #189;
+│       │                                  # the tables are left in place, unused (see §10c note)
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -1027,6 +1038,13 @@ CREATE TABLE admin_roles (
 
 -- RLS: Service role only (deny-all "service only" policy, same as every other table)
 ```
+
+A trigger, `enforce_last_super_admin()`, refuses any change that would leave no Super Admin (including a
+single UPDATE that demotes everyone); `20261017_01_bug_fixes.sql` fixed it so it actually fires.
+
+**Leftover tables:** `admin_agent_plans` / `admin_agent_actions` (`20261105_01_admin_destinyai.sql`) belonged
+to the admin DestinyAI assistant, which was removed (#189). No code reads them; the applied migration is kept
+as history. Destiny One's member DestinyAI (§29, part 18) is separate and still live.
 
 Distinct from the legacy, unused `admin_users` table in `supabase/schema.sql`
 (username/password_hash — predates the Supabase Auth migration; not read by
@@ -8362,6 +8380,17 @@ same database as the data rather than in a separate Synapse module.
   are 0, so none of this changes the layout there. Not done yet: a list + chat split view on the
   open display, keeping custom popups off the fold (React Native doesn't expose `ReservedRegion`
   yet), and the app's portrait lock.
+- `app.config.js`: a dynamic layer over `app.json` that only adds what can't be committed. Android push
+  goes through Firebase Cloud Messaging, so builds need the Firebase project's `google-services.json`:
+  on EAS from the `GOOGLE_SERVICES_JSON` file variable, locally from an untracked `./google-services.json`.
+  Without either the build still works but Android phones get no push token. Setup (Firebase + FCM V1
+  key) and the App Review demo-account steps are in `apps/destiny-one/README.md`.
+- **Previewing the update and maintenance screens:** Expo Go has no build number, so it never sees the
+  forced-update or maintenance gate. Set `EXPO_PUBLIC_D1_PREVIEW_GATE=update` (or `maintenance`) in
+  `.env.local` and restart with `npx expo start -c`; `src/lib/appGate.ts` honours it only in development
+  (`__DEV__`), so release builds ignore it. Remove it and restart to get the app back.
+- **Launch:** January 2027, alongside the refreshed website (`/app` says "coming 2027"). Launch blockers
+  and the DPIA items still to assess are tracked in `apps/destiny-one/todo.md` and `docs/destiny-one-dpia-draft.md`.
 - Checks: `npm run typecheck`, `npx expo lint`, `npx expo-doctor`, `npx expo export --platform ios --platform android`. CI runs typecheck and lint (the "Destiny One app" job).
 - GDPR notes (data map, processors, retention, erasure, review audit): `docs/destiny-one-gdpr.md`.
 - Staff guide (approvals, reports, review, takedown, suspension, blocks, settings, out of hours):
@@ -8443,13 +8472,15 @@ Destiny Church Tees Valley is a **professional, full-stack Next.js application**
 2. **Member engagement** — Prayer requests, volunteering, training, small groups
 3. **Admin dashboard** — Content management, HR tools, store management, design request queue
 4. **Ecommerce** — Online store with Stripe payments, product variants, order management
-5. **Intelligent features** — Smart Search tool-calling chat assistant, live banner management
+5. **Intelligent features** — Smart Search tool-calling chat assistant (with the live ChurchSuite events calendar), live banner management
+6. **Destiny One** — the members' messaging app (`apps/destiny-one`, Expo) with its safeguarding admin on the website and the D1 Admin desktop app; launching January 2027
+7. **Side apps** — status page (`apps/status`), Live Caption (macOS), talent show buzzers and audience voting, campaign films (Remotion)
 
 **Architecture:** Server-driven React with Supabase PostgreSQL, deployed to Vercel with ISR caching. All sensitive operations use service-role API proxies with explicit auth checks. Code is type-safe (TypeScript), styled with Tailwind CSS, and tested with Playwright E2E.
 
 **Key Differentiators:**
 - **No vendor lock-in** — Open-source stack (Next.js, React, Tailwind, PostgreSQL)
-- **Security first** — RLS, rate limiting, CSRF protection, signed URLs
+- **Security first** — RLS, rate limiting, CSRF protection, signed URLs, two-factor sign-in for every admin
 - **AI-ready** — Grounded knowledge base (`siteKnowledge.ts`) powering Smart Search's tool-calling chat (products, weather, directions, web search)
 - **Accessible** — Semantic HTML, ARIA labels, keyboard nav
 - **Mobile-first** — Responsive design, tested on real devices
@@ -8459,7 +8490,8 @@ This repository serves as a **reusable platform** for churches nationwide, licen
 
 ---
 
-**Document Version:** 1.0.5  
+**Document Version:** 1.0.19  
 **Created:** June 18, 2026  
+**Last Updated:** November 7, 2026  
 **For:** Destiny Church Tees Valley  
 **By:** Square Media Group (Malachi <malachi@squaremediagroup.org>)

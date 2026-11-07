@@ -67,7 +67,7 @@ export const ROLE_VIDEOS: AdminHelpVideo[] = [
     youtubeId: "eTaY2pgeTAo",
     title: "Event Admin: courses, events and announcements",
     description:
-      "Course dates and banners, the site popup, the featured event, NFC tiles, links pages, song requests, talent show voting and DestinyAI.",
+      "Course dates and banners, the site popup, the featured event, NFC tiles, links pages, song requests, and talent show voting.",
     role: "event_admin",
     poster: "/img/admin-help/events-poster.webp",
     length: "8:46",

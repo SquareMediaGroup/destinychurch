@@ -5,8 +5,7 @@ import Link from "next/link";
 import type { BannerType } from "@/contexts/BannerContext";
 import { clearPromoteFromUrl, readPromote } from "@/lib/promote";
 import ScheduleFields from "@/components/admin/ScheduleFields";
-import { windowState } from "@/lib/schedule";
-import { describeWindow } from "@/lib/adminAgent/time";
+import { describeWindow, windowState } from "@/lib/schedule";
 
 interface Banner {
   active: boolean;

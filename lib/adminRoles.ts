@@ -202,12 +202,6 @@ const OPEN_PATHS = [
   // The D1 Admin desktop app's "which sections can I see" — only ever
   // describes the caller (app/api/admin/destiny-one/whoami/route.ts).
   /^\/api\/admin\/destiny-one\/whoami$/,
-  // DestinyAI (/admin/assistant). Every admin can talk to it, but it can only
-  // change what their access level already covers: each tool checks
-  // hasAccess() for the admin API it calls, and those handlers keep their own
-  // checks (lib/adminAgent/context.server.ts).
-  /^\/admin\/assistant$/,
-  /^\/api\/admin\/assistant(\/|$)/,
 ];
 
 export function hasAccess(roles: RoleFlags, pathname: string): boolean {

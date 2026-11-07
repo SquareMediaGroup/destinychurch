@@ -1,7 +1,7 @@
 // Time windows on content: "show from X until Y".
 //
-// Client-safe. Used by the public layout (banner, popup), the admin banner
-// page and DestinyAI. A null bound means "no limit on that side", so a row
+// Client-safe. Used by the public layout (banner, popup) and the admin banner
+// and popup pages. A null bound means "no limit on that side", so a row
 // that has never been scheduled is always inside its window.
 
 export interface ScheduleWindow {
@@ -66,4 +66,38 @@ export function parseWindow(
     return { ok: false, error: "The end time must be after the start time." };
   }
   return { ok: true, fields };
+}
+
+/* ── UK time ─────────────────────────────────────────────────────────────── */
+
+// The church runs on UK time but the database stores UTC, so anything shown
+// to a person is formatted back in London time, whichever side of a GMT/BST
+// change it falls on.
+
+export const CHURCH_TIME_ZONE = "Europe/London";
+
+const DATE_TIME = new Intl.DateTimeFormat("en-GB", {
+  timeZone: CHURCH_TIME_ZONE,
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+/** "Fri 6 Nov, 12:00" in London time. */
+export function formatLondon(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const when = new Date(iso);
+  if (Number.isNaN(when.getTime())) return "";
+  return DATE_TIME.format(when);
+}
+
+/** "from Fri 6 Nov, 12:00 until Fri 6 Nov, 15:00", or the half that applies. */
+export function describeWindow(starts: string | null | undefined, ends: string | null | undefined): string {
+  if (starts && ends) return `from ${formatLondon(starts)} until ${formatLondon(ends)}`;
+  if (starts) return `from ${formatLondon(starts)}, with no end time`;
+  if (ends) return `straight away until ${formatLondon(ends)}`;
+  return "straight away, with no end time";
 }

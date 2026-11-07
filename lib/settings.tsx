@@ -24,10 +24,11 @@ const parseString = <T extends string>(value: unknown, allowed: T[], fallback: T
 
 const readStoredSettings = (): Settings => {
   if (typeof window === "undefined") return DEFAULT_SETTINGS;
-  const raw = window.localStorage.getItem(SETTINGS_STORAGE_KEY);
-  if (!raw) return DEFAULT_SETTINGS;
-
   try {
+    // Inside the try: storage access itself throws when the browser blocks
+    // site data, and this provider wraps every page.
+    const raw = window.localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (!raw) return DEFAULT_SETTINGS;
     const parsed = JSON.parse(raw) as Partial<Settings>;
     return {
       textSize: parseString(parsed.textSize, ["normal", "large"], DEFAULT_SETTINGS.textSize),
@@ -67,7 +68,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    try {
+      window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    } catch {
+      // Blocked or full storage: the setting still applies to this visit.
+    }
     applySettings(settings);
   }, [hydrated, settings]);
 
@@ -81,7 +86,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const resetSettings = useCallback(() => {
     setSettings(DEFAULT_SETTINGS);
     if (typeof window !== "undefined") {
-      window.localStorage.removeItem(SETTINGS_STORAGE_KEY);
+      try {
+        window.localStorage.removeItem(SETTINGS_STORAGE_KEY);
+      } catch {
+        // Nothing stored to remove if storage is blocked.
+      }
     }
     applySettings(DEFAULT_SETTINGS);
   }, []);

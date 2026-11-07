@@ -1,0 +1,285 @@
+{
+ "viewport": {
+  "w": 1600,
+  "h": 900,
+  "dsf": 1.6
+ },
+ "steps": [
+  {
+   "chapter": "Finding your way",
+   "caption": "Signed in as a Design Admin, Design tickets is your section: everything the church asks you to design.",
+   "target": {
+    "x": 0.0075,
+    "y": 0.24666666666666667,
+    "w": 0.124375,
+    "h": 0.04888888888888889
+   },
+   "kind": "click",
+   "before": "s001.jpg",
+   "frames": [],
+   "after": "s002.jpg",
+   "zoom": 1,
+   "hold": 3.2,
+   "nav": true
+  },
+  {
+   "chapter": "Finding your way",
+   "caption": "Each ticket has its number, what’s wanted, who asked, when it’s needed by and where it’s up to.",
+   "target": {
+    "x": 0.190625,
+    "y": 0.3794444444444444,
+    "w": 0.75875,
+    "h": 0.07888888888888888
+   },
+   "kind": "point",
+   "before": "s003.jpg",
+   "frames": [],
+   "after": "s003.jpg",
+   "zoom": 1.3,
+   "hold": 3.6,
+   "nav": false
+  },
+  {
+   "chapter": "Finding your way",
+   "caption": "The lightning bolt means fast-tracked: something urgent, so it goes to the top.",
+   "target": {
+    "x": 0.203125,
+    "y": 0.40078125,
+    "w": 0.033251953125,
+    "h": 0.017777777777777778
+   },
+   "kind": "point",
+   "before": "s004.jpg",
+   "frames": [],
+   "after": "s004.jpg",
+   "zoom": 1.8,
+   "hold": 3,
+   "nav": false
+  },
+  {
+   "chapter": "Finding your way",
+   "caption": "Needs someone shows what nobody’s picked up yet. Mine shows yours.",
+   "target": {
+    "x": 0.356455078125,
+    "y": 0.2688888888888889,
+    "w": 0.047900390625,
+    "h": 0.03333333333333333
+   },
+   "kind": "click",
+   "before": "s005.jpg",
+   "frames": [],
+   "after": "s006.jpg",
+   "zoom": 1.5,
+   "hold": 2.8,
+   "nav": false
+  },
+  {
+   "chapter": "Pick up a ticket",
+   "caption": "Open a ticket to read the brief.",
+   "target": {
+    "x": 0.3051171875,
+    "y": 0.4,
+    "w": 0.109892578125,
+    "h": 0.017777777777777778
+   },
+   "kind": "click",
+   "before": "s007.jpg",
+   "frames": [],
+   "after": "s008.jpg",
+   "zoom": 1.3,
+   "hold": 2.6,
+   "nav": true
+  },
+  {
+   "chapter": "Pick up a ticket",
+   "caption": "The brief, the sizes they need, and who asked, with a way to get in touch.",
+   "target": {
+    "x": 0.285625,
+    "y": 0.4211111111111111,
+    "w": 0.35375,
+    "h": 0.022222222222222223
+   },
+   "kind": "point",
+   "before": "s009.jpg",
+   "frames": [],
+   "after": "s009.jpg",
+   "zoom": 1.3,
+   "hold": 3.6,
+   "nav": false
+  },
+  {
+   "chapter": "Pick up a ticket",
+   "caption": "Claim this to make it yours, so nobody else starts it too.",
+   "target": {
+    "x": 0.283125,
+    "y": 0.29888888888888887,
+    "w": 0.05947265625,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s010.jpg",
+   "frames": [],
+   "after": "s011.jpg",
+   "zoom": 1.6,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Pick up a ticket",
+   "caption": "Start work when you begin. The person who asked can see where it’s up to.",
+   "target": {
+    "x": 0.34025390625,
+    "y": 0.29888888888888887,
+    "w": 0.060830078125,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s012.jpg",
+   "frames": [],
+   "after": "s013.jpg",
+   "zoom": 1.6,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Deliver it",
+   "caption": "Upload the finished file under Deliverables: an image or a PDF, up to 50 MB.",
+   "target": {
+    "x": 0.285625,
+    "y": 0.7880555555555555,
+    "w": 0.35375,
+    "h": 0.08444444444444445
+   },
+   "kind": "click",
+   "before": "s014.jpg",
+   "frames": [],
+   "after": "s015.jpg",
+   "zoom": 1.4,
+   "hold": 2.8,
+   "nav": false
+  },
+  {
+   "chapter": "Deliver it",
+   "caption": "For a video, choose Video link and paste a Google Drive or Playbook link instead.",
+   "target": {
+    "x": 0.46375,
+    "y": 0.7925,
+    "w": 0.173125,
+    "h": 0.03111111111111111
+   },
+   "kind": "point",
+   "before": "s016.jpg",
+   "frames": [],
+   "after": "s016.jpg",
+   "zoom": 1.6,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Deliver it",
+   "caption": "Mark it delivered and they’re told it’s ready.",
+   "target": {
+    "x": 0.283125,
+    "y": 0.29888888888888887,
+    "w": 0.0785546875,
+    "h": 0.044444444444444446
+   },
+   "kind": "click",
+   "before": "s017.jpg",
+   "frames": [],
+   "after": "s018.jpg",
+   "zoom": 1.6,
+   "hold": 2.8,
+   "nav": false
+  },
+  {
+   "chapter": "Deliver it",
+   "caption": "If they want changes, it comes back as Changes requested, and you upload the next version.",
+   "target": {
+    "x": 0.285625,
+    "y": 0.4891666666666667,
+    "w": 0.35375,
+    "h": 0.022222222222222223
+   },
+   "kind": "point",
+   "before": "s019.jpg",
+   "frames": [],
+   "after": "s019.jpg",
+   "zoom": 1.3,
+   "hold": 3.4,
+   "nav": false
+  },
+  {
+   "chapter": "Notes and closing",
+   "caption": "Add a note to record anything worth knowing.",
+   "target": {
+    "x": 0.285625,
+    "y": 0.7658333333333334,
+    "w": 0.35375,
+    "h": 0.09111111111111111
+   },
+   "kind": "type",
+   "before": "s020.jpg",
+   "frames": [
+    "s021.jpg",
+    "s022.jpg",
+    "s023.jpg"
+   ],
+   "after": "s024.jpg",
+   "zoom": 1.5,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Notes and closing",
+   "caption": "The switch keeps a note internal, just for the design team. Turn it off to share it with the person who asked.",
+   "target": {
+    "x": 0.285625,
+    "y": 0.9342708333333334,
+    "w": 0.35375,
+    "h": 0.017777777777777778
+   },
+   "kind": "point",
+   "before": "s025.jpg",
+   "frames": [],
+   "after": "s025.jpg",
+   "zoom": 1.6,
+   "hold": 3.6,
+   "nav": false
+  },
+  {
+   "chapter": "Notes and closing",
+   "caption": "Add note. It joins the ticket’s activity.",
+   "target": {
+    "x": 0.582685546875,
+    "y": 0.8787152777777778,
+    "w": 0.056689453125,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s026.jpg",
+   "frames": [],
+   "after": "s027.jpg",
+   "zoom": 1.4,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Notes and closing",
+   "caption": "Close tickets once they’re done. Cancel one that’s no longer needed: it keeps the history. Delete removes it for good.",
+   "target": {
+    "x": 0.190625,
+    "y": 0.3211111111111111,
+    "w": 0.75875,
+    "h": 0.29444444444444445
+   },
+   "kind": "point",
+   "before": "s028.jpg",
+   "frames": [],
+   "after": "s028.jpg",
+   "zoom": 1.2,
+   "hold": 4,
+   "nav": false
+  }
+ ]
+}

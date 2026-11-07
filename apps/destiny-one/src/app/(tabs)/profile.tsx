@@ -9,9 +9,11 @@ import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { File, Paths } from "expo-file-system";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTabBarClearance, withTabBarInsets } from "@/components/ScreenInsets";
 import { D1_ROLE_LABELS, topRole } from "@destiny/shared";
 import Constants from "expo-constants";
 import { openDocument } from "@/components/SafetyNotice";
+import { useFearfullyMade } from "@/components/EasterEggs";
 import { Icon } from "@/components/Icon";
 import { Avatar, Card, CardButton, LargeTitle, SectionLabel, Separator, SettingsRow } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -23,15 +25,20 @@ import { ORANGE, INK, useTheme } from "@/theme/tokens";
 const BETA_TAPS = 10;
 const TAP_WINDOW_MS = 2000;
 
-export default function Profile() {
+export default withTabBarInsets(Profile);
+
+function Profile() {
   const t = useTheme();
+  // Includes the tab bar, wherever the system put it (the side, on iPhone Duo).
   const insets = useSafeAreaInsets();
+  const bottomPad = useTabBarClearance(110);
   const { me, setMe, email, signOut, accounts } = useSession();
   const others = accounts.length - 1;
   const [signingOut, setSigningOut] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const taps = useRef(0);
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fearfullyMade = useFearfullyMade();
 
   const top = me ? topRole(me.roles) : null;
   const role = top ? D1_ROLE_LABELS[top] : "Member";
@@ -167,11 +174,12 @@ export default function Profile() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: t.grouped }} contentContainerStyle={{ paddingTop: insets.top + 52, paddingHorizontal: 16, paddingBottom: 110, gap: 22 }}>
+    <>
+    <ScrollView style={{ flex: 1, backgroundColor: t.grouped }} contentContainerStyle={{ paddingTop: insets.top + 52, paddingLeft: insets.left + 16, paddingRight: insets.right + 16, paddingBottom: bottomPad, gap: 22 }}>
       <LargeTitle style={{ paddingHorizontal: 4 }}>Profile</LargeTitle>
 
       <Card style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 16, paddingLeft: 16 }}>
-        <Pressable onPress={changeAvatar} disabled={avatarBusy} accessibilityRole="button" accessibilityLabel={me?.avatarUrl ? "Change or remove your picture" : "Add a picture"} style={{ opacity: avatarBusy ? 0.5 : 1 }}>
+        <Pressable onPress={changeAvatar} onLongPress={fearfullyMade.onLongPress} disabled={avatarBusy} accessibilityRole="button" accessibilityLabel={me?.avatarUrl ? "Change or remove your picture" : "Add a picture"} style={{ opacity: avatarBusy ? 0.5 : 1 }}>
           <Avatar name={me?.displayName ?? ""} uri={me?.avatarUrl} size={60} />
           {avatarBusy && (
             <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" }}>
@@ -262,6 +270,8 @@ export default function Profile() {
         <Text style={{ textAlign: "center", fontSize: 13, color: t.subtle }}>Destiny One {Constants.expoConfig?.version ?? ""}</Text>
       </Pressable>
     </ScrollView>
+    {fearfullyMade.node}
+    </>
   );
 }
 

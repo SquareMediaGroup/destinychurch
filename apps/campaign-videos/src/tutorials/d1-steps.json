@@ -1,0 +1,875 @@
+{
+ "viewport": {
+  "w": 1600,
+  "h": 900,
+  "dsf": 1.6
+ },
+ "steps": [
+  {
+   "chapter": "Finding your way",
+   "caption": "Destiny One is the members’ app for teams and groups. This is where you look after who’s in it.",
+   "target": {
+    "x": 0.2225,
+    "y": 0.11555555555555555,
+    "w": 0.47087890625,
+    "h": 0.04
+   },
+   "kind": "point",
+   "before": "s001.jpg",
+   "frames": [],
+   "after": "s001.jpg",
+   "zoom": 1.3,
+   "hold": 3.6,
+   "nav": false
+  },
+  {
+   "chapter": "Finding your way",
+   "caption": "The numbers at the top: who’s waiting for approval, active members, open invites and any paused groups.",
+   "target": {
+    "x": 0.235625,
+    "y": 0.3522222222222222,
+    "w": 0.078642578125,
+    "h": 0.021388888888888888
+   },
+   "kind": "point",
+   "before": "s002.jpg",
+   "frames": [],
+   "after": "s002.jpg",
+   "zoom": 1.4,
+   "hold": 3.6,
+   "nav": false
+  },
+  {
+   "chapter": "Finding your way",
+   "caption": "Message content is never shown here. Only Safeguarding can review a conversation, and every read is recorded.",
+   "target": {
+    "x": 0.2225,
+    "y": 0.16,
+    "w": 0.47087890625,
+    "h": 0.022222222222222223
+   },
+   "kind": "point",
+   "before": "s003.jpg",
+   "frames": [],
+   "after": "s003.jpg",
+   "zoom": 1.5,
+   "hold": 4,
+   "nav": false
+  },
+  {
+   "chapter": "Access requests",
+   "caption": "Access requests are people who signed in without an invite and asked to join.",
+   "target": {
+    "x": 0.03,
+    "y": 0.29777777777777775,
+    "w": 0.101875,
+    "h": 0.04
+   },
+   "kind": "click",
+   "before": "s004.jpg",
+   "frames": [],
+   "after": "s005.jpg",
+   "zoom": 1.3,
+   "hold": 3,
+   "nav": true
+  },
+  {
+   "chapter": "Access requests",
+   "caption": "Each shows what they told us, including whether they say they’re an adult. You decide, not them.",
+   "target": {
+    "x": 0.275625,
+    "y": 0.33621527777777777,
+    "w": 0.0984375,
+    "h": 0.023993055555555556
+   },
+   "kind": "point",
+   "before": "s006.jpg",
+   "frames": [],
+   "after": "s006.jpg",
+   "zoom": 1.6,
+   "hold": 3.8,
+   "nav": false
+  },
+  {
+   "chapter": "Access requests",
+   "caption": "Review to approve someone.",
+   "target": {
+    "x": 0.816201171875,
+    "y": 0.3106597222222222,
+    "w": 0.048173828125,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s007.jpg",
+   "frames": [],
+   "after": "s008.jpg",
+   "zoom": 1.6,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "Access requests",
+   "caption": "Check the name everyone in their groups will see…",
+   "target": {
+    "x": 0.355625,
+    "y": 0.16333333333333333,
+    "w": 0.28875,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s009.jpg",
+   "frames": [],
+   "after": "s010.jpg",
+   "zoom": 1.6,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Access requests",
+   "caption": "…confirm their age. Only adults you confirm count towards the two-adult rule in groups.",
+   "target": {
+    "x": 0.355625,
+    "y": 0.25222222222222224,
+    "w": 0.141875,
+    "h": 0.042222222222222223
+   },
+   "kind": "click",
+   "before": "s011.jpg",
+   "frames": [],
+   "after": "s012.jpg",
+   "zoom": 1.6,
+   "hold": 3.8,
+   "nav": false
+  },
+  {
+   "chapter": "Access requests",
+   "caption": "…and add them to communities straight away if you like.",
+   "target": {
+    "x": 0.363125,
+    "y": 0.485,
+    "w": 0.008125,
+    "h": 0.014444444444444444
+   },
+   "kind": "click",
+   "before": "s013.jpg",
+   "frames": [],
+   "after": "s014.jpg",
+   "zoom": 1.6,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Access requests",
+   "caption": "Approve, and they’re in.",
+   "target": {
+    "x": 0.59173828125,
+    "y": 0.5277777777777778,
+    "w": 0.05263671875,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s015.jpg",
+   "frames": [],
+   "after": "s016.jpg",
+   "zoom": 1.6,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Access requests",
+   "caption": "Decline if they shouldn’t use the app. You can reinstate them later from App members.",
+   "target": {
+    "x": 0.760712890625,
+    "y": 0.3106597222222222,
+    "w": 0.05048828125,
+    "h": 0.04666666666666667
+   },
+   "kind": "point",
+   "before": "s017.jpg",
+   "frames": [],
+   "after": "s017.jpg",
+   "zoom": 1.7,
+   "hold": 3.4,
+   "nav": false
+  },
+  {
+   "chapter": "Invites",
+   "caption": "Invites let people in as soon as they sign in with that email, with the details you set.",
+   "target": {
+    "x": 0.2225,
+    "y": 0.1511111111111111,
+    "w": 0.431484375,
+    "h": 0.04
+   },
+   "kind": "point",
+   "before": "s018.jpg",
+   "frames": [],
+   "after": "s018.jpg",
+   "zoom": 1.3,
+   "hold": 3.4,
+   "nav": false
+  },
+  {
+   "chapter": "Invites",
+   "caption": "Invite people.",
+   "target": {
+    "x": 0.828115234375,
+    "y": 0.1688888888888889,
+    "w": 0.089384765625,
+    "h": 0.04888888888888889
+   },
+   "kind": "click",
+   "before": "s019.jpg",
+   "frames": [],
+   "after": "s020.jpg",
+   "zoom": 1.6,
+   "hold": 2,
+   "nav": false
+  },
+  {
+   "chapter": "Invites",
+   "caption": "Their full name…",
+   "target": {
+    "x": 0.275625,
+    "y": 0.21666666666666667,
+    "w": 0.220625,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s021.jpg",
+   "frames": [
+    "s022.jpg",
+    "s023.jpg",
+    "s024.jpg"
+   ],
+   "after": "s025.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Invites",
+   "caption": "…their email…",
+   "target": {
+    "x": 0.50375,
+    "y": 0.21666666666666667,
+    "w": 0.220625,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s026.jpg",
+   "frames": [
+    "s027.jpg",
+    "s028.jpg",
+    "s029.jpg"
+   ],
+   "after": "s030.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Invites",
+   "caption": "…their age…",
+   "target": {
+    "x": 0.275625,
+    "y": 0.3055555555555556,
+    "w": 0.221875,
+    "h": 0.042222222222222223
+   },
+   "kind": "point",
+   "before": "s031.jpg",
+   "frames": [],
+   "after": "s031.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Invites",
+   "caption": "…a leader role, if they lead a group…",
+   "target": {
+    "x": 0.428232421875,
+    "y": 0.48944444444444446,
+    "w": 0.008125,
+    "h": 0.014444444444444444
+   },
+   "kind": "click",
+   "before": "s032.jpg",
+   "frames": [],
+   "after": "s033.jpg",
+   "zoom": 1.6,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Invites",
+   "caption": "…and which communities they join.",
+   "target": {
+    "x": 0.283125,
+    "y": 0.5672222222222222,
+    "w": 0.008125,
+    "h": 0.014444444444444444
+   },
+   "kind": "click",
+   "before": "s034.jpg",
+   "frames": [],
+   "after": "s035.jpg",
+   "zoom": 1.6,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "Invites",
+   "caption": "Several people lets you paste a list, one per line, all with the same age, roles and communities.",
+   "target": {
+    "x": 0.340654296875,
+    "y": 0.1388888888888889,
+    "w": 0.07294921875,
+    "h": 0.035555555555555556
+   },
+   "kind": "point",
+   "before": "s036.jpg",
+   "frames": [],
+   "after": "s036.jpg",
+   "zoom": 1.6,
+   "hold": 3.6,
+   "nav": false
+  },
+  {
+   "chapter": "Invites",
+   "caption": "Send invite. They get an email telling them to open the app.",
+   "target": {
+    "x": 0.660595703125,
+    "y": 0.61,
+    "w": 0.063779296875,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s037.jpg",
+   "frames": [],
+   "after": "s038.jpg",
+   "zoom": 1.6,
+   "hold": 2.8,
+   "nav": false
+  },
+  {
+   "chapter": "Invites",
+   "caption": "Expired invites can be sent again.",
+   "target": {
+    "x": 0.60197265625,
+    "y": 0.32666666666666666,
+    "w": 0.0562890625,
+    "h": 0.03333333333333333
+   },
+   "kind": "click",
+   "before": "s039.jpg",
+   "frames": [],
+   "after": "s040.jpg",
+   "zoom": 1.6,
+   "hold": 1.8,
+   "nav": false
+  },
+  {
+   "chapter": "Invites",
+   "caption": "Resend gives them a fresh link. Revoke cancels an invite that hasn’t been used.",
+   "target": {
+    "x": 0.853740234375,
+    "y": 0.41421875,
+    "w": 0.050634765625,
+    "h": 0.04666666666666667
+   },
+   "kind": "point",
+   "before": "s041.jpg",
+   "frames": [],
+   "after": "s041.jpg",
+   "zoom": 1.7,
+   "hold": 3.4,
+   "nav": false
+  },
+  {
+   "chapter": "App members",
+   "caption": "App members is everyone with an account: their age, leader roles and status.",
+   "target": {
+    "x": 0.2225,
+    "y": 0.23,
+    "w": 0.695,
+    "h": 0.7697222222222222
+   },
+   "kind": "point",
+   "before": "s042.jpg",
+   "frames": [],
+   "after": "s042.jpg",
+   "zoom": 1.2,
+   "hold": 3.4,
+   "nav": false
+  },
+  {
+   "chapter": "App members",
+   "caption": "Filter by status, age or role.",
+   "target": {
+    "x": 0.774013671875,
+    "y": 0.12555555555555556,
+    "w": 0.06173828125,
+    "h": 0.03333333333333333
+   },
+   "kind": "click",
+   "before": "s043.jpg",
+   "frames": [],
+   "after": "s044.jpg",
+   "zoom": 1.5,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "App members",
+   "caption": "Open someone to change their details.",
+   "target": {
+    "x": 0.235625,
+    "y": 0.4806597222222222,
+    "w": 0.5216015625,
+    "h": 0.0284375
+   },
+   "kind": "click",
+   "before": "s045.jpg",
+   "frames": [],
+   "after": "s046.jpg",
+   "zoom": 1.4,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "App members",
+   "caption": "Correct their name or age here. Making someone under 18 can pause groups that counted them as an adult.",
+   "target": {
+    "x": 0.275625,
+    "y": 0.35855902777777776,
+    "w": 0.07853515625,
+    "h": 0.017777777777777778
+   },
+   "kind": "point",
+   "before": "s047.jpg",
+   "frames": [],
+   "after": "s047.jpg",
+   "zoom": 1.5,
+   "hold": 4,
+   "nav": false
+  },
+  {
+   "chapter": "App members",
+   "caption": "Leader roles are for adults only.",
+   "target": {
+    "x": 0.341533203125,
+    "y": 0.5046701388888889,
+    "w": 0.008125,
+    "h": 0.014444444444444444
+   },
+   "kind": "click",
+   "before": "s048.jpg",
+   "frames": [],
+   "after": "s049.jpg",
+   "zoom": 1.6,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "App members",
+   "caption": "Suspend stops them using the app until you reinstate them. Delete account removes them and their data for good.",
+   "target": {
+    "x": 0.275625,
+    "y": 0.62078125,
+    "w": 0.055517578125,
+    "h": 0.04666666666666667
+   },
+   "kind": "point",
+   "before": "s050.jpg",
+   "frames": [],
+   "after": "s050.jpg",
+   "zoom": 1.6,
+   "hold": 4,
+   "nav": false
+  },
+  {
+   "chapter": "App members",
+   "caption": "Save changes.",
+   "target": {
+    "x": 0.64982421875,
+    "y": 0.62078125,
+    "w": 0.07455078125,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s051.jpg",
+   "frames": [],
+   "after": "s052.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Communities and groups",
+   "caption": "Each community has an Announcements channel everyone is in, plus groups for each team.",
+   "target": {
+    "x": 0.2625,
+    "y": 0.19555555555555557,
+    "w": 0.6092578125,
+    "h": 0.022222222222222223
+   },
+   "kind": "point",
+   "before": "s053.jpg",
+   "frames": [],
+   "after": "s053.jpg",
+   "zoom": 1.4,
+   "hold": 3.8,
+   "nav": false
+  },
+  {
+   "chapter": "Communities and groups",
+   "caption": "A group pauses on its own if it drops below 3 people or 2 adults, so no one is ever alone with a young person.",
+   "target": {
+    "x": 0.505419921875,
+    "y": 0.3433333333333333,
+    "w": 0.046455078125,
+    "h": 0.023993055555555556
+   },
+   "kind": "point",
+   "before": "s054.jpg",
+   "frames": [],
+   "after": "s054.jpg",
+   "zoom": 1.6,
+   "hold": 4.2,
+   "nav": false
+  },
+  {
+   "chapter": "Communities and groups",
+   "caption": "Open a community.",
+   "target": {
+    "x": 0.275625,
+    "y": 0.3433333333333333,
+    "w": 0.0683203125,
+    "h": 0.0284375
+   },
+   "kind": "click",
+   "before": "s055.jpg",
+   "frames": [],
+   "after": "s056.jpg",
+   "zoom": 1.4,
+   "hold": 2.4,
+   "nav": true
+  },
+  {
+   "chapter": "Communities and groups",
+   "caption": "Its groups, how many people and adults are in each, and why any are paused.",
+   "target": {
+    "x": 0.235625,
+    "y": 0.5997569444444445,
+    "w": 0.381142578125,
+    "h": 0.0284375
+   },
+   "kind": "point",
+   "before": "s057.jpg",
+   "frames": [],
+   "after": "s057.jpg",
+   "zoom": 1.5,
+   "hold": 3.6,
+   "nav": false
+  },
+  {
+   "chapter": "Communities and groups",
+   "caption": "New group.",
+   "target": {
+    "x": 0.83640625,
+    "y": 0.1688888888888889,
+    "w": 0.08109375,
+    "h": 0.04888888888888889
+   },
+   "kind": "click",
+   "before": "s058.jpg",
+   "frames": [],
+   "after": "s059.jpg",
+   "zoom": 1.6,
+   "hold": 2,
+   "nav": false
+  },
+  {
+   "chapter": "Communities and groups",
+   "caption": "Give it a name…",
+   "target": {
+    "x": 0.275625,
+    "y": 0.16333333333333333,
+    "w": 0.220625,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s060.jpg",
+   "frames": [
+    "s061.jpg",
+    "s062.jpg",
+    "s063.jpg"
+   ],
+   "after": "s064.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Communities and groups",
+   "caption": "…and a department…",
+   "target": {
+    "x": 0.50375,
+    "y": 0.16333333333333333,
+    "w": 0.220625,
+    "h": 0.04666666666666667
+   },
+   "kind": "type",
+   "before": "s065.jpg",
+   "frames": [
+    "s066.jpg",
+    "s067.jpg",
+    "s068.jpg"
+   ],
+   "after": "s069.jpg",
+   "zoom": 1.6,
+   "hold": 2.2,
+   "nav": false
+  },
+  {
+   "chapter": "Communities and groups",
+   "caption": "…and choose who’s in it.",
+   "target": {
+    "x": 0.28375,
+    "y": 0.445,
+    "w": 0.008125,
+    "h": 0.014444444444444444
+   },
+   "kind": "click",
+   "before": "s070.jpg",
+   "frames": [],
+   "after": "s071.jpg",
+   "zoom": 1.6,
+   "hold": 1.6,
+   "nav": false
+  },
+  {
+   "chapter": "Communities and groups",
+   "caption": "The rule checks itself as you go.",
+   "target": {
+    "x": 0.28375,
+    "y": 0.5638888888888889,
+    "w": 0.008125,
+    "h": 0.014444444444444444
+   },
+   "kind": "click",
+   "before": "s072.jpg",
+   "frames": [],
+   "after": "s073.jpg",
+   "zoom": 1.6,
+   "hold": 1.2,
+   "nav": false
+  },
+  {
+   "chapter": "Communities and groups",
+   "caption": "Three people, two of them adults: it meets the rules. Fewer, and it starts paused until it does.",
+   "target": {
+    "x": 0.275625,
+    "y": 0.6055555555555555,
+    "w": 0.44875,
+    "h": 0.04
+   },
+   "kind": "point",
+   "before": "s074.jpg",
+   "frames": [],
+   "after": "s074.jpg",
+   "zoom": 1.7,
+   "hold": 4,
+   "nav": false
+  },
+  {
+   "chapter": "Communities and groups",
+   "caption": "Choose who looks after it…",
+   "target": {
+    "x": 0.283125,
+    "y": 0.6983333333333334,
+    "w": 0.008125,
+    "h": 0.014444444444444444
+   },
+   "kind": "click",
+   "before": "s075.jpg",
+   "frames": [],
+   "after": "s076.jpg",
+   "zoom": 1.6,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "Communities and groups",
+   "caption": "…and Create group.",
+   "target": {
+    "x": 0.65341796875,
+    "y": 0.7411111111111112,
+    "w": 0.07095703125,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s077.jpg",
+   "frames": [],
+   "after": "s078.jpg",
+   "zoom": 1.6,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Communities and groups",
+   "caption": "Open a group to add or remove people, or make someone its admin.",
+   "target": {
+    "x": 0.235625,
+    "y": 0.5997569444444445,
+    "w": 0.381142578125,
+    "h": 0.0284375
+   },
+   "kind": "click",
+   "before": "s079.jpg",
+   "frames": [],
+   "after": "s080.jpg",
+   "zoom": 1.4,
+   "hold": 2.6,
+   "nav": false
+  },
+  {
+   "chapter": "Communities and groups",
+   "caption": "Add someone with a second adult and the paused group starts again.",
+   "target": {
+    "x": 0.679912109375,
+    "y": 0.3888888888888889,
+    "w": 0.044462890625,
+    "h": 0.022222222222222223
+   },
+   "kind": "point",
+   "before": "s081.jpg",
+   "frames": [],
+   "after": "s081.jpg",
+   "zoom": 1.6,
+   "hold": 3.4,
+   "nav": false
+  },
+  {
+   "chapter": "Communities and groups",
+   "caption": "Add people here puts them in the community and its Announcements.",
+   "target": {
+    "x": 0.873037109375,
+    "y": 0.25333333333333335,
+    "w": 0.044462890625,
+    "h": 0.022222222222222223
+   },
+   "kind": "point",
+   "before": "s082.jpg",
+   "frames": [],
+   "after": "s082.jpg",
+   "zoom": 1.6,
+   "hold": 3.2,
+   "nav": false
+  },
+  {
+   "chapter": "Feedback and settings",
+   "caption": "App feedback is problems and ideas sent from the app. Anything that sounds like a safeguarding concern goes to the safeguarding team straight away.",
+   "target": {
+    "x": 0.2625,
+    "y": 0.19555555555555557,
+    "w": 0.59408203125,
+    "h": 0.022222222222222223
+   },
+   "kind": "point",
+   "before": "s083.jpg",
+   "frames": [],
+   "after": "s083.jpg",
+   "zoom": 1.4,
+   "hold": 4.4,
+   "nav": false
+  },
+  {
+   "chapter": "Feedback and settings",
+   "caption": "Mark one done once it’s dealt with.",
+   "target": {
+    "x": 0.789873046875,
+    "y": 0.3277777777777778,
+    "w": 0.074501953125,
+    "h": 0.04666666666666667
+   },
+   "kind": "click",
+   "before": "s084.jpg",
+   "frames": [],
+   "after": "s085.jpg",
+   "zoom": 1.6,
+   "hold": 2.4,
+   "nav": false
+  },
+  {
+   "chapter": "Feedback and settings",
+   "caption": "Let people ask to join. Turn it off to make the app invite-only.",
+   "target": {
+    "x": 0.358125,
+    "y": 0.2811111111111111,
+    "w": 0.095712890625,
+    "h": 0.0284375
+   },
+   "kind": "point",
+   "before": "s086.jpg",
+   "frames": [],
+   "after": "s086.jpg",
+   "zoom": 1.6,
+   "hold": 3.4,
+   "nav": false
+  },
+  {
+   "chapter": "Feedback and settings",
+   "caption": "How long invites last before they expire.",
+   "target": {
+    "x": 0.358125,
+    "y": 0.46065972222222223,
+    "w": 0.379638671875,
+    "h": 0.04666666666666667
+   },
+   "kind": "point",
+   "before": "s087.jpg",
+   "frames": [],
+   "after": "s087.jpg",
+   "zoom": 1.6,
+   "hold": 2.8,
+   "nav": false
+  },
+  {
+   "chapter": "Feedback and settings",
+   "caption": "App versions: stop very old versions working, or tell people an update is available.",
+   "target": {
+    "x": 0.3425,
+    "y": 0.19555555555555557,
+    "w": 0.2635546875,
+    "h": 0.022222222222222223
+   },
+   "kind": "point",
+   "before": "s088.jpg",
+   "frames": [],
+   "after": "s088.jpg",
+   "zoom": 1.5,
+   "hold": 3.6,
+   "nav": false
+  },
+  {
+   "chapter": "Feedback and settings",
+   "caption": "Maintenance shows a message in the app instead, while something’s being fixed.",
+   "target": {
+    "x": 0.358125,
+    "y": 0.48552083333333335,
+    "w": 0.42375,
+    "h": 0.0284375
+   },
+   "kind": "point",
+   "before": "s089.jpg",
+   "frames": [],
+   "after": "s089.jpg",
+   "zoom": 1.5,
+   "hold": 3.4,
+   "nav": false
+  }
+ ]
+}

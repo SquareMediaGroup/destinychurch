@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
+import { parseWindow } from "@/lib/schedule";
 
 export async function GET() {
   const supabase = createServiceClient();
@@ -39,6 +40,10 @@ export async function PUT(request: Request) {
     show_once,
   } = body;
 
+  // Optional show-from / show-until; only sent keys are written.
+  const schedule = parseWindow(body);
+  if (!schedule.ok) return NextResponse.json({ error: schedule.error }, { status: 400 });
+
   const supabase = createServiceClient();
   const { data: existing } = await supabase
     .from("site_popup")
@@ -56,6 +61,7 @@ export async function PUT(request: Request) {
     image_url: image_url || null,
     image_path: image_path || null,
     show_once: show_once !== false,
+    ...schedule.fields,
     updated_at: new Date().toISOString(),
   };
 

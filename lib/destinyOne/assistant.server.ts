@@ -13,8 +13,8 @@
 // ever handed over (sent since they joined, not deleted, not from someone
 // they've blocked).
 //
-// It has every Smart Search tool (lib/smartSearch/tools.ts), plus the
-// ChurchSuite calendar (find_events) and an event card it can attach to its
+// It has every Smart Search tool (lib/smartSearch/tools.ts, which includes the
+// ChurchSuite calendar, find_events), plus an event card it can attach to its
 // answer (share_event).
 //
 // Runs from after(): the asker's own message has already been sent, so a slow
@@ -42,7 +42,7 @@ import { TOOL_DEFINITIONS, createToolContext, executeTool, type ToolContext } fr
 import type { Caller } from "@/lib/destinyOne/auth.server";
 import { blockedIds, broadcastNewMessage, broadcastToGroup, getMessage, listMessages } from "@/lib/destinyOne/chat.server";
 import { messageTerms, sealBody, sealContent } from "@/lib/destinyOne/crypto.server";
-import { buildEventSnapshot, upcomingEventSeries } from "@/lib/destinyOne/events.server";
+import { buildEventSnapshot } from "@/lib/destinyOne/events.server";
 import { getFullSermonArchive } from "@/lib/speakerOverrides.server";
 import { fromDbError, limit } from "@/lib/destinyOne/http";
 import { pushNewMessage } from "@/lib/destinyOne/push.server";
@@ -64,23 +64,6 @@ const TEXT_ONLY = "I can only read text at the moment, so I can't see photos, fi
 // ── Tools only DestinyAI has ────────────────────────────────────────────────
 
 const EVENT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
-  {
-    type: "function",
-    function: {
-      name: "find_events",
-      description:
-        "Search Destiny's live ChurchSuite calendar: every upcoming event, with dates, times, location, a summary and the sign-up link. Use it for anything about what's on, when something is, or how to sign up. With no query it lists everything in the date range.",
-      parameters: {
-        type: "object",
-        properties: {
-          query: { type: "string", description: "Words to match against event names and descriptions, e.g. 'youth', 'baptism', 'women'. Leave out to list everything." },
-          from_date: { type: "string", description: "YYYY-MM-DD. Only events with a date on or after this. Defaults to today." },
-          to_date: { type: "string", description: "YYYY-MM-DD. Only events with a date on or before this." },
-        },
-        additionalProperties: false,
-      },
-    },
-  },
   {
     type: "function",
     function: {
@@ -115,56 +98,6 @@ const EVENT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     },
   },
 ];
-
-const londonDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-CA", { timeZone: "Europe/London" }) : null);
-const londonWhen = (iso: string | null) =>
-  iso
-    ? new Date(iso).toLocaleString("en-GB", { timeZone: "Europe/London", weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" })
-    : null;
-
-async function runFindEvents(args: { query?: string; from_date?: string; to_date?: string }) {
-  let series;
-  try {
-    series = await upcomingEventSeries();
-  } catch {
-    return { available: false, reason: "The ChurchSuite calendar isn't responding right now." };
-  }
-  const from = args.from_date || londonDate(new Date().toISOString())!;
-  const to = args.to_date || null;
-  const words = (args.query ?? "").toLowerCase().split(/\s+/).filter((w) => w.length > 1);
-
-  const events = series
-    .map((s) => {
-      const dates = s.occurrences.filter((o) => {
-        const d = londonDate(o.startsAt);
-        return d && d >= from && (!to || d <= to);
-      });
-      return { s, dates };
-    })
-    .filter(({ s, dates }) => {
-      if (!dates.length) return false;
-      if (!words.length) return true;
-      const hay = `${s.name} ${s.summary} ${s.categoryName ?? ""} ${s.location?.name ?? ""}`.toLowerCase();
-      return words.some((w) => hay.includes(w));
-    })
-    .slice(0, words.length ? 12 : 40)
-    .map(({ s, dates }) => ({
-      name: s.name,
-      slug: s.slug,
-      seriesKey: s.seriesKey,
-      category: s.categoryName,
-      next: londonWhen(dates[0].startsAt),
-      ends: londonWhen(dates[0].endsAt),
-      moreDates: dates.slice(1, 6).map((d) => londonWhen(d.startsAt)),
-      totalUpcomingDates: dates.length,
-      location: s.location ? [s.location.name, s.location.address].filter(Boolean).join(", ") : null,
-      // The full description only when there are few matches, to keep the prompt small.
-      summary: words.length ? s.summary : s.summary.slice(0, 120),
-      signupUrl: s.signupUrl,
-      webUrl: s.webUrl,
-    }));
-  return { available: true, from, to, count: events.length, events };
-}
 
 // ── Prompt ──────────────────────────────────────────────────────────────────
 
@@ -432,9 +365,7 @@ async function generate(openai: OpenAI, system: string, turns: Turn[], live: Liv
         let data: unknown;
         try {
           const args = c.args ? JSON.parse(c.args) : {};
-          if (c.name === "find_events") {
-            data = await runFindEvents(args);
-          } else if (c.name === "share_event") {
+          if (c.name === "share_event") {
             if (card) data = { ok: false, reason: "Something is already attached to this answer." };
             else {
               card = await buildEventSnapshot({ slug: String(args.slug), seriesKey: String(args.series_key) }).catch(() => null);

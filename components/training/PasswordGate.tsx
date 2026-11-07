@@ -64,6 +64,7 @@ export default function PasswordGate({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
+            aria-label={`Password for ${subgroupName}`}
             className="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-center text-sm text-destiny-grey outline-none transition placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
           />
           {error && <p className="text-sm font-bold text-destiny-red">{error}</p>}

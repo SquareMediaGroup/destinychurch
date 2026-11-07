@@ -44,7 +44,7 @@ export function SwitchBanner() {
   return (
     <Animated.View
       pointerEvents="box-none"
-      style={{ position: "absolute", top: insets.top + 6, left: 16, right: 16, alignItems: "center", opacity: progress, transform: [{ translateY }] }}
+      style={{ position: "absolute", top: insets.top + 6, left: insets.left + 16, right: insets.right + 16, alignItems: "center", opacity: progress, transform: [{ translateY }] }}
     >
       <Pressable
         onPress={() => clearSwitchNotice()}

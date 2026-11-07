@@ -59,6 +59,14 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         keywords: ["home", "overview", "start"],
         exact: true,
       },
+      {
+        href: "/admin/help",
+        label: "Help",
+        icon: "help",
+        role: null,
+        description: "Short videos on how the admin works, for every role.",
+        keywords: ["help", "videos", "tutorial", "how to", "stuck", "guide", "youtube", "onboarding"],
+      },
     ],
   },
   {
@@ -193,6 +201,14 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         role: "event_admin",
         description: "Let guests request songs at an event, straight into the Spotify queue.",
         keywords: ["spotify", "music", "dj", "party", "playlist", "new year"],
+      },
+      {
+        href: "/admin/talent-show",
+        label: "Talent Show Voting",
+        icon: "how_to_vote",
+        role: "event_admin",
+        description: "Add the acts, open audience voting by QR code and show the results on screen.",
+        keywords: ["vote", "votes", "acts", "audience", "qr", "results", "screen", "competition"],
       },
     ],
   },
@@ -616,7 +632,9 @@ export function visibleGroups(
   return ADMIN_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter(
-      (item) => (includeUnlisted || !item.unlisted) && canSee(roles, item.role),
+      (item) =>
+        (includeUnlisted || !item.unlisted) &&
+        canSee(roles, item.role),
     ),
   })).filter((group) => group.items.length > 0);
 }

@@ -101,13 +101,20 @@ export async function adminSignIn(
   formData: FormData,
 ): Promise<{ success: boolean; error?: string; email?: string; access?: SystemAccess }> {
   const result = await signInCore(formData);
-  if (!result.success || !result.userId) return result;
+  // React resets the form once this action settles, so a failed attempt hands
+  // the address back for the email field's defaultValue — otherwise a wrong
+  // password wiped the email too, and retyping just the password hit the
+  // field's `required` check and the button seemed to do nothing.
+  if (!result.success || !result.userId) {
+    return { ...result, email: formData.get("email")?.toString().trim() };
+  }
 
   const access = await getSystemAccess(createServiceClient(), result.userId);
   if (!access.hasAdmin && !access.hasPortal) {
     return {
       success: false,
       error: "Your account isn't set up for the dashboard or the staff portal yet. Contact an administrator.",
+      email: formData.get("email")?.toString().trim(),
     };
   }
 

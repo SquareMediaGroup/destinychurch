@@ -385,7 +385,10 @@ function GroupChatScreen() {
   return (
     // "padding" on Android too: apps are edge-to-edge there now, so the window
     // no longer shrinks for the keyboard and the message box would be covered.
-    <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: t.bg }}>
+    <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: t.bg, paddingLeft: insets.left, paddingRight: insets.right }}>
+      {/* The wallpaper and header gradient run edge to edge (they're absolute,
+          so the side padding doesn't move them); messages, header and composer
+          stay clear of the side status bar and camera on iPhone Duo. */}
       <Backdrop />
       {!messages ? (
         convo.error ? (
@@ -460,7 +463,7 @@ function GroupChatScreen() {
       {/* Header: back · group pill (opens info) · search */}
       {t.wall || t.photo || preview ? null : <LinearGradient pointerEvents="none" colors={[t.bg, withAlpha(t.bg, 0)]} locations={[0.45, 1]} style={{ position: "absolute", top: 0, left: 0, right: 0, height: insets.top + 76 }} />}
       {preview ? null : (
-      <View style={{ position: "absolute", top: insets.top, left: 0, right: 0, height: 56, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16 }}>
+      <View style={{ position: "absolute", top: insets.top, left: insets.left, right: insets.right, height: 56, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16 }}>
         <BackButton />
         <Pressable accessibilityRole={isAssistant ? "header" : "button"} accessibilityLabel={isAssistant ? name : `${name}, group info`} disabled={isAssistant} onPress={() => router.push(`/group/${id}/info`)} style={{ flexShrink: 1, marginHorizontal: 8 }}>
           {({ pressed }) => (
@@ -483,7 +486,7 @@ function GroupChatScreen() {
 
       {/* Pinned: the newest pin; tapping shows it in the chat and moves on to the next. */}
       {shownPin && !preview ? (
-        <View style={{ position: "absolute", top: insets.top + 62, left: 16, right: 16 }}>
+        <View style={{ position: "absolute", top: insets.top + 62, left: insets.left + 16, right: insets.right + 16 }}>
           <PressableScale
             accessibilityRole="button"
             accessibilityLabel={`Pinned message${pinned.length > 1 ? ` ${(pinIndex % pinned.length) + 1} of ${pinned.length}` : ""}: ${messageSummary(shownPin)}. Shows it in the chat.`}

@@ -43,7 +43,8 @@ async function getPlaylistVideos(): Promise<Video[]> {
             thumbnails?.maxres?.url ||
             thumbnails?.high?.url ||
             thumbnails?.medium?.url ||
-            `https://i.ytimg.com/vi/${videoId}/hqdefault.webp`,
+            // hqdefault.jpg exists for every video; /vi/<id>/hqdefault.webp does not.
+            `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
         },
       ];
     });

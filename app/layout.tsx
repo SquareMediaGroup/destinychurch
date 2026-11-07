@@ -18,6 +18,8 @@ import GlassBloomTracker from "@/components/GlassBloomTracker";
 import PerformanceGate from "@/components/PerformanceGate";
 import { isSmartSearchEnabled } from "@/lib/serviceStatus";
 import { COURSE_EVENT_TYPES, isCourseEventType } from "@/lib/courseEvents";
+import { isWithinWindow } from "@/lib/schedule";
+import type { BannerType } from "@/contexts/BannerContext";
 import { getLiveStatus } from "@/lib/liveStatus.server";
 import { CHANNEL_URL } from "@/lib/youtube";
 import BannerSpacer from "@/components/BannerSpacer";
@@ -125,12 +127,27 @@ async function getActiveBanner() {
   noStore();
   try {
     const supabase = createServiceClient();
+    // `*` rather than a column list: starts_at/ends_at only exist once
+    // 20261105_01_admin_destinyai.sql is applied (the migration that added banner
+    // and popup windows), and naming a missing column
+    // would fail the whole query and take every banner down with it.
     const { data: rows } = await supabase
       .from("site_banner")
-      .select("active, message, type, link, link_text")
+      .select("*")
       .eq("active", true);
 
-    const banners = rows ?? [];
+    // Switched on but outside its window (scheduled for later, or past its
+    // end) reads as off. This is what makes "live in 2 hours, gone at 3pm"
+    // work without a cron job: the layout is never cached (noStore above).
+    const banners = (rows ?? [])
+      .filter((b) => isWithinWindow(b))
+      .map((b) => ({
+        active: b.active as boolean,
+        message: b.message as string,
+        type: b.type as BannerType,
+        link: b.link as string | null,
+        link_text: b.link_text as string | null,
+      }));
     if (banners.length === 0) return null;
 
     // Sitewide takes over everything.
@@ -184,16 +201,26 @@ async function getActivePopup() {
   noStore();
   try {
     const supabase = createServiceClient();
+    // `*` for the same reason as the banner above: the window columns may
+    // not exist yet, and a missing column would hide the popup entirely.
     const { data } = await supabase
       .from("site_popup")
-      .select(
-        "active, title, body, cta_text, cta_link, image_url, show_once, updated_at"
-      )
+      .select("*")
       .eq("active", true)
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle();
-    return data ?? null;
+    if (!data || !isWithinWindow(data)) return null;
+    return {
+      active: data.active as boolean,
+      title: data.title as string | null,
+      body: data.body as string | null,
+      cta_text: data.cta_text as string | null,
+      cta_link: data.cta_link as string | null,
+      image_url: data.image_url as string | null,
+      show_once: data.show_once as boolean,
+      updated_at: data.updated_at as string,
+    };
   } catch {
     return null;
   }

@@ -57,7 +57,14 @@ export default function HireForm() {
     }
     setStatus("loading");
     setErrorMsg("");
-    const result = await submitHireEnquiry(new FormData(e.currentTarget));
+    // A rejected action (offline, a deploy mid-submit) used to leave the
+    // button on "Sending enquiry…" for good.
+    let result: Awaited<ReturnType<typeof submitHireEnquiry>>;
+    try {
+      result = await submitHireEnquiry(new FormData(e.currentTarget));
+    } catch {
+      result = { success: false, error: "We couldn't send your enquiry. Please check your connection and try again." };
+    }
     if (result.success) {
       setStatus("success");
       formRef.current?.reset();

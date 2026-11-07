@@ -38,6 +38,8 @@
     input[type=text]:focus { outline: 2px solid #4c6ef5; outline-offset: -1px; }
     input.bad { border-color: var(--bad); }
     #nameRows input { width: 14em; max-width: 100%; }
+    #nameRows .row { flex-wrap: wrap; }
+    #nameRows .row .name { flex: 1 1 100px; }
     #judgeMsg.fail { color: var(--bad); } #judgeMsg.ok { color: var(--ok); }
     section.wide { grid-column: 1 / -1; }
     .cue { flex-wrap: wrap; }
@@ -72,7 +74,9 @@
         <button class="big" id="lock">Lock buzzers</button>
       </div>
       <p class="muted" style="margin: 0">Reset clears every X and the golden buzzer for the next act. Lock ignores all presses (use between acts).</p>
-      <div class="row" style="margin-top: 10px"><span class="name">Number of judges</span>
+      <div class="row" style="margin-top: 10px"><span class="name">Style</span>
+        <select id="style" aria-label="Style"><option value="celebrate">Celebrate (X-traordinary)</option><option value="buzzer">Buzzer (red X means no)</option></select></div>
+      <div class="row"><span class="name">Number of judges</span>
         <select id="judgeCount" aria-label="Number of judges"><option>2</option><option>3</option><option>4</option></select></div>
       <div id="nameRows"></div>
       <div class="actions" style="margin-top: 8px"><button id="saveNames">Save names</button></div>
@@ -88,7 +92,7 @@
       <h2>Screen and lighting</h2>
       <div class="row"><span class="dot" id="dispDot"></span><span class="name">LED display page</span><span class="pill" id="dispTxt"></span></div>
       <div class="row"><span class="dot" id="soundDot"></span><span class="name">Display sound</span><span class="pill" id="soundTxt"></span></div>
-      <div class="actions" style="padding: 2px 0 8px 20px"><button data-sound="x">Test X sound</button><button data-sound="all-x">Test all out</button><button data-sound="golden">Test gold</button></div>
+      <div class="actions" style="padding: 2px 0 8px 20px"><button data-sound="x">Test X sound</button><button data-sound="all-x">Test all X's</button><button data-sound="golden">Test gold</button></div>
       <div class="row"><span class="dot" id="agentDot"></span><span class="name">Lighting link</span><span class="pill" id="agentTxt"></span></div>
       <div class="row"><span class="dot" id="titanDot"></span><span class="name">Avolites Titan</span><span class="pill" id="titanTxt"></span></div>
     </section>
@@ -140,6 +144,7 @@
     let golden = { name: 'Golden Buzzer' };
     let cues = {};
     let sounds = {};
+    let style = 'celebrate';
     let last = null;
 
     const hub = connectHub(
@@ -147,6 +152,8 @@
       (msg) => {
         if (msg.type === 'welcome') {
           judges = msg.judges;
+          style = msg.style || 'celebrate';
+          $('style').value = style;
           $('judgeCount').value = String(msg.judgeCount ?? judges.length);
           golden = msg.golden;
           cues = msg.cues;
@@ -162,7 +169,7 @@
         } else if (msg.type === 'judges-error') {
           judgeMessage(msg.error, 'fail');
         } else if (msg.type === 'names-saved') {
-          judgeMessage(msg.saved ? 'Names saved. The screen and tablets show them now.' : 'Names changed for now, but could not be saved: they reset when the app restarts.', msg.saved ? 'ok' : 'fail');
+          judgeMessage(msg.saved ? 'Saved. The screen and tablets show them now.' : 'Names changed for now, but could not be saved: they reset when the app restarts.', msg.saved ? 'ok' : 'fail');
         } else if (msg.type === 'cues-error') {
           cueMessage(msg.error, 'fail');
           $('anyMsg').textContent = msg.error;
@@ -193,20 +200,26 @@
       $('judgeMsg').className = `muted ${cls || ''}`;
     }
 
+    $('style').onchange = () => {
+      judgeMessage(hub.send({ type: 'set-style', style: $('style').value }) ? '' : 'Not connected to the hub. Try again in a moment.', 'fail');
+    };
+
     function buildNames() {
       const rows = $('nameRows');
       rows.innerHTML = '';
       const add = (id, label, value) => {
         const row = document.createElement('div');
         row.className = 'row';
-        row.innerHTML = '<span class="name"></span><input type="text" maxlength="40">';
+        row.innerHTML = '<span class="name"></span><input type="text" class="who" maxlength="40">';
         row.querySelector('.name').textContent = label;
         const input = row.querySelector('input');
         input.value = value;
         input.dataset.id = id;
         input.setAttribute('aria-label', `${label} name`);
-        input.oninput = () => { input.classList.remove('bad'); judgeMessage(''); };
-        input.onkeydown = (e) => { if (e.key === 'Enter') saveNames(); };
+        for (const inp of row.querySelectorAll('input')) {
+          inp.oninput = () => { inp.classList.remove('bad'); judgeMessage(''); };
+          inp.onkeydown = (e) => { if (e.key === 'Enter') saveNames(); };
+        }
         rows.append(row);
       };
       judges.forEach((j) => add(j.seat, `Judge ${j.seat}`, j.name));
@@ -215,7 +228,7 @@
 
     function saveNames() {
       const names = { judges: {} };
-      for (const input of $('nameRows').querySelectorAll('input')) {
+      for (const input of $('nameRows').querySelectorAll('input.who')) {
         const value = input.value.trim();
         if (!value) {
           input.classList.add('bad');
@@ -332,7 +345,9 @@
     $('anyRow').append(anyRow);
 
     // ---------- sounds ----------
-    const SOUND_LABELS = [['x', 'Red X'], ['all-x', 'All judges out'], ['golden', 'Golden buzzer']];
+    const soundLabels = () => (style === 'buzzer'
+      ? [['x', 'Red X'], ['all-x', 'All judges out'], ['golden', 'Golden buzzer']]
+      : [['x', 'Judge lights an X'], ['all-x', "All X's lit"], ['golden', 'Golden buzzer']]);
 
     function soundMessage(text, cls) {
       $('soundMsg').textContent = text;
@@ -357,7 +372,7 @@
     function buildSounds() {
       const rows = $('soundRows');
       rows.innerHTML = '';
-      for (const [kind, label] of SOUND_LABELS) {
+      for (const [kind, label] of soundLabels()) {
         const row = document.createElement('div');
         row.className = 'row sound';
         row.innerHTML = `<span class="name"></span><span class="pill"></span><input type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac">

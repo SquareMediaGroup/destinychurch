@@ -1,13 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createServiceClient } from "@/utils/supabase/service";
 
 export async function GET() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await createServiceClient()
       .from("alpha_events")
       .select("*")
       .eq("active", true)

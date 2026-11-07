@@ -13,8 +13,8 @@ const { WebSocketServer } = require('ws');
 const { ShowState } = require('../lib/state');
 const titanApi = require('../lib/titan');
 const { normaliseCue, applyCueEdit, offStep, planCue } = require('../lib/cues');
-const { SOUND_FILES, MAX_SOUND_BYTES, checkSound } = require('../lib/sounds');
-const { parseJudgeCount, normaliseJudges, applyNameEdit, activeJudges } = require('../lib/judges');
+const { SOUND_FILES, SOUND_KINDS, MAX_SOUND_BYTES, checkSound } = require('../lib/sounds');
+const { parseJudgeCount, parseStyle, normaliseJudges, applyNameEdit, activeJudges } = require('../lib/judges');
 const discovery = require('../lib/discovery');
 
 const APP_DIR = path.join(__dirname, '..');
@@ -57,6 +57,7 @@ try {
   log('🔥', `config.json judgeCount is not valid: ${err.message}`);
   process.exit(1);
 }
+if (!['celebrate', 'buzzer'].includes(config.style)) config.style = 'celebrate';
 const allSeats = config.judges.map((j) => j.seat);
 let seats = activeJudges(config).map((j) => j.seat);
 // Old configs hold bare playback numbers; turn them into full cues once here.
@@ -116,8 +117,9 @@ const server = http.createServer((req, res) => {
 
 // ---------- sounds (uploaded from the control page) ----------
 
+// Which sounds have an uploaded file, for the current style.
 function customSounds() {
-  return Object.fromEntries(Object.entries(SOUND_FILES).map(([kind, file]) => [kind, fs.existsSync(path.join(SOUNDS_DIR, file))]));
+  return Object.fromEntries(Object.entries(SOUND_FILES[config.style]).map(([kind, file]) => [kind, fs.existsSync(path.join(SOUNDS_DIR, file))]));
 }
 
 // PUT /api/sound?kind=x with the file as the body replaces that sound;
@@ -126,8 +128,8 @@ function soundRequest(req, res, url) {
   const reply = (status, body) => res.writeHead(status, { 'Content-Type': 'application/json' }).end(JSON.stringify(body));
   if (config.key && url.searchParams.get('key') !== config.key) return reply(403, { error: 'Wrong or missing access key' });
   const kind = url.searchParams.get('kind');
-  if (!(kind in SOUND_FILES)) return reply(400, { error: 'Unknown sound' });
-  const target = path.join(SOUNDS_DIR, SOUND_FILES[kind]);
+  if (!SOUND_KINDS.includes(kind)) return reply(400, { error: 'Unknown sound' });
+  const target = path.join(SOUNDS_DIR, SOUND_FILES[config.style][kind]);
   if (req.method === 'DELETE') {
     fs.rm(target, { force: true }, (err) => {
       if (err) return reply(500, { error: err.message });
@@ -221,7 +223,8 @@ function pushState() {
 function welcome() {
   return {
     type: 'welcome',
-    judges: activeJudges(config).map((j) => ({ seat: j.seat, name: j.name })),
+    judges: activeJudges(config).map((j) => ({ seat: j.seat, name: j.name, category: j.category ?? '' })),
+    style: config.style,
     judgeCount: config.judgeCount,
     golden: { name: config.golden?.name ?? 'Golden Buzzer' },
     cues: config.cues,
@@ -422,9 +425,29 @@ function handleMessage(client, msg) {
       } catch (err) {
         log('⚠️ ', `Names changed but could not be saved: ${err.message}`);
       }
-      log('🏷️ ', `Names changed${savedTo ? '' : ' (NOT saved, lost on restart)'}: ${activeJudges(config).map((j) => j.name).join(', ')}, ${config.golden.name}`);
+      log('🏷️ ', `Names changed${savedTo ? '' : ' (NOT saved, lost on restart)'}: ${activeJudges(config).map((j) => `${j.name}${j.category ? ` (${j.category})` : ''}`).join(', ')}, ${config.golden.name}`);
       broadcast(welcome(), ['display', 'control', 'tablet', 'unknown']);
       send(client.ws, { type: 'names-saved', saved: Boolean(savedTo) });
+      pushState();
+      break;
+    }
+    case 'set-style': {
+      if (client.role !== 'control') return;
+      try {
+        config.style = parseStyle(msg.style);
+      } catch (err) {
+        send(client.ws, { type: 'judges-error', error: err.message });
+        return;
+      }
+      let savedTo = null;
+      try {
+        savedTo = saveConfig();
+      } catch (err) {
+        log('⚠️ ', `Style changed but could not be saved: ${err.message}`);
+      }
+      log('🎨', `Style set to ${config.style}${savedTo ? '' : ' (NOT saved, lost on restart)'}`);
+      broadcast(welcome(), ['display', 'control', 'tablet', 'unknown']);
+      soundsChanged();
       pushState();
       break;
     }

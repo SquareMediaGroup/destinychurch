@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useTransition, useActionState } from "react";
+import { useEffect, useState, useTransition, useActionState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { adminSignIn, adminSignOut } from "./actions";
 import type { SystemAccess } from "@/lib/staffPortalAuth";
+import { PORTAL_OPEN, PORTAL_REOPENS } from "@/lib/portalStatus";
 
 const initialState = {
   success: false,
@@ -19,6 +21,8 @@ type SystemCard = {
   title: string;
   description: string;
   hasAccess: (access: SystemAccess) => boolean;
+  /** Set while the system is closed to everyone: the card shows this instead of a link. */
+  comingLabel?: string;
 };
 
 const SYSTEMS: SystemCard[] = [
@@ -35,6 +39,7 @@ const SYSTEMS: SystemCard[] = [
     title: "Portal",
     description: "Your staff self-service — profile, leave and documents.",
     hasAccess: (a) => a.hasPortal,
+    comingLabel: PORTAL_OPEN ? undefined : `Coming ${PORTAL_REOPENS}`,
   },
 ];
 
@@ -111,6 +116,17 @@ function SignInScreen({
     }
   }
 
+  // A password on its own never opens the admin (lib/twoFactor.ts), so an
+  // admin goes straight on to their second step instead of to a chooser whose
+  // Admin card would only bounce them there. Someone who also has the staff
+  // portal comes back to the chooser afterwards.
+  const twoFactorNext =
+    state.success && state.access?.hasAdmin ? (state.access.hasPortal ? "/login" : "/admin") : null;
+  const router = useRouter();
+  useEffect(() => {
+    if (twoFactorNext) router.replace(`/login/2fa?next=${encodeURIComponent(twoFactorNext)}`);
+  }, [twoFactorNext, router]);
+
   const phase = session ? "choose" : "login";
 
   function handleSignOut() {
@@ -147,7 +163,7 @@ function SignInScreen({
           </div>
 
           {phase === "login" ? (
-            <LoginPanel formAction={formAction} pending={pending} error={state.error} />
+            <LoginPanel formAction={formAction} pending={pending} error={state.error} email={state.email} />
           ) : (
             <ChoosePanel
               email={session?.email}
@@ -194,7 +210,7 @@ function ChoosePanel({
           const hasAccess = access ? sys.hasAccess(access) : false;
           const delay = { animationDelay: `${100 + i * 90}ms` };
 
-          if (!hasAccess) {
+          if (!hasAccess || sys.comingLabel) {
             return (
               <div
                 key={sys.href}
@@ -203,17 +219,21 @@ function ChoosePanel({
                 className="glass flex cursor-not-allowed items-center gap-4 rounded-3xl border border-white/10 p-5 opacity-50 animate-[fadeInUp_0.45s_ease-out_both]"
               >
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-on-dark-subtle">
-                  <span className="material-symbols-rounded text-[28px]" aria-hidden="true">lock</span>
+                  <span className="material-symbols-rounded text-[28px]" aria-hidden="true">
+                    {sys.comingLabel ? "schedule" : "lock"}
+                  </span>
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <h2 className="text-base font-bold text-on-dark-muted">{sys.title}</h2>
                     <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-on-dark-subtle">
-                      No access
+                      {sys.comingLabel ?? "No access"}
                     </span>
                   </div>
                   <p className="mt-1 text-sm leading-snug text-white/35">
-                    You don&apos;t have permission for this system.
+                    {sys.comingLabel
+                      ? "The staff portal is closed for now."
+                      : "You don’t have permission for this system."}
                   </p>
                 </div>
               </div>
@@ -261,10 +281,13 @@ function LoginPanel({
   formAction,
   pending,
   error,
+  email,
 }: {
   formAction: (formData: FormData) => void;
   pending: boolean;
   error?: string;
+  /** The address from the last failed attempt, so the form reset keeps it. */
+  email?: string;
 }) {
   return (
     <div className="animate-[fadeInUp_0.4s_ease-out_both]">
@@ -285,13 +308,15 @@ function LoginPanel({
       <div className="glass rounded-3xl p-8">
         <form action={formAction} className="flex flex-col gap-5">
           <div>
-            <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-on-dark-subtle">
+            <label htmlFor="login-email" className="mb-2 block text-xs font-bold uppercase tracking-wider text-on-dark-subtle">
               Email
             </label>
             <input
+              id="login-email"
               type="email"
               name="email"
               autoComplete="email"
+              defaultValue={email}
               required
               placeholder="you@example.com"
               className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-3.5 text-sm text-white placeholder:text-white/20 transition focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
@@ -300,7 +325,7 @@ function LoginPanel({
 
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <label className="block text-xs font-bold uppercase tracking-wider text-on-dark-subtle">
+              <label htmlFor="login-password" className="block text-xs font-bold uppercase tracking-wider text-on-dark-subtle">
                 Password
               </label>
               <Link
@@ -311,6 +336,7 @@ function LoginPanel({
               </Link>
             </div>
             <input
+              id="login-password"
               type="password"
               name="password"
               autoComplete="current-password"

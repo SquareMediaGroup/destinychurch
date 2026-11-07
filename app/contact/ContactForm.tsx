@@ -29,7 +29,15 @@ export default function ContactForm() {
     setErrorMsg("");
 
     const formData = new FormData(e.currentTarget);
-    const result = await submitContactForm(formData);
+    // The action rejects (rather than returning an error) when the request
+    // never reaches it — offline, or a deploy mid-submit — which left the
+    // button spinning on "Sending…" for good.
+    let result: Awaited<ReturnType<typeof submitContactForm>>;
+    try {
+      result = await submitContactForm(formData);
+    } catch {
+      result = { success: false, error: "We couldn't send your message. Please check your connection and try again." };
+    }
 
     if (result.success) {
       setStatus("success");

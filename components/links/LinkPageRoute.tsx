@@ -5,7 +5,7 @@ import "server-only";
 import { cache } from "react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, unstable_rethrow } from "next/navigation";
 import { after } from "next/server";
 import LinkPageView from "./LinkPageView";
 import { fallbackMainPage, getLinkPage } from "@/lib/linkPages/linkPages.server";
@@ -27,6 +27,10 @@ const load = cache(async (slug: string): Promise<ResolvedLinkPage | null> => {
   try {
     return (await getLinkPage(slug)) ?? fallbackMainPage();
   } catch (err) {
+    // getLinkPage() calls noStore(); during a static render that throws Next's
+    // own "dynamic usage" signal, which must reach Next — caught here, the
+    // hardcoded fallback would be what got prerendered.
+    unstable_rethrow(err);
     console.error("⚠️ /links fell back to the hardcoded Next Steps:", err);
     return fallbackMainPage();
   }

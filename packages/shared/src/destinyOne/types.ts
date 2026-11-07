@@ -6,6 +6,10 @@
 //
 // Deliberately absent from every type here: phone numbers, email addresses,
 // dates of birth. The app never receives another person's contact details.
+// (The one exception is D1CardContent's people: the pastors' and team's public
+// work emails, already published on the church website, never a member's.)
+
+import type { ChurchCardSet } from "../churchCards";
 
 export type D1MemberStatus = "pending" | "active" | "suspended" | "deleted";
 /**
@@ -271,7 +275,18 @@ export interface D1SermonContent {
   };
 }
 
-export type D1MessageContent = D1EventContent | D1PollContent | D1SermonContent;
+/**
+ * Church cards DestinyAI attaches to an answer: people (pastors and team) and
+ * info cards (ministry, visit, giving, live, course, job, weather, directions,
+ * shop). Built on the server from structured data and stored as sent, with
+ * every link and photo already absolute. See ../churchCards.ts.
+ */
+export interface D1CardContent {
+  kind: "card";
+  cards: ChurchCardSet;
+}
+
+export type D1MessageContent = D1EventContent | D1PollContent | D1SermonContent | D1CardContent;
 
 /** What the app sends to create a poll — the server mints option ids and tallies. */
 export interface D1PollDraft {

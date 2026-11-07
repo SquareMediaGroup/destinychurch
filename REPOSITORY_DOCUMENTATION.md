@@ -297,6 +297,10 @@ destinychurch/
 │   ├── openaiClient.ts            # OpenAI client + SMART_SEARCH_MODEL constant
 │   ├── siteKnowledge.ts           # AI search knowledge base
 │   ├── team.ts                    # pastors and team: single source for /about, the AI prompt and person cards
+│   ├── ministries.ts              # ministry / serve / next-step / mission data for info cards
+│   ├── giving.ts                  # bank + text-to-give defaults, shared by /give and the giving card
+│   ├── churchCards.ts             # pure card helpers (summaries, absolute URLs, tool result to card)
+│   ├── churchCards.server.ts      # cards needing the DB or live lookups (giving, live, courses, jobs)
 │   ├── serviceStatus.ts           # Smart Search health / kill-switch state (service_status table)
 │   ├── smartSearchAlertEmail.ts   # Resend email on Smart Search down/recovered transitions
 │   ├── rateLimit.ts               # Rate limiting
@@ -2439,6 +2443,16 @@ with a blinking cursor). The finished message (the normal `message` event from D
 bubble. A bubble with no update for 60 s is dropped, in case that message was lost. `liveUpdates().done()`
 waits for in-flight updates before posting, so a stale update can't land after the answer.
 
+**Church cards.** DestinyAI uses the same four card tools as the website (`find_person`, `find_ministry`,
+`church_info`, `find_jobs`). The first tool in an answer that has a card attaches it automatically from its
+tool result (`cardsFromToolResult` in `lib/churchCards.ts`, one card per answer, so no `share_*` tool is needed per
+card): the weather, directions and shop results the app used to answer in text only now arrive as cards too.
+The snapshot is stored as `D1CardContent` (`kind: "card"`, `cards: ChurchCardSet`) with every link and photo made
+absolute by `absolutizeCards`, because the app has no site origin. `ChurchCards.tsx` renders `PersonCard` and
+`InfoCard` inside the bubble; links open in the in-app browser (mail and phone links go to their apps) and Copy
+uses `expo-clipboard`. The team emails on a person card are the public work emails already on /about, never a
+member's details. No migration is needed (`content` is unconstrained jsonb for non-poll kinds).
+
 **Scope, beta, sermons (0.11.x).** DestinyAI answers only about Destiny (its services, events, groups,
 beliefs, giving, shop, sermons, charity and company records, visiting). Everything else gets one line
 saying so, and no tool call; safeguarding replies still apply. Its label says **beta** (`BetaTag` in
@@ -3358,6 +3372,7 @@ through the site's normal nav and the "New Here?" page/link, which were never pa
   - The route uses **tool-calling** and streams **NDJSON** events (`text`, `tool_call`, `tool_result`, `done`). Prose is still parsed for the trailing `OPTION:`/`PAGE:`/`CTA:` lines (clarifying chips + a navigation CTA). Each `tool_call` event shows a short status line ("Searching the web…", "Reading the page…", etc.) while that tool runs.
   - **Tools** (`lib/smartSearch/tools.ts`): `find_products` (searches published shop products via `getPublishedProducts()` + fuse.js, returns cards), `get_weather` (Open-Meteo, no key), `get_directions` (Google Maps embed), `search_web` (Tavily search, `search_depth: "advanced"`), `extract_page` (Tavily extract — reads the full content of one URL a prior `search_web` call actually returned; rejects any URL not in that request's `seenUrls` set, so the model can't be steered into fetching arbitrary pages).
   - **Result cards** (`components/smartSearch/ResultCards.tsx`) render below the prose in Smart Search's glass style. The product card offers inline size/colour selection and **add-to-cart** (via `useCart()`), so a visitor can buy without leaving the conversation.
+  - **Church cards** (`PersonResultCards`, `InfoResultCards` in `ResultCards.tsx`) cover everything else with two shapes (`packages/shared/src/churchCards.ts`): `PersonCardData` (photo, role, bio if one is published, email) and `InfoCardData` (title, summary, labelled facts, buttons; `copy: true` facts get a Copy button, used for bank details). `useSmartSearchChat` collects them into `ToolCards.people` / `ToolCards.info`.
   - Chat history + cards stored in component state (not persisted)
 - **Optional env vars:** `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY` (directions embed — degrades to an "Open in Maps" link without it) and `TAVILY_API_KEY` (web search + page extraction — degrades to a "not configured" note). Weather and product search need no extra key.
 
@@ -6171,6 +6186,10 @@ export function cooldownAnswer(): SmartSearchResult {
 
 ---
 
+### `lib/ministries.ts` / `lib/giving.ts` / `lib/churchCards.ts` / `lib/churchCards.server.ts`
+
+Structured sources for the church cards. `ministries.ts` holds Kids, Youth, Young Adults, Prayer, Recovery, Connect Groups, serve teams, baptism, child dedication and the mission partners as typed entries (facts taken from `siteKnowledge.ts` and the pages they link to; leaders looked up from `lib/team.ts`), with `findMinistries(query, topic?)`. `giving.ts` owns the bank and text-to-give defaults and `resolveGiveContent()`, used by both `/give` and the giving card so the fallback cannot drift. `churchCards.ts` is the pure side (person and visit cards, `summarizeCards` for the model, `cardsFromToolResult`, `absolutizeCards`, `courseTypesFor`) and is unit tested; `churchCards.server.ts` is the side that needs the database or a live lookup (giving, live service, course dates, jobs). Only add to these what the church has actually published: the cards are shown as fact.
+
 ### `lib/team.ts`
 
 Single source of truth for pastors and team (id, name, aliases such as "NK", role, group, photo, email, optional bio, what they lead). `TeamSection.tsx` renders the Lead Team and Department Heads from it, `lib/siteKnowledge.ts` builds its leadership prose from `teamKnowledgeLines()`, and `findTeamMembers(query)` matches by name, alias, role or ministry for the person cards. `bio` is optional on purpose: the assistant must never invent one, so a person without a bio renders as role and ministry only. Edit people here and nowhere else.
@@ -6373,6 +6392,7 @@ export async function executeTool(name: string, rawArgs: string, ctx: ToolContex
 
 - `find_products`, `get_weather`, `get_directions` — unchanged from prior behavior (see Components → `FloatingSmartSearch.tsx`).
 - `find_events(query?, from_date?, to_date?)` — the live ChurchSuite calendar (`fetchChurchSuiteEventsResult` → `buildEventIndex` → `serializeEventSeries`, 5-minute revalidate), so visitors can ask "when's the next event?" or "when is Alpha?". Filters each series' occurrences to the London-date range (default from today), matches query words against name/summary/category/location, and sorts by the first *matching* date. Returns up to 40 series (12 with a query) with London-formatted dates, location, summary, sign-up link and `/whats-on/<slug>`; a feed failure returns `available: false` rather than an empty calendar. The website chat renders the first three as `EventResultCards` (`components/smartSearch/ResultCards.tsx`). Shared with Destiny One's DestinyAI, which reaches it through `executeTool` — keep `slug` + `seriesKey` in the result for its `share_event`.
+- **Church cards** — `find_person(query)`, `find_ministry(query, topic?)`, `church_info(topic: visit | giving | live)` and `find_jobs()` return a `ChurchCardsResult`: `cards` (a `ChurchCardSet` for the UI) plus a plain-text `summary`. `modelPayload(result)` hands the model only the summary and a "card is already shown, answer in one or two sentences" note, so photo paths and button links cost no tokens; the client gets the full `data`. Nothing on a card is written by the model: people come from `lib/team.ts`, ministries/serve/connect/next steps/mission partners from `lib/ministries.ts`, giving from `lib/giving.ts` (admin-editable `page_content` "give" with defaults), visit from `lib/churchInfo.ts`, and the live service, upcoming course dates (`alpha_events`) and open jobs from `lib/churchCards.server.ts`. A lookup with no match returns `available: false` with an instruction not to guess.
 - `search_web` — Tavily `/search` with `search_depth: "advanced"` (curated chunks, not raw page tops) and the API key sent as an `Authorization: Bearer` header (not in the body). Snippets truncated to `SNIPPET_CHARS` (1200 chars). Every result URL is recorded into `ctx.seenUrls`.
 - `extract_page` — Tavily `/extract`, `extract_depth: "advanced"`. **Only** opens a URL already present in `ctx.seenUrls` for that request — this is the sole guard against the model being prompted (by a visitor or by web content) into fetching an arbitrary URL. Content truncated to `EXTRACT_CHARS` (8000 chars).
 - Deliberately does **not** request Tavily's own `include_answer` summary: it was observed conflating Destiny Church Tees Valley with an unrelated Scottish charity of a similar name and reporting a wrong income figure. The model instead reads raw snippets/page content and is told (via `lib/siteKnowledge.ts`) to cross-check the charity/company number before quoting any figure.

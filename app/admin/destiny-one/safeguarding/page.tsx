@@ -395,5 +395,6 @@ function TranscriptModal({ group, onClose }: { group: { id: string; name: string
 function contentText(content: D1MessageContent): string {
   if (content.kind === "poll") return `Poll: ${content.poll.question} (${content.poll.options.map((o) => o.label).join(" / ")})`;
   if (content.kind === "sermon") return `Sermon: ${content.sermon.title}`;
+  if (content.kind === "card") return `Card: ${content.cards.people?.[0]?.name ?? content.cards.info?.[0]?.title ?? "church info"}`;
   return `Event: ${content.event.name}`;
 }

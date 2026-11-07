@@ -14,6 +14,7 @@ export * from "./churchsuite/series";
 export * from "./churchsuite/sanitize";
 export * from "./churchsuite/ics";
 export * from "./design/tokens";
+export * from "./churchCards";
 
 // Destiny One (the Expo messaging app, apps/destiny-one) — wire types, the
 // pure safeguarding rules, and the typed API client. Unlike the Swift app,

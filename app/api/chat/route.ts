@@ -3,7 +3,7 @@ import type OpenAI from "openai";
 import { getOpenAI, SMART_SEARCH_MODEL } from "@/lib/openaiClient";
 import { buildSmartSearchPrompt } from "@/lib/siteKnowledge";
 import { FALLBACK_ANSWERS } from "@/lib/smartSearch";
-import { TOOL_DEFINITIONS, executeTool, createToolContext } from "@/lib/smartSearch/tools";
+import { TOOL_DEFINITIONS, executeTool, createToolContext, modelPayload } from "@/lib/smartSearch/tools";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
           );
 
           for (const { tc, result } of results) {
-            convo.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(result.data) });
+            convo.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(modelPayload(result)) });
           }
         }
       } catch (err) {

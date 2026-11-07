@@ -13,6 +13,8 @@ import {
   WeatherResultCard,
   DirectionsResultCard,
   WebResultsCard,
+  PersonResultCards,
+  InfoResultCards,
 } from "@/components/smartSearch/ResultCards";
 import type { ChatMessage } from "@/lib/useSmartSearchChat";
 import Button from "@/components/ui/Button";
@@ -80,6 +82,8 @@ export function SmartSearchThread({
                 {msg.weather && <WeatherResultCard data={msg.weather} />}
                 {msg.directions && <DirectionsResultCard data={msg.directions} />}
                 {msg.web && <WebResultsCard data={msg.web} />}
+                {msg.people && msg.people.length > 0 && <PersonResultCards people={msg.people} />}
+                {msg.info && msg.info.length > 0 && <InfoResultCards cards={msg.info} />}
               </>
             )}
 

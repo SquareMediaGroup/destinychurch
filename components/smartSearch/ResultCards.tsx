@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useToast } from "@/components/ToastProvider";
 import Button from "@/components/ui/Button";
 import { useCart } from "@/lib/cart-store";
+import { MAX_CARDS, type CardAction, type InfoCardData, type PersonCardData } from "@destiny/shared";
 import { formatPrice, sizeIndex, type CartItem } from "@/lib/shop";
 import type {
   ProductResult,
@@ -417,6 +418,165 @@ export function ProductResultCards({ products }: { products: ProductResult[] }) 
     <div className="space-y-2">
       {products.map((p) => (
         <ProductResultCard key={p.id} product={p} />
+      ))}
+    </div>
+  );
+}
+
+// ── Church cards: people and info ────────────────────────────────────────────
+// Built on the server from structured data (lib/team.ts, lib/ministries.ts,
+// lib/giving.ts ...) so nothing on them is written by the model.
+
+/** A button-style link that handles site paths, external URLs, mailto: and tel:. */
+function CardLink({ action, primary }: { action: CardAction; primary?: boolean }) {
+  const cls = `inline-flex items-center rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
+    primary
+      ? "bg-destiny-orange text-white hover:brightness-110"
+      : "border border-white/20 text-white/85 hover:border-destiny-orange hover:text-white"
+  }`;
+  if (action.href.startsWith("/")) {
+    return (
+      <Link href={action.href} className={cls}>
+        {action.label}
+      </Link>
+    );
+  }
+  const external = /^https?:/.test(action.href);
+  return (
+    <a
+      href={action.href}
+      className={cls}
+      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+    >
+      {action.label}
+    </a>
+  );
+}
+
+function PersonResultCard({ person }: { person: PersonCardData }) {
+  const initials = person.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2);
+  return (
+    <div className="mt-2 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+      <div className="flex gap-3 p-3">
+        {person.photo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={person.photo} alt={person.name} className="h-24 w-[4.5rem] shrink-0 rounded-xl bg-[#f5f3ef] object-contain" />
+        ) : (
+          <div className="flex h-24 w-[4.5rem] shrink-0 items-center justify-center rounded-xl bg-destiny-orange/20 text-xl font-black text-white/70">
+            {initials}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="text-base font-black text-white">{person.name}</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-destiny-orange">{person.role}</p>
+          {person.bio && <p className="mt-1.5 text-xs leading-relaxed text-white/80">{person.bio}</p>}
+          {person.leads.length > 0 && (
+            <p className="mt-1.5 text-xs text-on-dark-subtle">Leads: {person.leads.join(", ")}</p>
+          )}
+        </div>
+      </div>
+      {(person.email || person.href) && (
+        <div className="flex flex-wrap gap-2 px-3 pb-3">
+          {person.email && <CardLink primary action={{ label: "Email", href: `mailto:${person.email}` }} />}
+          {person.href && <CardLink action={{ label: "Learn more", href: person.href }} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function PersonResultCards({ people }: { people: PersonCardData[] }) {
+  if (people.length === 0) return null;
+  return (
+    <div>
+      {people.slice(0, MAX_CARDS).map((p) => (
+        <PersonResultCard key={p.id} person={p} />
+      ))}
+    </div>
+  );
+}
+
+function CopyButton({ value, label }: { value: string; label: string }) {
+  const toast = useToast();
+  const [copied, setCopied] = useState(false);
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Couldn't copy that. Please select the text instead.");
+    }
+  }
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      aria-label={`Copy ${label}`}
+      className="ml-2 inline-flex shrink-0 items-center gap-1 rounded-full border border-white/20 px-2 py-0.5 text-[11px] font-bold text-white/80 transition hover:border-destiny-orange hover:text-white"
+    >
+      <span className="material-symbols-rounded text-sm" aria-hidden="true">
+        {copied ? "check" : "content_copy"}
+      </span>
+      {copied ? "Copied" : "Copy"}
+    </button>
+  );
+}
+
+function InfoResultCard({ card }: { card: InfoCardData }) {
+  const isLive = card.variant === "live" && card.eyebrow === "Live now";
+  return (
+    <div className="mt-2 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+      {card.image && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={card.image} alt="" className="h-28 w-full object-cover" />
+      )}
+      <div className="p-3">
+        {card.eyebrow && (
+          <p className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide ${isLive ? "text-red-400" : "text-destiny-orange"}`}>
+            {isLive && <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" aria-hidden="true" />}
+            {card.eyebrow}
+          </p>
+        )}
+        <p className="mt-0.5 text-base font-black text-white">{card.title}</p>
+        {card.summary && <p className="mt-1 text-xs leading-relaxed text-white/80">{card.summary}</p>}
+
+        {card.facts.length > 0 && (
+          <dl className="mt-2 divide-y divide-white/10 rounded-xl border border-white/10 bg-white/[0.03]">
+            {card.facts.map((f) => (
+              <div key={f.label} className="flex items-start justify-between gap-3 px-3 py-2">
+                <dt className="shrink-0 text-[11px] font-bold uppercase tracking-wide text-on-dark-subtle">{f.label}</dt>
+                <dd className="flex min-w-0 items-center text-right text-xs font-semibold text-white/90">
+                  <span className="min-w-0 break-words">{f.value}</span>
+                  {f.copy && <CopyButton value={f.value} label={f.label} />}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
+
+        {card.actions.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {card.actions.map((a, i) => (
+              <CardLink key={a.href + a.label} action={a} primary={i === 0} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function InfoResultCards({ cards }: { cards: InfoCardData[] }) {
+  if (cards.length === 0) return null;
+  return (
+    <div>
+      {cards.slice(0, MAX_CARDS).map((c) => (
+        <InfoResultCard key={c.id} card={c} />
       ))}
     </div>
   );

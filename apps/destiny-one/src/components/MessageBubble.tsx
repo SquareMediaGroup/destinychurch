@@ -12,6 +12,7 @@ import { Animated, Image, Pressable, Text, View, type ViewInstance } from "react
 import * as WebBrowser from "expo-web-browser";
 import Svg, { Path } from "react-native-svg";
 import { DESTINY_AI_ID, mentionSegments, type D1EventContent, type D1LinkPreview, type D1LeaderRole, type D1Message, type D1PollContent, type D1SermonContent, type Mentionable } from "@destiny/shared";
+import { ChurchCards } from "@/components/ChurchCards";
 import { Emoji } from "@/components/Emoji";
 import { Icon } from "@/components/Icon";
 import { MessageMenu, type MessageMenuActions } from "@/components/MessageMenu";
@@ -212,6 +213,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
         <Attachment m={m} onOpen={onOpenAttachment} />
         {m.content?.kind === "event" ? <EventCard content={m.content} mine={m.mine} onOpen={onOpenAttachment} /> : null}
         {m.content?.kind === "sermon" ? <SermonCard content={m.content} mine={m.mine} /> : null}
+        {m.content?.kind === "card" ? <ChurchCards content={m.content} tone={k} /> : null}
         {m.content?.kind === "poll" ? <PollCard content={m.content} mine={m.mine} sending={m.id < 0} onVote={onVotePoll} /> : null}
         {m.body ? (
           <Text style={{ fontSize: 17, lineHeight: 22, letterSpacing: -0.2, color: k.text }}>

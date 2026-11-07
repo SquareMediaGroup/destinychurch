@@ -38,7 +38,8 @@ import {
 import { createServiceClient } from "@/utils/supabase/service";
 import { getOpenAI, SMART_SEARCH_MODEL } from "@/lib/openaiClient";
 import { CHURCH_FACTS } from "@/lib/siteKnowledge";
-import { TOOL_DEFINITIONS, createToolContext, executeTool, type ToolContext } from "@/lib/smartSearch/tools";
+import { TOOL_DEFINITIONS, createToolContext, executeTool, modelPayload, type ToolContext } from "@/lib/smartSearch/tools";
+import { absolutizeCards, cardsFromToolResult } from "@/lib/churchCards";
 import type { Caller } from "@/lib/destinyOne/auth.server";
 import { blockedIds, broadcastNewMessage, broadcastToGroup, getMessage, listMessages } from "@/lib/destinyOne/chat.server";
 import { messageTerms, sealBody, sealContent } from "@/lib/destinyOne/crypto.server";
@@ -155,6 +156,7 @@ SCOPE — STRICT
 TOOLS
 - find_events, share_event: the ChurchSuite calendar (see GROUNDING).
 - share_sermon: plays one sermon in the chat with an embedded player. When someone wants to watch or listen to a talk, call find_sermons, then share_sermon with the video_id of the best match. The player shows in the chat, so never paste a YouTube link.
+- find_person (who someone is or who leads something), find_ministry (Kids, Youth, Young Adults, Prayer, Recovery, Connect Groups, serving, baptism, child dedication, mission partners, courses like Alpha with dates), church_info (visit, giving, live) and find_jobs each show the member a card with the details. Call the tool, then reply in one or two short sentences. Don't repeat the card's details or quote bank details, times or contact details yourself. If one finds nothing, say you don't have that detail.
 - find_sermons, get_weather (dates within 16 days), get_directions (Destiny Centre), find_products (the Destiny shop: mention names and prices only), search_web, extract_page.
 - When a tool reports available: false, say that lookup isn't working right now.
 
@@ -241,6 +243,10 @@ const TOOL_LABELS: Record<string, string> = {
   find_sermons: "Looking through sermons",
   get_weather: "Checking the weather",
   get_directions: "Getting directions",
+  find_person: "Looking up the team",
+  find_ministry: "Finding that out",
+  church_info: "Finding that out",
+  find_jobs: "Checking open roles",
   search_web: "Searching the web",
   extract_page: "Reading the page",
 };
@@ -378,7 +384,11 @@ async function generate(openai: OpenAI, system: string, turns: Turn[], live: Liv
               data = card ? { ok: true } : { ok: false, reason: "That sermon couldn't be found. Use an id from find_sermons." };
             }
           } else {
-            data = (await executeTool(c.name, c.args, ctx)).data;
+            const result = await executeTool(c.name, c.args, ctx);
+            data = modelPayload(result);
+            // The first tool that has a card for the answer attaches it (one card per answer).
+            const set = card ? null : cardsFromToolResult(result);
+            if (set) card = { kind: "card", cards: absolutizeCards(set) };
           }
         } catch (err) {
           data = { available: false, reason: (err as Error).message };

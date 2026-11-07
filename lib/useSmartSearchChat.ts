@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { cooldownAnswer, parseAnswer } from "@/lib/smartSearch";
+import type { InfoCardData, PersonCardData } from "@destiny/shared";
 import type {
   ProductResult,
   SermonResult,
@@ -7,6 +8,7 @@ import type {
   WeatherToolResult,
   DirectionsToolResult,
   SearchWebResult,
+  ChurchCardsResult,
 } from "@/lib/smartSearch/tools";
 
 // Hide the trailing OPTION:/PAGE:/CTA: lines while text is still streaming in, so
@@ -27,6 +29,9 @@ export interface ToolCards {
   weather?: WeatherToolResult;
   directions?: DirectionsToolResult;
   web?: SearchWebResult;
+  /** Church cards: pastors and team, and info cards (ministry, visit, giving, live, courses, jobs). */
+  people?: PersonCardData[];
+  info?: InfoCardData[];
 }
 
 export interface ChatMessage extends ToolCards {
@@ -43,6 +48,10 @@ export const TOOL_STATUS_LABELS: Record<string, string> = {
   find_events: "Checking the calendar…",
   get_weather: "Checking the forecast…",
   get_directions: "Looking up directions…",
+  find_person: "Looking up the team…",
+  find_ministry: "Finding that out…",
+  church_info: "Finding that out…",
+  find_jobs: "Checking open roles…",
   search_web: "Searching the web…",
   extract_page: "Reading the page…",
 };
@@ -113,7 +122,14 @@ export function useSmartSearchChat() {
 
         const hasCards = () =>
           Boolean(
-            cards.products || cards.sermons || cards.events || cards.weather || cards.directions || cards.web,
+            cards.products ||
+              cards.sermons ||
+              cards.events ||
+              cards.weather ||
+              cards.directions ||
+              cards.web ||
+              cards.people?.length ||
+              cards.info?.length,
           );
 
         const liveMessage = (): ChatMessage => ({
@@ -162,6 +178,15 @@ export function useSmartSearchChat() {
               case "search_web":
                 cards.web = evt.data as SearchWebResult;
                 break;
+              case "find_person":
+              case "find_ministry":
+              case "church_info":
+              case "find_jobs": {
+                const set = (evt.data as ChurchCardsResult).cards;
+                if (set?.people?.length) cards.people = [...(cards.people ?? []), ...set.people];
+                if (set?.info?.length) cards.info = [...(cards.info ?? []), ...set.info];
+                break;
+              }
             }
             sync();
           }

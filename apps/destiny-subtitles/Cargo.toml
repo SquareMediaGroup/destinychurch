@@ -1,0 +1,11 @@
+# Destiny Subtitles: Rust engine (crates/engine) + Tauri shell (src-tauri).
+# Its own cargo workspace and npm project, not part of the website build.
+[workspace]
+members = ["crates/engine", "src-tauri"]
+resolver = "2"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+strip = true

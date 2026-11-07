@@ -174,6 +174,7 @@ supabase/
 mobile/               # Native SwiftUI iOS content app (Home/Sermons/Events/Give/More tabs)
 apps/
 ├── destiny-one/      # Destiny One — members' group-messaging app (Expo / React Native, iOS + Android)
+├── destiny-subtitles/ # Rust + Tauri macOS app — NDI audio in, live AI captions, NDI video out (replaces live-caption)
 ├── live-caption/     # Native SwiftUI macOS app — real-time captions (whisper.cpp + NDI)
 └── talent-buzzer/    # Talent-show judge buzzers (LAN Node app) — tablets → LED screen X + Avolites cues
 packages/shared/      # @destiny/shared — types & logic shared by the web app, app BFF & Destiny One

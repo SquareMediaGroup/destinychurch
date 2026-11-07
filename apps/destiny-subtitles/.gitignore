@@ -1,0 +1,7 @@
+node_modules
+dist
+target
+src-tauri/gen
+Vendor/NDI/include
+Vendor/NDI/lib
+Vendor/Models

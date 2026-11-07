@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Destiny Subtitles",
+  "version": "0.1.0",
+  "identifier": "uk.destinychurch.subtitles",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1431",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Destiny Subtitles",
+        "url": "index.html",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 1000,
+        "minHeight": 640,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "trafficLightPosition": { "x": 20, "y": 22 }
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost; font-src 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["app", "dmg"],
+    "category": "Video",
+    "shortDescription": "Live AI subtitles from NDI audio to NDI video",
+    "copyright": "Destiny Church",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.png"],
+    "macOS": {
+      "minimumSystemVersion": "13.0",
+      "signingIdentity": null,
+      "entitlements": null
+    }
+  }
+}

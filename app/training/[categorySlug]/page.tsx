@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import PageUnavailable from "@/components/PageUnavailable";
+import { getOutageState } from "@/lib/outage";
 import AnimateIn from "@/components/AnimateIn";
 import {
   getCategoryBySlug,
@@ -43,7 +45,10 @@ export default async function TrainingCategoryPage({
 }) {
   const { categorySlug } = await params;
   const category = await getCategoryBySlug(categorySlug);
-  if (!category) notFound();
+  if (!category) {
+    if (getOutageState().data) return <PageUnavailable what="training" />;
+    notFound();
+  }
 
   const subgroups = await getSubgroupsForCategory(category.id);
   const subgroupStats = await getSubgroupStats(subgroups.map((s) => s.id));

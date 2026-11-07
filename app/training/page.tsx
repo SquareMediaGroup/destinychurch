@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import { getTrainingTree } from "@/lib/training.server";
+import ServiceUnavailable from "@/components/ServiceUnavailable";
+import { getOutageState } from "@/lib/outage";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +53,9 @@ export default async function TrainingPage() {
       {/* Categories */}
       <section className="bg-white pb-24 pt-8">
         <div className="mx-auto max-w-5xl px-4 lg:px-8">
-          {categories.length === 0 ? (
+          {categories.length === 0 && getOutageState().data ? (
+            <ServiceUnavailable title="We can't load training right now" />
+          ) : categories.length === 0 ? (
             <p className="py-16 text-center text-subtle">
               Training content is coming soon.
             </p>

@@ -25,6 +25,8 @@ import { CHANNEL_URL } from "@/lib/youtube";
 import BannerSpacer from "@/components/BannerSpacer";
 import { PodcastPlayerProvider } from "@/components/sermons/podcast/PodcastPlayerProvider";
 import { createServiceClient } from "@/utils/supabase/service";
+import { getOutageState, STATUS_PAGE_URL } from "@/lib/outage";
+import type { BannerData } from "@/contexts/BannerContext";
 import { unstable_noStore as noStore } from "next/cache";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ICON_FONT_URL } from "@/lib/iconFont";
@@ -320,6 +322,27 @@ export default async function RootLayout({
       getLiveStatus(),
     ]);
 
+  // The loaders above all swallow their errors, so a down service shows up
+  // here as missing content rather than an error. getOutageState() is what
+  // tells the two apart: the loaders' own failed requests have just set it.
+  const outage = getOutageState();
+  const outageBanner: BannerData | null =
+    outage.data || outage.events
+      ? {
+          active: true,
+          type: "outage",
+          message: outage.data
+            ? "Some parts of our website aren't working right now."
+            : "Our events calendar isn't loading right now.",
+          link: STATUS_PAGE_URL,
+          link_text: "Service status",
+        }
+      : null;
+  // The outage notice outranks anything an admin scheduled, except the
+  // sitewide maintenance screen, which already covers everything.
+  const siteBanner =
+    outageBanner && banner?.type !== "sitewide" ? outageBanner : banner;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -483,7 +506,7 @@ export default async function RootLayout({
           </filter>
         </svg>
         <SmartSearchVisibilityProvider>
-        <Providers banner={banner} live={liveStatus}>
+        <Providers banner={siteBanner} live={liveStatus}>
           <LiveBanner />
           <SiteBanner />
           <CookieBanner />

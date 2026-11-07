@@ -9,6 +9,8 @@ import {
   isClosed,
   type Job,
 } from "@/lib/jobs";
+import ServiceUnavailable from "@/components/ServiceUnavailable";
+import { getOutageState } from "@/lib/outage";
 
 export const metadata: Metadata = {
   title: "Jobs & Internships",
@@ -255,7 +257,11 @@ export default async function JobsPage() {
             </h2>
           </AnimateIn>
 
-          {!hasAny ? (
+          {!hasAny && getOutageState().data ? (
+            <AnimateIn>
+              <ServiceUnavailable title="We can't load our open roles right now" />
+            </AnimateIn>
+          ) : !hasAny ? (
             <AnimateIn>
               <div className="mx-auto max-w-xl rounded-3xl border border-dashed border-black/10 bg-[#f5f7fa] px-6 py-16 text-center">
                 <span className="material-symbols-rounded mb-3 text-4xl text-destiny-grey/25" aria-hidden="true">

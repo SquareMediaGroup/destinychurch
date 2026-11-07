@@ -9,6 +9,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import PageUnavailable from "@/components/PageUnavailable";
 import {
   eventDescriptionText,
   eventImage,
@@ -25,19 +26,15 @@ import EventSignupButton from "@/components/events/EventSignupButton";
 import { getEventIndex } from "@/lib/events.server";
 import RichContent from "@/components/content/RichContent";
 
-export const revalidate = 300;
-// New events appear in the feed between builds; render them on demand rather
-// than 404ing until the next revalidation.
-export const dynamicParams = true;
+// Rendered per request. This used to be ISR (revalidate + generateStaticParams
+// + dynamicParams), but the root layout reads live data with noStore(), so any
+// slug not prebuilt — every event added since the last deploy, and every event
+// when the feed was down at build time — crashed with DYNAMIC_SERVER_USAGE
+// instead of rendering. The feed itself is still cached for five minutes
+// (lib/events.server.ts), so this costs a parse, not a fetch.
+export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ slug: string }> };
-
-export async function generateStaticParams() {
-  // The feed returns [] on failure, which yields no params — every page then
-  // renders on demand. Deliberately no build-time coupling to ChurchSuite.
-  const { series } = await getEventIndex();
-  return series.map((s) => ({ slug: s.slug }));
-}
 
 /**
  * Find the series for a slug.
@@ -151,7 +148,11 @@ export default async function EventPage({ params }: Props) {
   const { slug } = await params;
   const index = await getEventIndex();
   const found = resolve(index, slug);
-  if (!found) notFound();
+  if (!found) {
+    // An unreadable feed can't say whether the event exists.
+    if (index.unavailable) return <PageUnavailable what="this event" />;
+    notFound();
+  }
 
   const { series, canonical } = found;
   if (canonical !== slug) redirect(`/whats-on/${canonical}`);

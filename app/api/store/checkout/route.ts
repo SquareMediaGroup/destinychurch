@@ -3,7 +3,14 @@ import { headers } from "next/headers";
 import { createServiceClient } from "@/utils/supabase/service";
 import { getStripe } from "@/lib/stripe";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
-import { buildPendingOrder, checkoutSchema, deleteOrder } from "@/lib/checkout.server";
+import {
+  buildPendingOrder,
+  checkoutSchema,
+  claimFreeItem,
+  deleteOrder,
+  finalizeOrderPaid,
+} from "@/lib/checkout.server";
+import { FREE_ITEM_LIMIT_MESSAGE } from "@/lib/shop";
 
 export const runtime = "nodejs";
 
@@ -25,6 +32,31 @@ export async function POST(request: Request) {
   const built = await buildPendingOrder(parsed.data);
   if (!built.ok) {
     return NextResponse.json({ error: built.error }, { status: built.status });
+  }
+
+  // Nothing to pay (a basket holding only the one free item): take the
+  // customer's free-item claim and complete the order straight away.
+  if (built.total === 0) {
+    let claimed = false;
+    try {
+      claimed = await claimFreeItem(parsed.data.customer.email, built.orderDbId);
+    } catch (err) {
+      console.error("Free item claim error:", err);
+      await deleteOrder(built.orderDbId);
+      return NextResponse.json(
+        { error: "Your order could not be placed. Please try again." },
+        { status: 500 },
+      );
+    }
+    if (!claimed) {
+      await deleteOrder(built.orderDbId);
+      return NextResponse.json(
+        { error: `You've already had your free item. ${FREE_ITEM_LIMIT_MESSAGE}` },
+        { status: 409 },
+      );
+    }
+    await finalizeOrderPaid(built.orderDbId);
+    return NextResponse.json({ orderNumber: built.orderNumber, free: true });
   }
 
   try {

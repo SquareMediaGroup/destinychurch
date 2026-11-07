@@ -46,6 +46,15 @@ export const ENGAGEMENT_SOURCES = {
     icon: "visibility",
     description: "Visits to /links and /links/<slug>.",
   },
+  // Page views of published Posts, recorded server-side by app/[slug]/page.tsx.
+  // target_key is the post id (so a renamed slug keeps its history); the label
+  // is the path it had at the time.
+  post_view: {
+    label: "Post views",
+    noun: "view",
+    icon: "article",
+    description: "Visits to pages made in Posts.",
+  },
 } as const;
 
 export type EngagementSource = keyof typeof ENGAGEMENT_SOURCES;

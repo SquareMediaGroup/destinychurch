@@ -11,10 +11,10 @@
 // pages. That BorderBeam is the one piece of motion this site already uses to
 // mean "working, hold on", so reusing it here costs nothing to learn.
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BorderBeam } from "border-beam";
-import type { TourStep } from "@/lib/adminOnboarding";
+import type { TourSection, TourStep } from "@/lib/adminOnboarding";
 import { useHydrated } from "@/lib/useHydrated";
 
 interface Rect {
@@ -27,6 +27,14 @@ interface Rect {
 const PAD = 8;
 const CARD_W = 380;
 const GAP = 16;
+/** Below this the card stops floating beside its target and docks to the bottom. */
+const PHONE_W = 720;
+
+type CardPosition =
+  /** Beside the anchor, or the middle of the screen when there isn't one. */
+  | { kind: "beside"; top: number; left: number }
+  /** Phone width: full width along an edge, clear of what it describes. */
+  | { kind: "dock"; edge: "top" | "bottom" };
 
 function rectOf(el: HTMLElement): Rect {
   const r = el.getBoundingClientRect();
@@ -47,12 +55,25 @@ function placeCard(
   rect: Rect | null,
   preferred: TourStep["placement"],
   viewport: { w: number; h: number },
-): { top: number; left: number; centred: boolean } {
-  const cardH = 240;
-  if (!rect || viewport.w < 720) {
-    // No anchor, or a phone-width admin — the card goes to the bottom, full
-    // width, where it can't cover the thing it's describing.
-    return { top: viewport.h - cardH - GAP, left: GAP, centred: true };
+  cardH: number,
+): CardPosition {
+  // Phone-width admin: dock to the bottom, full width. Measured against the
+  // card's real height rather than a guess, so a long step can't hang off the
+  // bottom of the screen and a short one doesn't float halfway up it.
+  // The tab bar lives along the bottom on phones, so a step pointing at
+  // something down there docks to the top instead.
+  if (viewport.w < PHONE_W) {
+    const coversAnchor = rect !== null && rect.top + rect.height > viewport.h - cardH - GAP * 2;
+    return { kind: "dock", edge: coversAnchor ? "top" : "bottom" };
+  }
+  // No anchor on a wide screen: the middle of the viewport. Computed rather
+  // than done with a translate, because the entrance animation owns transform.
+  if (!rect) {
+    return {
+      kind: "beside",
+      top: Math.max(GAP, (viewport.h - cardH) / 2),
+      left: Math.max(GAP, (viewport.w - CARD_W) / 2),
+    };
   }
 
   const room = {
@@ -78,26 +99,37 @@ function placeCard(
 
   switch (side) {
     case "top":
-      return { top: clampY(rect.top - cardH - GAP), left: clampX(rect.left), centred: false };
+      return { kind: "beside", top: clampY(rect.top - cardH - GAP), left: clampX(rect.left) };
     case "left":
-      return { top: clampY(rect.top), left: clampX(rect.left - CARD_W - GAP), centred: false };
+      return { kind: "beside", top: clampY(rect.top), left: clampX(rect.left - CARD_W - GAP) };
     case "right":
-      return {
-        top: clampY(rect.top),
-        left: clampX(rect.left + rect.width + GAP),
-        centred: false,
-      };
+      return { kind: "beside", top: clampY(rect.top), left: clampX(rect.left + rect.width + GAP) };
     default:
-      return {
-        top: clampY(rect.top + rect.height + GAP),
-        left: clampX(rect.left),
-        centred: false,
-      };
+      return { kind: "beside", top: clampY(rect.top + rect.height + GAP), left: clampX(rect.left) };
   }
+}
+
+function cardStyle(pos: CardPosition): React.CSSProperties {
+  switch (pos.kind) {
+    case "beside":
+      return { top: pos.top, left: pos.left, width: CARD_W };
+    case "dock":
+      return { [pos.edge]: GAP, left: GAP, right: GAP };
+  }
+}
+
+/** Typing into a sandbox form must not page the tour on. */
+function isTyping(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return (
+    target.isContentEditable ||
+    ["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(target.tagName)
+  );
 }
 
 export default function TourSpotlight({
   step,
+  section,
   anchor,
   searching,
   index,
@@ -107,6 +139,8 @@ export default function TourSpotlight({
   onExit,
 }: {
   step: TourStep;
+  /** The checklist section this step belongs to; null for the closing card. */
+  section: TourSection | null;
   anchor: HTMLElement | null;
   searching: boolean;
   index: number;
@@ -117,6 +151,8 @@ export default function TourSpotlight({
 }) {
   const [rect, setRect] = useState<Rect | null>(null);
   const [viewport, setViewport] = useState({ w: 1280, h: 800 });
+  const [cardH, setCardH] = useState(240);
+  const cardRef = useRef<HTMLDivElement>(null);
   const mounted = useHydrated();
 
   // The anchor moves whenever the page scrolls, a list finishes loading or the
@@ -126,24 +162,40 @@ export default function TourSpotlight({
     const measure = () => {
       setViewport({ w: window.innerWidth, h: window.innerHeight });
       setRect(anchor ? rectOf(anchor) : null);
+      if (cardRef.current) setCardH(cardRef.current.offsetHeight);
       frame = requestAnimationFrame(measure);
     };
     frame = requestAnimationFrame(measure);
     return () => cancelAnimationFrame(frame);
   }, [anchor]);
 
+  // A step that waits for a click on its anchor has no Next button — unless
+  // the anchor never turned up, in which case there is nothing to click and
+  // the tour would be stuck. Offer Next then.
+  const waiting = Boolean(step.advanceOnClick) && (anchor !== null || searching);
+  const last = index + 1 === total;
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onExit();
+      if (e.key === "Escape") {
+        onExit();
+        return;
+      }
+      if (isTyping(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "ArrowRight" && !waiting) onNext();
+      if (e.key === "ArrowLeft" && index > 0) onBack();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onExit]);
+  }, [onExit, onNext, onBack, waiting, index]);
 
   if (!mounted) return null;
 
-  const card = placeCard(rect, step.placement, viewport);
-  const waiting = step.advanceOnClick;
+  const card = placeCard(rect, step.placement, viewport, cardH);
+  const position = section
+    ? section.steps.findIndex((s) => s.id === step.id) + 1
+    : 0;
+  const pct = Math.round(((index + 1) / total) * 100);
 
   return createPortal(
     <>
@@ -178,16 +230,14 @@ export default function TourSpotlight({
       )}
 
       <div
-        className="tour-card tour-card-enter"
-        style={{
-          top: card.top,
-          left: card.centred ? undefined : card.left,
-          right: card.centred ? 16 : undefined,
-          width: card.centred ? undefined : CARD_W,
-        }}
+        ref={cardRef}
+        key={step.id}
+        className="tour-card tour-card-enter max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-3xl"
+        style={cardStyle(card)}
         role="dialog"
         aria-modal="false"
-        aria-label={step.title}
+        aria-labelledby="tour-step-title"
+        aria-describedby="tour-step-body"
       >
         {/* BorderBeam owns the loading glow on the wrapper it renders, so the
             glass has to be an inner layer — the same structure as the Smart
@@ -196,8 +246,19 @@ export default function TourSpotlight({
           <div className="glass admin-glass absolute inset-0 rounded-3xl" />
           <div className="relative p-5">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-white/45">
-                Step {index + 1} of {total}
+              <span className="min-w-0 truncate text-[11px] font-bold uppercase tracking-widest text-white/45">
+                {section ? (
+                  <>
+                    {section.label}
+                    {section.steps.length > 1 && (
+                      <span className="tabular-nums"> · {position} of {section.steps.length}</span>
+                    )}
+                  </>
+                ) : last ? (
+                  "All done"
+                ) : (
+                  <span className="tabular-nums">Step {index + 1} of {total}</span>
+                )}
               </span>
               <button
                 type="button"
@@ -209,15 +270,34 @@ export default function TourSpotlight({
               </button>
             </div>
 
-            <h2 className="text-base font-black leading-tight text-white">{step.title}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-white/70">{step.body}</p>
+            <h2 id="tour-step-title" className="text-base font-black leading-tight text-white">
+              {step.title}
+            </h2>
+            <p id="tour-step-body" className="mt-2 text-sm leading-relaxed text-white/70">
+              {step.body}
+            </p>
 
             {step.sandbox && (
               <p className="mt-3 flex items-start gap-1.5 rounded-xl bg-white/8 px-3 py-2 text-xs font-bold text-white/60">
                 <span className="material-symbols-rounded text-sm leading-none" aria-hidden="true">shield</span>
-                Practice only — nothing on this page will be saved.
+                Practice only. Nothing on this page will be saved.
               </p>
             )}
+
+            {/* Whole-run progress, so a section label never hides how far is left. */}
+            <div
+              className="mt-4 h-1 w-full overflow-hidden rounded-full bg-white/15"
+              role="progressbar"
+              aria-valuenow={index + 1}
+              aria-valuemin={1}
+              aria-valuemax={total}
+              aria-label={`Step ${index + 1} of ${total}`}
+            >
+              <div
+                className="h-full rounded-full bg-destiny-orange transition-[width] duration-500"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
 
             <div className="mt-4 flex items-center justify-between gap-2">
               <button
@@ -230,8 +310,8 @@ export default function TourSpotlight({
               </button>
 
               {waiting ? (
-                <span className="text-xs font-bold text-white/45">
-                  Press it when you&rsquo;re ready
+                <span className="text-right text-xs font-bold text-white/55">
+                  Press the highlighted button to continue
                 </span>
               ) : (
                 <button
@@ -239,8 +319,10 @@ export default function TourSpotlight({
                   onClick={onNext}
                   className="inline-flex items-center gap-1.5 rounded-xl bg-destiny-orange px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-110"
                 >
-                  {index + 1 === total ? "Finish" : "Next"}
-                  <span className="material-symbols-rounded text-base" aria-hidden="true">arrow_forward</span>
+                  {last ? "Finish" : "Next"}
+                  {!last && (
+                    <span className="material-symbols-rounded text-base" aria-hidden="true">arrow_forward</span>
+                  )}
                 </button>
               )}
             </div>

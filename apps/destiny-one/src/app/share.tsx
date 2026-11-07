@@ -21,6 +21,7 @@ import { haptic } from "@/lib/haptics";
 import { keys } from "@/lib/queries";
 import { queryClient } from "@/lib/queryClient";
 import { uploadAttachment } from "@/lib/upload";
+import { dataSettings } from "@/state/dataSettings";
 import { errorMessage, useSession } from "@/state/session";
 import { ORANGE, useTheme } from "@/theme/tokens";
 
@@ -91,7 +92,7 @@ export default function Share() {
           continue;
         }
         // Photos get a clean copy first, exactly as from the composer.
-        const file = item.mimeType.startsWith("image/") ? await cleanImage(item.uri, item.name, item.mimeType).then((c) => ({ uri: c.uri, name: c.name, mimeType: c.mimeType, size: null })) : item;
+        const file = item.mimeType.startsWith("image/") ? await cleanImage(item.uri, item.name, item.mimeType, { quality: dataSettings.get().uploadQuality }).then((c) => ({ uri: c.uri, name: c.name, mimeType: c.mimeType, size: null })) : item;
         const attachmentId = await uploadAttachment(groupId, file);
         await api.send(groupId, { attachmentId });
       }

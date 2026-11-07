@@ -2,6 +2,7 @@
 // Crucially, password_hash is NEVER selected into a shape returned to a page —
 // callers only ever see `has_password`.
 import "server-only";
+import { cache } from "react";
 import { createServiceClient } from "@/utils/supabase/service";
 import type {
   TrainingCategory,
@@ -67,7 +68,7 @@ export async function getTrainingTree(): Promise<TrainingCategoryWithSubgroups[]
 }
 
 /** A single published category by slug, or null. */
-export async function getCategoryBySlug(
+async function loadCategoryBySlug(
   slug: string,
 ): Promise<TrainingCategory | null> {
   const supabase = createServiceClient();
@@ -84,6 +85,8 @@ export async function getCategoryBySlug(
   }
   return (data as TrainingCategory) ?? null;
 }
+// cache(): generateMetadata and the page both ask, but it's one query per request.
+export const getCategoryBySlug = cache(loadCategoryBySlug);
 
 /** Published sub-groups for a category id, ordered. */
 export async function getSubgroupsForCategory(
@@ -106,7 +109,7 @@ export async function getSubgroupsForCategory(
 }
 
 /** A published sub-group by category + sub-group slug, or null. */
-export async function getSubgroupBySlugs(
+async function loadSubgroupBySlugs(
   categorySlug: string,
   subgroupSlug: string,
 ): Promise<{ category: TrainingCategory; subgroup: TrainingSubgroup } | null> {
@@ -128,6 +131,8 @@ export async function getSubgroupBySlugs(
   }
   return { category, subgroup: toPublicSubgroup(data as SubgroupRow) };
 }
+// cache(): generateMetadata and the page both ask, but it's one query per request.
+export const getSubgroupBySlugs = cache(loadSubgroupBySlugs);
 
 /** Published posts for a sub-group id, ordered. */
 export async function getPublishedPosts(
@@ -150,7 +155,7 @@ export async function getPublishedPosts(
 }
 
 /** A published post within a sub-group, by all three slugs. */
-export async function getPostBySlugs(
+async function loadPostBySlugs(
   categorySlug: string,
   subgroupSlug: string,
   postSlug: string,
@@ -177,6 +182,8 @@ export async function getPostBySlugs(
   }
   return { ...found, post: data as TrainingPost };
 }
+// cache(): generateMetadata and the page both ask, but it's one query per request.
+export const getPostBySlugs = cache(loadPostBySlugs);
 
 /** Post count and total estimated read time (word-count based) per subgroup id. */
 export async function getSubgroupStats(

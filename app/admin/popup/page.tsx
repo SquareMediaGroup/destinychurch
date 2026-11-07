@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { clearPromoteFromUrl, readPromote } from "@/lib/promote";
+import ScheduleFields from "@/components/admin/ScheduleFields";
 
 interface Popup {
   active: boolean;
@@ -12,6 +14,8 @@ interface Popup {
   image_url: string | null;
   image_path: string | null;
   show_once: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
 }
 
 const EMPTY: Popup = {
@@ -23,6 +27,8 @@ const EMPTY: Popup = {
   image_url: null,
   image_path: null,
   show_once: true,
+  starts_at: null,
+  ends_at: null,
 };
 
 const MAX_BYTES = 50 * 1024 * 1024;
@@ -34,6 +40,9 @@ export default function AdminPopupPage() {
   const [uploading, setUploading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [promotedFrom, setPromotedFrom] = useState<string | null>(null);
+  // Whether the database has the window columns yet; see the banner page.
+  const [scheduling, setScheduling] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -41,8 +50,8 @@ export default function AdminPopupPage() {
       // A failed load used to fall through to the blank defaults, showing a
       // live banner/popup as switched off — and saving from there wiped it.
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((p) =>
-        setPopup({
+      .then((p) => {
+        const loaded: Popup = {
           active: p.active ?? false,
           title: p.title ?? "",
           body: p.body ?? "",
@@ -51,8 +60,29 @@ export default function AdminPopupPage() {
           image_url: p.image_url ?? null,
           image_path: p.image_path ?? null,
           show_once: p.show_once ?? true,
-        })
-      )
+          starts_at: p.starts_at ?? null,
+          ends_at: p.ends_at ?? null,
+        };
+        setScheduling("starts_at" in p);
+        // "Promote" from a post's Share panel: its details over the saved
+        // settings, unsaved until Save.
+        const promo = readPromote(window.location.search);
+        if (promo) {
+          clearPromoteFromUrl();
+          setPromotedFrom(promo.title || "a page");
+          setPopup({
+            ...loaded,
+            active: true,
+            title: promo.title,
+            body: promo.text,
+            cta_text: "Find out more",
+            cta_link: promo.link,
+            ...(promo.image ? { image_url: promo.image, image_path: null } : {}),
+          });
+          return;
+        }
+        setPopup(loaded);
+      })
       .catch(() =>
         setError("Couldn't load the current settings. Refresh before saving, or they'll be overwritten."),
       )
@@ -105,7 +135,11 @@ export default function AdminPopupPage() {
     const res = await fetch("/api/admin/popup", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(popup),
+      body: JSON.stringify(
+        scheduling || popup.starts_at || popup.ends_at
+          ? popup
+          : { ...popup, starts_at: undefined, ends_at: undefined },
+      ),
     });
     if (res.ok) {
       setSaved(true);
@@ -120,7 +154,7 @@ export default function AdminPopupPage() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
       <div className="max-w-2xl">
-        <div className="mb-6">
+        <div data-tour="page-header" className="mb-6">
           <h1 className="text-2xl font-black text-destiny-grey dark:text-white">Site Popup</h1>
           <p className="mt-1 text-sm text-destiny-grey/50 dark:text-white/50">
             Show a one-time popup with an image, message and call-to-action.
@@ -135,6 +169,12 @@ export default function AdminPopupPage() {
           </div>
         ) : (
           <form onSubmit={handleSave} className="flex flex-col gap-6">
+            {promotedFrom && (
+              <p className="rounded-xl bg-destiny-orange/10 px-4 py-3 text-sm text-destiny-orange">
+                Filled in from the page &ldquo;{promotedFrom}&rdquo;. Check it over, then save to put it live. Nothing
+                has changed yet.
+              </p>
+            )}
             {/* Live preview */}
             {popup.active && (popup.title || popup.body || popup.image_url) && (
               <div className="rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-4 shadow-sm">
@@ -233,6 +273,15 @@ export default function AdminPopupPage() {
                   />
                 </button>
               </div>
+
+              <div className="h-px bg-black/5" />
+
+              <ScheduleFields
+                noun="the popup"
+                startsAt={popup.starts_at}
+                endsAt={popup.ends_at}
+                onChange={(w) => setPopup((p) => ({ ...p, ...w }))}
+              />
 
               <div className="h-px bg-black/5" />
 
@@ -368,6 +417,7 @@ export default function AdminPopupPage() {
             <div className="flex justify-end">
               <button
                 type="submit"
+                data-tour="popup-save"
                 disabled={saving || uploading}
                 className="inline-flex items-center gap-2 rounded-xl bg-destiny-orange px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-destiny-orange/20 transition hover:brightness-110 disabled:opacity-60"
               >

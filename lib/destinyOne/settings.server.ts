@@ -14,6 +14,10 @@ export interface D1Settings {
   forceUpdateMessage: string | null;
   /** When set, the whole app shows this instead of working (emergency off switch). */
   maintenanceMessage: string | null;
+  /** Newest version in the stores ("0.13"). Older X.X apps get a dismissible "update available" prompt. */
+  latestVersion: string | null;
+  /** What's in it, one feature per line, shown on that prompt. */
+  latestVersionNotes: string | null;
 }
 
 const DEFAULTS: D1Settings = {
@@ -23,12 +27,14 @@ const DEFAULTS: D1Settings = {
   minBuildAndroid: 1,
   forceUpdateMessage: null,
   maintenanceMessage: null,
+  latestVersion: null,
+  latestVersionNotes: null,
 };
 
 export async function getSettings(): Promise<D1Settings> {
   const { data } = await createServiceClient()
     .from("d1_settings")
-    .select("allow_access_requests, invite_expiry_days, min_build_ios, min_build_android, force_update_message, maintenance_message")
+    .select("allow_access_requests, invite_expiry_days, min_build_ios, min_build_android, force_update_message, maintenance_message, latest_version, latest_version_notes")
     .eq("id", true)
     .maybeSingle();
   if (!data) return DEFAULTS;
@@ -39,6 +45,8 @@ export async function getSettings(): Promise<D1Settings> {
     minBuildAndroid: data.min_build_android,
     forceUpdateMessage: data.force_update_message,
     maintenanceMessage: data.maintenance_message,
+    latestVersion: data.latest_version,
+    latestVersionNotes: data.latest_version_notes,
   };
 }
 

@@ -43,12 +43,19 @@ export function sameDay(a: string, b: string): boolean {
   return startOfDay(new Date(a)) === startOfDay(new Date(b));
 }
 
+/** "1.2 MB", "340 KB", "2.1 GB". Zero is "0 KB". */
+export function formatBytes(bytes: number): string {
+  if (bytes <= 0) return "0 KB";
+  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
 /** "PDF · 1.2 MB" */
 export function fileMeta(mimeType: string, sizeBytes: number | null): string {
   const kind = mimeType === "application/pdf" ? "PDF" : mimeType.startsWith("image/") ? "Image" : mimeType.startsWith("audio/") ? "Voice message" : "File";
   if (sizeBytes == null) return kind;
-  const size = sizeBytes >= 1024 * 1024 ? `${(sizeBytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(sizeBytes / 1024))} KB`;
-  return `${kind} · ${size}`;
+  return `${kind} · ${formatBytes(sizeBytes)}`;
 }
 
 /** Event cards: "12 September, 18:30" */

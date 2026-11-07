@@ -229,3 +229,13 @@ export function totalStock(product: ProductWithVariants): number {
 }
 
 export const SHOP_ADMIN_API = "/api/admin/store";
+
+// Free items (price 0) are limited to one per customer, ever — enforced at
+// checkout (see lib/checkout.server.ts); the basket mirrors it for display.
+export const FREE_ITEM_LIMIT = 1;
+export const FREE_ITEM_LIMIT_MESSAGE = "Free items are limited to one per person.";
+
+/** Number of free units in a basket. */
+export function freeUnits(items: { unitPricePennies: number; quantity: number }[]): number {
+  return items.reduce((n, i) => n + (i.unitPricePennies === 0 ? i.quantity : 0), 0);
+}

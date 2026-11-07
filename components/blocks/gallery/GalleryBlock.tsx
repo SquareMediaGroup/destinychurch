@@ -1,4 +1,5 @@
 import type { BlockRenderContext } from "../types";
+import type { BlockSize } from "../size";
 import { BODY_MUTED, safeUrl } from "../tokens";
 
 export interface GalleryImage {
@@ -13,6 +14,8 @@ export interface GalleryProps {
   columns: "2" | "3";
   crop: "square" | "landscape" | "natural";
   caption: string;
+  /** Posts only: how far it reaches past the column. See ../size.ts. */
+  size: BlockSize;
 }
 
 const RATIO = {

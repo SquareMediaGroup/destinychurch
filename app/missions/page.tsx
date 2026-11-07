@@ -30,7 +30,7 @@ const partners = [
     video: {
       src: "https://www.youtube.com/embed/jNtRUpTfCvY",
       title: "The Moses Project",
-      thumbnail: "https://i.ytimg.com/vi/jNtRUpTfCvY/maxresdefault.webp",
+      thumbnail: "https://i.ytimg.com/vi_webp/jNtRUpTfCvY/maxresdefault.webp",
     },
     cta: { label: "Visit The Moses Project", href: "https://www.themosesproject.co.uk" },
   },
@@ -44,7 +44,7 @@ const partners = [
     video: {
       src: "https://www.youtube.com/embed/HE5FDJZkGms",
       title: "Compassion UK",
-      thumbnail: "https://i.ytimg.com/vi/HE5FDJZkGms/maxresdefault.webp",
+      thumbnail: "https://i.ytimg.com/vi_webp/HE5FDJZkGms/maxresdefault.webp",
     },
     cta: { label: "Visit Compassion UK", href: "https://www.compassionuk.org" },
   },

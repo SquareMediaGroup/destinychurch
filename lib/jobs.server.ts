@@ -1,5 +1,6 @@
 // Server-only data fetchers for the public /jobs pages.
 import "server-only";
+import { cache } from "react";
 import { createServiceClient } from "@/utils/supabase/service";
 import type { Job } from "@/lib/jobs";
 
@@ -21,7 +22,7 @@ export async function getPublishedJobs(): Promise<Job[]> {
 }
 
 /** A single published role by slug, or null. Used by /jobs/[slug]. */
-export async function getJobBySlug(slug: string): Promise<Job | null> {
+async function loadJobBySlug(slug: string): Promise<Job | null> {
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("jobs")
@@ -36,3 +37,5 @@ export async function getJobBySlug(slug: string): Promise<Job | null> {
   }
   return (data as Job) ?? null;
 }
+// cache(): generateMetadata and the page both ask, but it's one query per request.
+export const getJobBySlug = cache(loadJobBySlug);

@@ -43,6 +43,19 @@ final class Preferences {
         didSet { persistNDIOutputs() }
     }
 
+    /// Process-wide NDI network settings (interface, discovery servers,
+    /// multicast). Read by the NDI SDK once at launch, so a change here only
+    /// takes effect after Live Caption is restarted.
+    var ndiNetwork: NDINetworkConfiguration {
+        didSet { persistNDINetwork() }
+    }
+
+    /// Skip audio with no speech in it (applause, music, room noise) instead
+    /// of letting whisper.cpp guess words for it. See `SpeechDetector`.
+    var filterNonSpeech: Bool {
+        didSet { defaults.set(filterNonSpeech, forKey: Key.filterNonSpeech) }
+    }
+
     /// Extra terms biasing whisper.cpp's decoding, on top of the built-in
     /// Bible-book list. Speaker and place names belong here.
     var customVocabulary: [String] {
@@ -61,6 +74,14 @@ final class Preferences {
         self.stabilityDelay = defaults.object(forKey: Key.stabilityDelay) as? Double ?? 0.4
         self.ndiOutputEnabled = defaults.object(forKey: Key.ndiOutputEnabled) as? Bool ?? false
         self.customVocabulary = defaults.stringArray(forKey: Key.customVocabulary) ?? []
+        self.filterNonSpeech = defaults.object(forKey: Key.filterNonSpeech) as? Bool ?? true
+
+        if let data = defaults.data(forKey: Key.ndiNetwork),
+           let decoded = try? JSONDecoder().decode(NDINetworkConfiguration.self, from: data) {
+            self.ndiNetwork = decoded
+        } else {
+            self.ndiNetwork = NDINetworkConfiguration()
+        }
 
         if let data = defaults.data(forKey: Key.ndiOutputs),
            let decoded = try? JSONDecoder().decode([NDIOutputConfiguration].self, from: data),
@@ -85,6 +106,11 @@ final class Preferences {
         defaults.set(data, forKey: Key.ndiOutputs)
     }
 
+    private func persistNDINetwork() {
+        guard let data = try? JSONEncoder().encode(ndiNetwork) else { return }
+        defaults.set(data, forKey: Key.ndiNetwork)
+    }
+
     private enum Key {
         static let modelPath = "modelPath"
         static let captionFontSize = "captionFontSize"
@@ -94,5 +120,7 @@ final class Preferences {
         static let ndiOutputEnabled = "ndiOutputEnabled"
         static let ndiOutputs = "ndiOutputs"
         static let customVocabulary = "customVocabulary"
+        static let ndiNetwork = "ndiNetwork"
+        static let filterNonSpeech = "filterNonSpeech"
     }
 }

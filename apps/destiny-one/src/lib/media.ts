@@ -15,6 +15,8 @@ import { File, Paths } from "expo-file-system";
 import * as MediaLibrary from "expo-media-library";
 import * as Sharing from "expo-sharing";
 import type { LocalMessage } from "@/lib/queries";
+import { mediaKind, onWifi } from "@/state/dataSettings";
+import { networkUsage } from "@/state/networkUsage";
 
 export type Photo = LocalMessage & { attachment: NonNullable<LocalMessage["attachment"]> };
 
@@ -38,7 +40,9 @@ const EXTENSION: Record<string, string> = {
 export async function downloadAttachment(url: string, attachmentId: string, mimeType: string): Promise<File> {
   const file = new File(Paths.cache, `d1-${attachmentId}.${EXTENSION[mimeType] ?? "bin"}`);
   if (file.exists && file.size > 0) return file;
-  return File.downloadFileAsync(url, file, { idempotent: true });
+  const downloaded = await File.downloadFileAsync(url, file, { idempotent: true });
+  networkUsage.record("received", mediaKind(mimeType), downloaded.size, onWifi());
+  return downloaded;
 }
 
 export class SaveRefusedError extends Error {

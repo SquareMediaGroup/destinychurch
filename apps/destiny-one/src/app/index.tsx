@@ -4,12 +4,13 @@
 import { useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Redirect } from "expo-router";
+import { OUTAGE_MESSAGE } from "@destiny/shared";
 import { ErrorState } from "@/components/ui";
 import { routeFor, useSession } from "@/state/session";
 import { ORANGE, useTheme } from "@/theme/tokens";
 
 export default function Index() {
-  const { ready, session, me, refreshMe } = useSession();
+  const { ready, session, me, refreshMe, outage } = useSession();
   const [retrying, setRetrying] = useState(false);
   const t = useTheme();
 
@@ -18,7 +19,7 @@ export default function Index() {
     return (
       <View style={{ flex: 1, justifyContent: "center", backgroundColor: t.bg }}>
         <ErrorState
-          message="Couldn't reach Destiny One. Check your connection and try again."
+          message={outage ? OUTAGE_MESSAGE : "Couldn't reach Destiny One. Check your connection and try again."}
           onRetry={() => {
             setRetrying(true);
             void refreshMe().finally(() => setRetrying(false));

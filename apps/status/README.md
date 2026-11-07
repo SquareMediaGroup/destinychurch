@@ -12,7 +12,7 @@ HTTP request, so the page still renders when the website or Supabase is down.
 ```bash
 cd apps/status
 npm install
-cp .env.example .env.local   # optional; defaults probe https://destinytees.uk
+cp .env.example .env.local   # optional; defaults probe https://destinychurch.vercel.app
 npm run dev                  # http://localhost:3100
 ```
 
@@ -20,20 +20,24 @@ npm run dev                  # http://localhost:3100
 
 1. In Vercel, add a new project from this repo with **Root Directory** `apps/status`
    (framework: Next.js). Region comes from `vercel.json`.
-2. Set the env vars from `.env.example`. Only `RESEND_API_KEY` is secret.
+2. Set the env vars from `.env.example`. `RESEND_API_KEY` and `STATUS_SUPABASE_SECRET_KEY` are secret.
 3. Add the domain `status.destinytees.uk` to that project and create the DNS record
    Vercel asks for (a CNAME to `cname.vercel-dns.com`).
 
 ## Report a problem
 
-Every part on the page has a "Report a problem" button. Reports are emailed to the
-addresses in `STATUS_REPORT_RECIPIENTS` (the super admins) through Resend, using
-`RESEND_API_KEY`. Keep that list in step with who holds `super_admin`.
+Every part on the page has a "Report a problem" button. Reports are emailed through
+Resend (`RESEND_API_KEY`) to everyone with `super_admin` in `admin_roles`, looked up
+with `STATUS_SUPABASE_SECRET_KEY`. If Supabase can't be read, they go to
+admin@destinytees.uk instead.
 
 ## Post a notice
 
-Add an entry to `src/lib/notices.ts` (title, body, kind, component ids, `startedAt`)
-and merge. Set `resolvedAt` when it is over. Component ids are in `src/lib/status.ts`.
+Site Admins post outages, amber alerts and maintenance from the website's
+`/admin/status`, with timeline updates as the fix goes. They're stored in
+`status_incidents` / `status_incident_updates` (Supabase, public read) and shown
+here. An outage still open after an hour emails every Site Admin
+(`/api/cron/status-outage-alerts` on the main site).
 
 ## What each component checks
 

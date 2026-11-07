@@ -6,7 +6,12 @@ import { isReservedSlug, normalizeSlug } from "@/lib/reserved-slugs";
 type ServiceClient = ReturnType<typeof createServiceClient>;
 
 export type SlugCheck =
-  | { ok: true; slug: string }
+  /**
+   * `reclaimsRedirectId`: the slug is held by a redirect that points at this
+   * very post (left behind when its URL changed). Taking the old URL back is
+   * allowed; the caller deletes that redirect when it publishes.
+   */
+  | { ok: true; slug: string; reclaimsRedirectId?: string }
   | { ok: false; slug: string; reason: string; status: number };
 
 /**
@@ -40,9 +45,15 @@ export async function checkSlug(
 
   const { data: existingRedirect } = await supabase
     .from("redirects")
-    .select("slug")
+    .select("id, slug, target_url")
     .eq("slug", slug)
     .maybeSingle();
+  if (existingRedirect && excludeId) {
+    const { data: self } = await supabase.from("posts").select("slug").eq("id", excludeId).maybeSingle();
+    if (self && existingRedirect.target_url === `/${self.slug}`) {
+      return { ok: true, slug, reclaimsRedirectId: existingRedirect.id as string };
+    }
+  }
   if (existingRedirect) {
     return {
       ok: false,

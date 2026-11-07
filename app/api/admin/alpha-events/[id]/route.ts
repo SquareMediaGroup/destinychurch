@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createServiceClient } from "@/utils/supabase/service";
 import { COURSE_EVENT_META, isCourseEventType } from "@/lib/courseEvents";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
 
@@ -15,11 +15,6 @@ function formatCourseDate(value: unknown): string {
     : date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -29,7 +24,7 @@ export async function PATCH(
     const { id } = await params;
     const before = await readForAudit("alpha_events", id);
 
-    const { data, error } = await supabase
+    const { data, error } = await createServiceClient()
       .from("alpha_events")
       .update({
         ...body,
@@ -76,7 +71,7 @@ export async function DELETE(
     const { id } = await params;
     const before = await readForAudit("alpha_events", id);
 
-    const { error } = await supabase
+    const { error } = await createServiceClient()
       .from("alpha_events")
       .delete()
       .eq("id", id);

@@ -4,10 +4,10 @@
 
 import { Linking, Text, View } from "react-native";
 import { SvgXml } from "react-native-svg";
-import type { D1AppConfig } from "@destiny/shared";
+import { D1_STATUS_URL, type D1AppConfig } from "@destiny/shared";
 import { AuthScreen } from "@/components/AuthScreen";
 import { LOGO_XML } from "@/components/logoXml";
-import { Lead, PrimaryButton } from "@/components/ui";
+import { Lead, PrimaryButton, SecondaryButton } from "@/components/ui";
 import { useTheme } from "@/theme/tokens";
 
 const COPY = {
@@ -28,7 +28,13 @@ export function UpdateScreen({ mode, config, platform }: { mode: "update" | "mai
 
   return (
     <AuthScreen
-      footer={mode === "update" && storeUrl ? <PrimaryButton label="Update" onPress={() => void Linking.openURL(storeUrl)} /> : undefined}
+      footer={
+        mode === "update" ? (
+          storeUrl ? <PrimaryButton label="Update" onPress={() => void Linking.openURL(storeUrl)} /> : undefined
+        ) : (
+          <SecondaryButton label="Check status" onPress={() => void Linking.openURL(D1_STATUS_URL)} />
+        )
+      }
     >
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 18 }}>
         <View style={{ width: 88, height: 88 }}>

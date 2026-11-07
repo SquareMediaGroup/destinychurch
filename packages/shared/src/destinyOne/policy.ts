@@ -394,6 +394,21 @@ export function appGate(config: D1AppConfig | null | undefined, platform: string
   return build < min ? "update" : "ok";
 }
 
+/**
+ * The version to offer as an optional update, or null. Only X.X counts: an
+ * app on 0.12.x is offered 0.13 (or 1.0), never 0.12.1. A major release is
+ * normally also forced through `minBuild`, which wins because the gate covers
+ * the whole app. `installed` is the app's own version ("0.12.0").
+ */
+export function optionalUpdate(config: D1AppConfig | null | undefined, installed: string | null | undefined): string | null {
+  const latest = config?.latestVersion;
+  if (!latest || !installed) return null;
+  const minor = (v: string) => v.split(".").slice(0, 2).map((n) => Number.parseInt(n, 10) || 0);
+  const [lMajor, lMinor] = minor(latest);
+  const [iMajor, iMinor] = minor(installed);
+  return lMajor > iMajor || (lMajor === iMajor && lMinor > iMinor) ? latest : null;
+}
+
 /** A member may change their own name this many times in any rolling 30 days. */
 export const NAME_CHANGES_PER_MONTH = 2;
 const NAME_CHANGE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;

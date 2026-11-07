@@ -13,6 +13,8 @@ export default function DestinyOneSettingsPage() {
   const [minAndroid, setMinAndroid] = useState("1");
   const [updateMessage, setUpdateMessage] = useState("");
   const [maintenance, setMaintenance] = useState("");
+  const [latest, setLatest] = useState("");
+  const [latestNotes, setLatestNotes] = useState("");
   const [saved, setSaved] = useState("");
 
   const load = useCallback(async () => {
@@ -23,10 +25,12 @@ export default function DestinyOneSettingsPage() {
     setMinAndroid(String(s.minBuildAndroid));
     setUpdateMessage(s.forceUpdateMessage ?? "");
     setMaintenance(s.maintenanceMessage ?? "");
+    setLatest(s.latestVersion ?? "");
+    setLatestNotes(s.latestVersionNotes ?? "");
   }, []);
   const { error, setError } = useAdminLoader(load);
 
-  type Editable = "allowAccessRequests" | "inviteExpiryDays" | "minBuildIos" | "minBuildAndroid" | "forceUpdateMessage" | "maintenanceMessage";
+  type Editable = "allowAccessRequests" | "inviteExpiryDays" | "minBuildIos" | "minBuildAndroid" | "forceUpdateMessage" | "maintenanceMessage" | "latestVersion" | "latestVersionNotes";
 
   async function save(body: Partial<Pick<AdminSettings, Editable>>) {
     setSaved("");
@@ -109,6 +113,39 @@ export default function DestinyOneSettingsPage() {
               onChange={(e) => setUpdateMessage(e.target.value)}
             />
             <button className={`${primaryBtn} mt-3`} onClick={saveVersions}>Save</button>
+          </section>
+
+          <section className={`${cardClass} p-6`}>
+            <h2 className="font-bold">Update available prompt</h2>
+            <p className="mt-1 mb-4 text-sm text-destiny-grey/60 dark:text-white/60">
+              Anyone on an older version sees a one-off &quot;update available&quot; message listing what&apos;s new, with an Update button and a
+              Not now button. It never blocks them, and each person sees it once per version. Use it for X.X releases: the last number is ignored,
+              so 0.13.1 never prompts someone on 0.13.0. For a release everyone must have, raise the lowest builds above instead. Leave the
+              version blank to turn it off.
+            </p>
+            <label className={labelClass} htmlFor="s-latest">Latest version in the stores</label>
+            <input
+              id="s-latest"
+              className={inputClass}
+              placeholder="0.13"
+              inputMode="decimal"
+              maxLength={14}
+              value={latest}
+              onChange={(e) => setLatest(e.target.value)}
+            />
+            <label className={`${labelClass} mt-4`} htmlFor="s-latest-notes">What&apos;s new (one feature per line)</label>
+            <textarea
+              id="s-latest-notes"
+              rows={4}
+              maxLength={1000}
+              className={inputClass}
+              placeholder={"Archive chats you don't need right now\nDestinyAI answers as it writes"}
+              value={latestNotes}
+              onChange={(e) => setLatestNotes(e.target.value)}
+            />
+            <button className={`${primaryBtn} mt-3`} onClick={() => save({ latestVersion: latest.trim(), latestVersionNotes: latestNotes })}>
+              Save
+            </button>
           </section>
 
           <section className={`${cardClass} p-6`}>

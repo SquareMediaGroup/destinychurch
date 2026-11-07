@@ -7,6 +7,8 @@
 
 import type { PickedFile } from "@/components/Composer";
 import { api } from "@/lib/api";
+import { mediaKind, onWifi } from "@/state/dataSettings";
+import { networkUsage } from "@/state/networkUsage";
 
 function reason(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
@@ -50,5 +52,6 @@ export async function uploadAttachment(groupId: string, file: PickedFile): Promi
   // React Native's FormData takes { uri, name, type } as a file part.
   form.append("file", { uri: file.uri, name: file.name, type: file.mimeType } as unknown as Blob);
   await putForm(ticket.uploadUrl, form);
+  networkUsage.record("sent", mediaKind(file.mimeType), sizeBytes, onWifi());
   return ticket.attachmentId;
 }

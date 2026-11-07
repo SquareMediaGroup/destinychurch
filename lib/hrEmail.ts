@@ -4,6 +4,7 @@
 
 import "server-only";
 import { sendEmailCard } from "@/lib/emailCard";
+import { PORTAL_OPEN } from "@/lib/portalStatus";
 import { formatDate, fullName, LEAVE_TYPE_LABELS, type LeaveRequest, type Staff } from "@/lib/hr";
 
 // Falls back to the same inbox the recruitment flow already notifies —
@@ -51,8 +52,11 @@ export async function sendLeaveDecisionEmail(
       ["Dates", `${formatDate(request.start_date)} – ${formatDate(request.end_date)}`],
       ["Days", String(request.days)],
     ],
-    ctaHref: "https://destinytees.uk/portal/leave",
-    ctaLabel: "View my leave",
+    // No link while the portal is closed (lib/portalStatus.ts) — it would land
+    // on the "Coming Summer 2027" page.
+    ...(PORTAL_OPEN
+      ? { ctaHref: "https://destinytees.uk/portal/leave", ctaLabel: "View my leave" }
+      : {}),
   });
 }
 

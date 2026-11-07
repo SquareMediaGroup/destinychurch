@@ -1,0 +1,61 @@
+name: Talent Buzzer download
+
+# Builds a ready-to-run talent-buzzer.zip (dependencies included, so the show
+# computers don't need to run npm install) and attaches it to the
+# "talent-buzzer" release. The README links straight to that file:
+# https://github.com/SquareMediaGroup/destinychurch/releases/download/talent-buzzer/talent-buzzer.zip
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/talent-buzzer/**"
+      - ".github/workflows/talent-buzzer-release.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: talent-buzzer-release
+  cancel-in-progress: true
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Test
+        working-directory: apps/talent-buzzer
+        run: |
+          npm ci --no-audit --no-fund
+          npm test
+
+      - name: Build zip
+        run: |
+          mkdir -p dist
+          cp -r apps/talent-buzzer dist/talent-buzzer
+          cd dist/talent-buzzer
+          rm -rf node_modules test
+          npm ci --omit=dev --no-audit --no-fund
+          cd ..
+          zip -rq talent-buzzer.zip talent-buzzer
+          ls -lh talent-buzzer.zip
+
+      - name: Publish to the talent-buzzer release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view talent-buzzer >/dev/null 2>&1; then
+            gh release create talent-buzzer --target "$GITHUB_SHA" --latest=false \
+              --title "Talent Show Buzzers" \
+              --notes "Download talent-buzzer.zip below. Setup steps: https://github.com/${GITHUB_REPOSITORY}/tree/main/apps/talent-buzzer#readme"
+          fi
+          gh release upload talent-buzzer dist/talent-buzzer.zip --clobber
+          echo "✓ Uploaded talent-buzzer.zip from ${GITHUB_SHA::7}"

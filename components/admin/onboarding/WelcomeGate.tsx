@@ -4,19 +4,21 @@
 // again, whichever button they press.
 //
 // It is a gate, not a wall: "Skip for now" is a real answer and is recorded as
-// one. Forcing somebody through a tour before they can reach a page they've
+// one. It means what it says: the gate goes, and the Get Started checklist in
+// the corner stays, so "later" has somewhere to happen. Forcing somebody through a tour before they can reach a page they've
 // been sent to fix is how onboarding earns a reputation for being in the way.
 //
 // It names the access levels they hold, because most people arrive not knowing
 // what they've been given — that single line answers the question they were
 // about to ask someone.
 
+import { useRef } from "react";
 import { createPortal } from "react-dom";
 import { BorderBeam } from "border-beam";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 import { useHydrated } from "@/lib/useHydrated";
 import { useScrollLock } from "@/lib/useScrollLock";
-import { minutesFor, type TourSection } from "@/lib/adminOnboarding";
-import { TOURS, TOUR_ORDER } from "@/lib/adminOnboarding";
+import { TOURS, TOUR_ORDER, minutesFor, type TourSection } from "@/lib/adminOnboarding";
 import type { RoleFlags } from "@/lib/adminRoles";
 
 export default function WelcomeGate({
@@ -31,8 +33,11 @@ export default function WelcomeGate({
   onSkip: () => void;
 }) {
   const mounted = useHydrated();
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useScrollLock(true);
+  // Escape is "Skip for now", same as the button.
+  useFocusTrap(panelRef, mounted, onSkip);
 
   if (!mounted) return null;
 
@@ -40,19 +45,25 @@ export default function WelcomeGate({
   const minutes = minutesFor(sections);
 
   return createPortal(
-    <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <BorderBeam size="pulse-inner" borderRadius={24} strength={1} className="relative w-full max-w-lg rounded-3xl">
+    <div className="fixed inset-0 z-[400] flex items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm">
+      <BorderBeam size="pulse-inner" borderRadius={24} strength={1} className="relative my-auto w-full max-w-lg rounded-3xl">
         <div className="glass admin-glass absolute inset-0 rounded-3xl" />
-        <div className="relative p-8">
+        <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="welcome-gate-title"
+          className="relative p-6 sm:p-8"
+        >
           <span className="text-[11px] font-bold uppercase tracking-widest text-white/45">
             Welcome
           </span>
-          <h1 className="mt-2 text-2xl font-black leading-tight text-white">
+          <h1 id="welcome-gate-title" className="mt-2 text-2xl font-black leading-tight text-white">
             Let&rsquo;s show you around
           </h1>
           <p className="mt-3 text-sm leading-relaxed text-white/70">
             This admin only shows you the parts of the website you look after. A short
-            walkthrough covers each one — and nothing you do inside it is saved, so you
+            walkthrough covers each one, and nothing you do inside it is saved, so you
             can press every button.
           </p>
 
@@ -73,8 +84,9 @@ export default function WelcomeGate({
             ))}
           </ul>
 
-          <p className="mt-5 text-xs font-bold uppercase tracking-widest text-white/40">
-            About {minutes} {minutes === 1 ? "minute" : "minutes"} · {sections.length} steps
+          <p className="mt-5 text-xs font-bold uppercase tracking-widest text-white/45">
+            About {minutes} {minutes === 1 ? "minute" : "minutes"} · {sections.length}{" "}
+            {sections.length === 1 ? "section" : "sections"}
           </p>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -94,6 +106,10 @@ export default function WelcomeGate({
               Skip for now
             </button>
           </div>
+          <p className="mt-4 text-xs text-white/45">
+            Skipping keeps a Get Started checklist in the corner, so you can pick it up
+            whenever suits.
+          </p>
         </div>
       </BorderBeam>
     </div>,

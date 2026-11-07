@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/youtube";
+import { SITE_ORIGIN } from "@/lib/appApi";
 import { getVideo } from "@/lib/speakerOverrides.server";
 import { getPodcastShow } from "@/lib/podcast";
 import { pairAudioForVideo } from "@/lib/sermonPairing";
@@ -18,6 +19,10 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+function sermonThumbnailUrl(id: string): string {
+  return `${SITE_ORIGIN}/api/youtube/thumbnail/${encodeURIComponent(id)}`;
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const video = await getVideo(id);
@@ -25,7 +30,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: "Sermon Not Found" };
   }
   const desc = video.description.slice(0, 160);
-  const ogImage = `https://i.ytimg.com/vi/${id}/maxresdefault.webp`;
+  // YouTube has no /vi/<id>/maxresdefault.webp (WebP lives under /vi_webp/,
+  // and maxres doesn't exist for every upload), so that URL 404'd and shares
+  // went out with no picture. The thumbnail route falls back maxres → sd → hq
+  // JPEG; absolute on SITE_ORIGIN because metadataBase (destinytees.uk)
+  // doesn't serve this app yet.
+  const ogImage = sermonThumbnailUrl(id);
   return {
     title: video.title,
     description: desc,
@@ -135,7 +145,7 @@ export default async function SermonPage({ params }: PageProps) {
     "@type": "VideoObject",
     name: video.title,
     description: displayDescription.slice(0, 300) || video.title,
-    thumbnailUrl: `https://i.ytimg.com/vi/${id}/maxresdefault.webp`,
+    thumbnailUrl: sermonThumbnailUrl(id),
     uploadDate: video.publishedAt,
     embedUrl: `https://www.youtube.com/embed/${id}`,
     contentUrl: `https://www.youtube.com/watch?v=${id}`,

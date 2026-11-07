@@ -82,11 +82,12 @@ export default function ForgotPasswordPage() {
             ) : (
               <form action={formAction} className="flex flex-col gap-5">
                 <div>
-                  <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">
+                  <label htmlFor="forgot-email" className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">
                     Email address
                   </label>
                   <input
                     type="email"
+                    id="forgot-email"
                     name="email"
                     autoComplete="email"
                     required

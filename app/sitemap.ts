@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { getTrainingTree } from "@/lib/training.server";
 import { getEventIndex } from "@/lib/events.server";
 import { listIndexableLinkPages } from "@/lib/linkPages/linkPages.server";
+import { listIndexablePosts } from "@/lib/posts.server";
 
 const BASE_URL = "https://destinytees.uk";
 
@@ -52,8 +53,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // A database blip shouldn't take the whole sitemap down.
   }
 
+  // Published Posts (campaign and one-off pages at /<slug>), unless an admin
+  // switched on "Hide from search" for a page meant only for the QR code.
+  let posts: MetadataRoute.Sitemap = [];
+  try {
+    posts = (await listIndexablePosts()).map((p) => ({
+      url: `${BASE_URL}/${p.slug}`,
+      lastModified: p.updated_at,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    }));
+  } catch {
+    // A database blip shouldn't take the whole sitemap down.
+  }
+
   return [
     ...training,
+    ...posts,
     ...events,
     ...linkPages,
     { url: `${BASE_URL}/links`,        changeFrequency: "weekly",  priority: 0.7 },
@@ -79,6 +95,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/hire`,          changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE_URL}/contact`,      changeFrequency: "yearly",  priority: 0.6 },
     { url: `${BASE_URL}/governance`,   changeFrequency: "monthly", priority: 0.5 },
+    { url: `${BASE_URL}/app`,          changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE_URL}/discover`,     changeFrequency: "yearly",  priority: 0.4 },
     { url: `${BASE_URL}/privacy`,      changeFrequency: "yearly",  priority: 0.3 },
     { url: `${BASE_URL}/terms`,        changeFrequency: "yearly",  priority: 0.3 },
     { url: `${BASE_URL}/data-gdpr`,    changeFrequency: "yearly",  priority: 0.3 },

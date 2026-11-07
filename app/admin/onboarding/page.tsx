@@ -16,12 +16,12 @@ import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/admin/AdminUI";
 import { useOnboardingTour } from "@/components/admin/onboarding/OnboardingProvider";
 import {
+  ROLE_LABELS,
   TOURS,
   TOUR_ORDER,
   checklistForRole,
   minutesFor,
 } from "@/lib/adminOnboarding";
-import { ROLE_LABELS } from "@/lib/adminOnboarding";
 import { useAdminSession, setRolePreview, type PreviewRole } from "@/lib/useAdminSession";
 import { visibleItems } from "@/lib/adminNav";
 import { NO_ROLES } from "@/lib/adminRoles";
@@ -40,11 +40,12 @@ export default function OnboardingAdminPage() {
     <div className="mx-auto max-w-5xl px-6 py-10">
       <PageHeader
         title="Onboarding"
-        subtitle="What each access level is taught when they first sign in — and what the admin looks like from their side."
+        subtitle="What each access level is taught when they first sign in, and what the admin looks like from their side. Running a tour also switches the admin to that access level's view."
         back={{ href: "/admin", label: "Dashboard" }}
         action={
           previewRole ? (
             <button
+              type="button"
               className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
               onClick={() => setRolePreview(null)}
             >
@@ -65,21 +66,32 @@ export default function OnboardingAdminPage() {
           const tour = TOURS[role];
           const sections = checklistForRole(role);
           const reach = visibleItems({ ...NO_ROLES, [role]: true });
+          const minutes = minutesFor(sections);
+          const active = previewRole === role;
           return (
             <div
               key={role}
-              className="flex flex-col rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm"
+              className={`flex flex-col rounded-3xl border bg-white p-6 shadow-sm dark:bg-destiny-grey-800 ${
+                active
+                  ? "border-destiny-orange/60 ring-2 ring-destiny-orange/20"
+                  : "border-black/5 dark:border-white/8"
+              }`}
             >
-              <div className="mb-3 flex items-center gap-3">
+              <div className="mb-4 flex items-center gap-3">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-destiny-orange/10">
                   <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">
                     {tour.icon}
                   </span>
                 </span>
-                <div>
+                <div className="min-w-0 flex-1">
                   <h2 className="text-base font-black text-destiny-grey dark:text-white">{tour.label}</h2>
-                  <p className="text-xs text-destiny-grey/50 dark:text-white/50">{tour.blurb}</p>
+                  <p className="text-xs text-destiny-grey/55 dark:text-white/55">{tour.blurb}</p>
                 </div>
+                {active && (
+                  <span className="shrink-0 rounded-full bg-destiny-orange/10 px-2.5 py-1 text-[11px] font-bold text-destiny-orange">
+                    Previewing
+                  </span>
+                )}
               </div>
 
               <p className="mb-1 text-xs font-bold uppercase tracking-widest text-destiny-grey/40 dark:text-white/40">
@@ -90,7 +102,7 @@ export default function OnboardingAdminPage() {
               </p>
 
               <p className="mb-1 text-xs font-bold uppercase tracking-widest text-destiny-grey/40 dark:text-white/40">
-                Their checklist · about {minutesFor(sections)} min
+                Their checklist · about {minutes} {minutes === 1 ? "minute" : "minutes"}
               </p>
               <ol className="mb-5 space-y-1">
                 {sections.map((section, i) => (
@@ -103,24 +115,42 @@ export default function OnboardingAdminPage() {
 
               <div className="mt-auto flex flex-wrap gap-2">
                 <button
+                  type="button"
                   className="inline-flex items-center gap-1.5 rounded-xl bg-destiny-orange px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-110"
                   onClick={() => startRole(role)}
                 >
                   <span className="material-symbols-rounded text-lg" aria-hidden="true">play_arrow</span>
                   Run this tour
                 </button>
-                <button
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
-                  onClick={() => preview(role)}
-                >
-                  <span className="material-symbols-rounded text-lg" aria-hidden="true">visibility</span>
-                  Preview as {ROLE_LABELS[role]}
-                </button>
+                {active ? (
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
+                    onClick={() => setRolePreview(null)}
+                  >
+                    <span className="material-symbols-rounded text-lg" aria-hidden="true">visibility_off</span>
+                    Exit preview
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
+                    onClick={() => preview(role)}
+                  >
+                    <span className="material-symbols-rounded text-lg" aria-hidden="true">visibility</span>
+                    Preview as {ROLE_LABELS[role]}
+                  </button>
+                )}
               </div>
             </div>
           );
         })}
       </div>
+
+      <p className="mt-6 text-sm text-destiny-grey/55 dark:text-white/55">
+        Other access levels, such as HR Admin, don&rsquo;t have a tour yet. People who
+        only hold those see the dashboard without a welcome or checklist.
+      </p>
     </div>
   );
 }

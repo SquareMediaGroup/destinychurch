@@ -46,6 +46,8 @@ export const PAGE_INTENTS: { href: string; cta: string; intent: string }[] = [
   { href: "/shop",            cta: "Browse Merch",            intent: "shop, store, merch, apparel, t-shirts, clothing, buy" },
   { href: "/safeguarding",    cta: "Safeguarding",            intent: "safeguarding, child protection, concerns" },
   { href: "/governance",      cta: "Governance & Registration", intent: "charity number, company number, registered charity, trustees, directors, accounts, income, finances, annual return, filings, how the church is governed" },
+  { href: "/app",             cta: "Meet Destiny One",        intent: "Destiny One, the church app, mobile app, iPhone, Android, App Store, Google Play, group chats, DestinyAI, coming 2027, pre-order, pre-register" },
+  { href: "/discover",        cta: "Behind the Build",        intent: "the new website, how the website was built, redesign, old vs new site, website speed, performance, technology" },
   { href: "/help",            cta: "Help Centre",             intent: "help, FAQ, questions, how do I" },
   { href: "/contact",         cta: "Contact Us",              intent: "contact, get in touch, phone, email, address, or anything we don't have info on" },
 ];
@@ -287,8 +289,9 @@ TOOLS
 
 TODAY: ${today} (${isoToday}), Europe/London time.
 
-You have tools that fetch live information and real products. Prefer a tool over guessing; never invent a product, price, forecast, or address the tools would provide.
+You have tools that fetch live information and real products. Prefer a tool over guessing; never invent a product, price, forecast, event date, or address the tools would provide.
 - find_products(query, fit?, product_type?): search Destiny's shop and show real product cards the visitor can buy from directly. Use for any merch/apparel/gift/"what should I buy" request. If the request is broad (e.g. "a shirt"), ask ONE short clarifying question first using OPTION lines (fit, who it's for, or occasion), then call the tool once they've clarified. After it returns, briefly introduce the picks in your prose — do NOT list sizes, prices, or IDs; the card shows those. If it returns nothing, say so warmly and point to the shop (PAGE: /shop, CTA: Browse Merch).
+- find_events(query?, from_date?, to_date?): Destiny's live ChurchSuite calendar. ALWAYS call it for anything about what's on, when the next event is, when a specific event or course is happening, or how to sign up — never answer event dates from memory. Resolve "this weekend", "next week", "in December" to YYYY-MM-DD using TODAY. Results come back soonest first, so for "when's the next event?" answer with the first one (name, day and time). Regular weekly things (Sunday services, Destiny Kids, Destiny Youth) are in KNOWLEDGE: mention them too when they fit. The card shows the events, so keep your prose to a sentence or two. If nothing matches, say so and point to What's On (PAGE: /whats-on).
 - get_weather(location?, date): resolve relative dates ("this Sunday", "tomorrow") to a concrete YYYY-MM-DD using TODAY above before calling. Only for dates within 16 days.
 - get_directions(): shows an embedded map/location for Destiny Centre. Use whenever someone asks how to get there, where it is, or for a map — no need to ask their starting point.
 - search_web(query): use for a real-world fact you're not certain of or that could be out of date, where it helps someone visit or engage with Destiny, or concerns Destiny itself — including its public Charity Commission / Companies House record. Don't guess when a search would give a better answer. Do NOT use it for general trivia unrelated to Destiny or to visiting us (see OFF-TOPIC), or for genuinely unpublished internals like staff pay or member data — for those, say you don't have it and point to Contact Us.

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useCart, cartSubtotal } from "@/lib/cart-store";
-import { formatPrice } from "@/lib/shop";
+import { FREE_ITEM_LIMIT, FREE_ITEM_LIMIT_MESSAGE, formatPrice, freeUnits } from "@/lib/shop";
 import { useHydrated } from "@/lib/useHydrated";
 import Button from "@/components/ui/Button";
 
@@ -12,6 +12,7 @@ export default function CartPage() {
   const mounted = useHydrated();
 
   const subtotal = cartSubtotal(items);
+  const atFreeLimit = freeUnits(items) >= FREE_ITEM_LIMIT;
 
   return (
     <div className="relative min-h-screen bg-white text-destiny-grey">
@@ -48,6 +49,7 @@ export default function CartPage() {
             <ul className="divide-y divide-black/8">
               {items.map((item) => {
                 const variant = [item.color, item.size].filter(Boolean).join(" / ");
+                const isFree = item.unitPricePennies === 0;
                 return (
                   <li key={item.variantId} className="flex gap-4 py-5">
                     <Link
@@ -81,6 +83,9 @@ export default function CartPage() {
                           {variant && (
                             <p className="mt-0.5 text-sm text-subtle">{variant}</p>
                           )}
+                          {isFree && (
+                            <p className="mt-0.5 text-sm text-subtle">{FREE_ITEM_LIMIT_MESSAGE}</p>
+                          )}
                         </div>
                         <button
                           type="button"
@@ -106,14 +111,15 @@ export default function CartPage() {
                           <button
                             type="button"
                             onClick={() => setQty(item.variantId, item.quantity + 1)}
-                            className="flex h-9 w-9 items-center justify-center text-muted hover:text-destiny-grey"
+                            disabled={isFree && atFreeLimit}
+                            className="flex h-9 w-9 items-center justify-center text-muted hover:text-destiny-grey disabled:cursor-not-allowed disabled:opacity-30"
                             aria-label="Increase quantity"
                           >
                             <span className="material-symbols-rounded text-base" aria-hidden="true">add</span>
                           </button>
                         </div>
                         <p className="font-bold text-destiny-grey">
-                          {formatPrice(item.unitPricePennies * item.quantity)}
+                          {isFree ? "Free" : formatPrice(item.unitPricePennies * item.quantity)}
                         </p>
                       </div>
                     </div>

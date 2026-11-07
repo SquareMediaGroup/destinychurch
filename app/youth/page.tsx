@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import Image from "next/image";
-import AnimateIn from "@/components/AnimateIn";
 import MinistryHero from "@/components/ministry/MinistryHero";
 import SplitSection from "@/components/ministry/SplitSection";
-import ImageMosaic from "@/components/ministry/ImageMosaic";
+import PhotoSlideshow from "@/components/ui/PhotoSlideshow";
 import AgeGroupCards, { type AgeGroup } from "@/components/ministry/AgeGroupCards";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import YouthAlphaSection from "@/components/youth-alpha/YouthAlphaSection";
@@ -66,14 +64,14 @@ export default function YouthPage() {
       <SplitSection
         eyebrow="About Destiny Youth"
         title="More than a youth group"
-        wideMedia
+        evenSplit
         media={
-          <ImageMosaic
-            wide
-            images={[
-              { src: "/img/photos/EHAP_Youth.webp", alt: "A young person at Destiny Youth" },
+          <PhotoSlideshow
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            photos={[
+              { src: "/img/photos/EHAP_Youth.webp", position: "50% 35%", alt: "A young person at Destiny Youth" },
               { src: "/img/photos/Gallery/YouthCommunity.webp", alt: "Young people together at Destiny Youth" },
-              { src: "/img/photos/Gallery/WorshipMoment3.webp", alt: "" },
+              { src: "/img/photos/Gallery/WorshipMoment3.webp", alt: "A crowd with hands raised in worship" },
             ]}
           />
         }
@@ -87,38 +85,6 @@ export default function YouthPage() {
       </SplitSection>
 
       <AgeGroupCards heading="For every age" groups={groups} />
-
-      {/* Photo band — photographs only. This used to repeat three of the four
-          shots from the intro, and the two Youth Alpha graphics that sat here
-          are promo artwork, not photos; mixed in with photography they read as
-          adverts, and the Alpha artwork already appears in the section below.
-          Three distinct images beats four with duplicates. */}
-      <section className="bg-[#f5f7fa] pb-20">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8">
-          <AnimateIn>
-            <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
-              {[
-                { src: "/img/photos/WorshipMoment1.webp", offset: false },
-                { src: "/img/photos/Gallery/SingingLand2.webp", offset: true },
-                { src: "/img/photos/Gallery/SingingLand3.webp", offset: false },
-              ].map((img) => (
-                <div
-                  key={img.src}
-                  className={`relative aspect-[4/3] overflow-hidden rounded-2xl bg-white sm:aspect-[4/5] ${img.offset ? "lg:mt-8" : ""}`}
-                >
-                  <Image
-                    src={img.src}
-                    alt=""
-                    fill
-                    sizes="(min-width: 640px) 31vw, 92vw"
-                    className="object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-          </AnimateIn>
-        </div>
-      </section>
 
       <YouthAlphaSection />
 

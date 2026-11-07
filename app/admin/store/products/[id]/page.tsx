@@ -406,7 +406,7 @@ export default function ProductEditorPage({
   return (
     <div className="mx-auto max-w-3xl px-5 py-8 sm:px-8">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between gap-4">
+      <div data-tour="page-header" className="mb-6 flex items-center justify-between gap-4">
         <Link
           href="/admin/store"
           className="inline-flex items-center gap-1 text-sm font-semibold text-destiny-grey/60 dark:text-white/60 hover:text-destiny-grey dark:hover:text-white"

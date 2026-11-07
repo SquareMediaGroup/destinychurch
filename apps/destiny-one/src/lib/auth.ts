@@ -18,12 +18,29 @@ import * as Crypto from "expo-crypto";
 import * as LocalAuthentication from "expo-local-authentication";
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
-import { SIGN_IN_FAILED, passwordRejection, validateNewPassword, type D1Me, type PasswordRejection } from "@destiny/shared";
+import { isAuthError, isAuthRetryableFetchError } from "@supabase/supabase-js";
+import { OUTAGE_MESSAGE, SIGN_IN_FAILED, passwordRejection, validateNewPassword, type D1Me, type PasswordRejection } from "@destiny/shared";
 import { client, signInClient } from "@/lib/accounts";
 import { api, signInApi } from "@/lib/api";
 import { unregisterPush } from "@/lib/push";
 
 WebBrowser.maybeCompleteAuthSession();
+
+/**
+ * Whether a failed Supabase Auth call (checking a code, a password) means
+ * Supabase is down, rather than a wrong code or password or a phone that's
+ * offline. A 5xx answer is Supabase failing. No answer at all is Supabase down
+ * if Destiny One's own server can still be reached, and the phone offline if not.
+ */
+export async function isAuthOutage(err: unknown): Promise<boolean> {
+  if (!isAuthError(err)) return false;
+  if (typeof err.status === "number" && err.status >= 500) return true;
+  if (!isAuthRetryableFetchError(err)) return false;
+  return api.appConfig().then(
+    () => true,
+    () => false,
+  );
+}
 
 // ── Email one-time code ─────────────────────────────────────────────────────
 
@@ -64,11 +81,12 @@ export function finishSignIn(): Promise<D1Me> {
 /**
  * Password sign-in. Every failure (no such email, wrong password, an account
  * that can't sign in) says the same thing, so the app never reveals who is a member.
+ * The one exception is a Supabase outage, which is the same for everyone.
  * Approval, invite-only and suspension are still decided by api.link().
  */
 export async function signInWithPassword(email: string, password: string): Promise<{ me: D1Me; leaked: boolean }> {
   const { data, error } = await signInClient().auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
-  if (error) throw new Error(SIGN_IN_FAILED);
+  if (error) throw new Error((await isAuthOutage(error)) ? OUTAGE_MESSAGE : SIGN_IN_FAILED);
   // With leaked password protection on, Supabase still lets an existing password
   // sign in but flags it if it has since turned up in a data breach.
   const leaked = !!data.weakPassword?.reasons.includes("pwned");

@@ -8,7 +8,7 @@
 // branches on it; `message` is plain copy the app can show as-is.
 
 import { NextResponse } from "next/server";
-import type { D1Envelope, D1ErrorCode } from "@destiny/shared";
+import { OUTAGE_MESSAGE, type D1Envelope, type D1ErrorCode } from "@destiny/shared";
 import { APP_API_VERSION } from "@/lib/appApi";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { createServiceClient } from "@/utils/supabase/service";
@@ -40,7 +40,10 @@ const STATUS_FOR: Record<D1ErrorCode, number> = {
   rule_violation: 422,
   rate_limited: 429,
   unavailable: 503,
+  outage: 503,
 };
+
+const GENERIC = "Something went wrong. Please try again.";
 
 /** Thrown anywhere inside a handler wrapped by `oneRoute`; becomes the error response. */
 export class OneError extends Error {
@@ -77,13 +80,43 @@ export function fromDbError(error: { code?: string; message: string }): OneError
       return new OneError("invalid", error.message);
     default:
       console.error("⚠️ Destiny One database error:", error.code, error.message);
-      return new OneError("unavailable", "Something went wrong. Please try again.");
+      return new OneError("unavailable", GENERIC);
   }
 }
 
 type Handler<C> = (request: Request, context: C) => Promise<Response>;
 
-/** Wraps a route handler so a thrown OneError becomes a proper response. */
+const PROBE_TIMEOUT_MS = 2500;
+const PROBE_TTL_MS = 15_000;
+let probe: { at: number; down: Promise<boolean> } | null = null;
+
+/**
+ * Whether Supabase itself is down: its Auth health check, or one tiny database
+ * read, fails or times out. Only asked after a request has already failed, and
+ * the answer is shared for a few seconds so an outage doesn't add a probe to
+ * every failing request on this instance.
+ */
+export function supabaseDown(): Promise<boolean> {
+  if (probe && Date.now() - probe.at < PROBE_TTL_MS) return probe.down;
+  const signal = AbortSignal.timeout(PROBE_TIMEOUT_MS);
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  const auth = fetch(`${url}/auth/v1/health`, { headers: { apikey: key }, signal, cache: "no-store" }).then((res) => res.ok);
+  const db = Promise.resolve(createServiceClient().from("d1_settings").select("id").limit(1).abortSignal(signal)).then(({ error }) => !error);
+  const down = Promise.all([auth, db])
+    .then(([authOk, dbOk]) => !authOk || !dbOk)
+    .catch(() => true);
+  probe = { at: Date.now(), down };
+  return down;
+}
+
+/**
+ * Wraps a route handler so a thrown OneError becomes a proper response.
+ *
+ * A generic failure (an unexpected error, or "Something went wrong") is turned
+ * into the `outage` error when Supabase turns out to be down, so members are
+ * told it isn't them and where to follow along, instead of "try again".
+ */
 export function oneRoute<C>(handler: Handler<C>): Handler<C> {
   return async (request, context) => {
     try {
@@ -92,9 +125,14 @@ export function oneRoute<C>(handler: Handler<C>): Handler<C> {
       await loadMessageKeyring().catch((err) => console.error("🔐 Destiny One keys unavailable:", (err as Error).message));
       return await handler(request, context);
     } catch (err) {
+      const generic = !(err instanceof OneError) || (err.code === "unavailable" && err.message === GENERIC);
+      if (generic && (await supabaseDown())) {
+        console.error("🔥 Destiny One: Supabase is down:", err instanceof Error ? err.message : err);
+        return oneError("outage", OUTAGE_MESSAGE);
+      }
       if (err instanceof OneError) return oneError(err.code, err.message);
       console.error("⚠️ Destiny One route failed:", err);
-      return oneError("unavailable", "Something went wrong. Please try again.");
+      return oneError("unavailable", GENERIC);
     }
   };
 }

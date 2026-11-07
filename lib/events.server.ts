@@ -1,6 +1,7 @@
 // Server-only event lookups: the ChurchSuite index, and the featured event
 // that /whats-on, the homepage carousel and the event popup all read.
 import "server-only";
+import { cache } from "react";
 import { unstable_noStore as noStore } from "next/cache";
 import {
   buildEventIndex,
@@ -22,10 +23,13 @@ import { RESERVED_EVENT_SLUGS } from "@/lib/events";
  * `fetchChurchSuiteEvents` returns [] on any error, so an empty index is also
  * the degraded state — callers must render an empty state rather than throw.
  */
-export async function getEventIndex(): Promise<EventIndex> {
+async function loadEventIndex(): Promise<EventIndex> {
   const events = await fetchChurchSuiteEvents({ next: { revalidate: 300 } });
   return buildEventIndex(events, { reservedSlugs: RESERVED_EVENT_SLUGS });
 }
+// Built once per request: the layout's event popup and the page (homepage
+// rail, /whats-on) each need it, and parsing the feed isn't free.
+export const getEventIndex = cache(loadEventIndex);
 
 /** The `featured_event` singleton row, as stored. */
 export type FeaturedEventRow = {
@@ -84,7 +88,7 @@ export type ResolvedEventPopup = {
 const EMPTY = (value: string | null | undefined): boolean =>
   !value || value.trim().length === 0;
 
-async function readFeaturedRow(): Promise<FeaturedEventRow | null> {
+async function fetchFeaturedRow(): Promise<FeaturedEventRow | null> {
   try {
     const supabase = createServiceClient();
     const { data } = await supabase
@@ -97,6 +101,9 @@ async function readFeaturedRow(): Promise<FeaturedEventRow | null> {
     return null;
   }
 }
+// Once per request: the layout's popup, the page's hero and getFeaturedEvent
+// inside getActiveEventPopup all read this row.
+const readFeaturedRow = cache(fetchFeaturedRow);
 
 /**
  * Is the promotion live right now?

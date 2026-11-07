@@ -33,8 +33,13 @@ export interface TourStep {
   id: string;
   /** Navigated to before the step is shown. */
   route: string;
-  /** `data-tour` value to spotlight. Omit for a centred card with no target. */
-  anchor?: string;
+  /**
+   * `data-tour` value to spotlight. Omit for a centred card with no target. A
+   * list is tried in order and the first one on screen wins — the sidebar only
+   * exists at desktop width and the tab bar only on phones, so a step about
+   * "where the pages are" names both.
+   */
+  anchor?: string | string[];
   title: string;
   body: string;
   placement?: "top" | "bottom" | "left" | "right" | "auto";
@@ -79,15 +84,15 @@ const ORIENTATION: TourSection = {
       id: "orientation-welcome",
       route: "/admin",
       title: "This is your dashboard",
-      body: "Everything you can change on the website lives behind this screen. It only ever shows the sections your access level covers, so there is nothing here you can break by accident.",
+      body: "Everything you can change on the website starts from here. You only see the sections your access level covers, so if something is missing, it belongs to someone else.",
     },
     {
       id: "orientation-sidebar",
       route: "/admin",
-      anchor: "sidebar",
+      anchor: ["sidebar", "tabbar"],
       placement: "right",
-      title: "The sidebar is the whole map",
-      body: "Every page you can reach is listed here, grouped by what it does. If it isn't in this list, you don't have access to it — that's normal, not a fault.",
+      title: "Every page you can reach is here",
+      body: "Pages are grouped by what they do. If a page isn't listed, your access level doesn't include it. That's normal, not a fault.",
     },
     {
       id: "orientation-search",
@@ -95,7 +100,7 @@ const ORIENTATION: TourSection = {
       anchor: "command-trigger",
       placement: "bottom",
       title: "Jump anywhere with one key",
-      body: "Press Command-K (or Control-K) from any page and start typing. It searches pages and your actual content — a product name, a post title — and takes you straight there.",
+      body: "Press Command-K (Control-K on Windows) from any page and start typing. It finds pages and your actual content, like a product name or a post title, and takes you straight there. It's also where you restart this tour: search for \"tour\".",
     },
   ],
 };
@@ -108,8 +113,8 @@ export function finaleStep(role: string): TourStep {
   return {
     id: `${role}-finale`,
     route: "/admin",
-    title: "That's it — and nothing was saved",
-    body: "Everything you just did was a rehearsal. No product, post or setting was created or changed, and the moment you leave this tour it all disappears. You can run it again any time from the Get Started button.",
+    title: "That's it, and nothing was saved",
+    body: "Everything you just did was practice. Nothing was created or changed on the website, and anything you made disappears when the tour ends. To run it again, press Command-K and search for \"tour\".",
   };
 }
 
@@ -166,7 +171,7 @@ const STORE: Tour = {
           sandbox: true,
           advanceOnClick: true,
           title: "Create it",
-          body: "Press this and you'll land in the product editor. To be completely clear: this does not create a product. The button behaves exactly as it will in real life, but the request never leaves your browser.",
+          body: "Press this and you'll land in the product editor, exactly as you would for real. No product is actually created.",
         },
         {
           id: "store-editor",
@@ -248,8 +253,6 @@ const SITE: Tour = {
         {
           id: "posts-slug",
           route: "/admin/posts",
-          anchor: "list-toolbar",
-          placement: "bottom",
           title: "The address matters",
           body: "Each post has a slug, which is the bit after the slash in the address. Change it after you've shared the link and the old link breaks — so set it once, before you publish.",
         },
@@ -280,11 +283,11 @@ const SITE: Tour = {
         {
           id: "redirects-form",
           route: "/admin/redirects",
-          anchor: "list-toolbar",
+          anchor: "redirect-form",
           placement: "bottom",
           sandbox: true,
           title: "Three fields, one rule",
-          body: "The label is for you, the slug is what people type, and the target is where they end up. Keep slugs short and lower-case — they get read aloud from a stage more often than you'd think.",
+          body: "The label is for you, the slug is what people type, and the target is where they end up. Keep slugs short and lower-case, because they get read aloud from a stage more often than you'd think. Try saving one: it won't be created.",
         },
       ],
     },
@@ -328,14 +331,13 @@ const EVENT: Tour = {
           route: "/admin/popup",
           anchor: "page-header",
           placement: "bottom",
-          sandbox: true,
           title: "The pop-up visitors see",
           body: "This appears a few seconds after someone lands on the site, once per visit. It is the loudest thing we own, so it earns its place only when there's something genuinely time-sensitive to say.",
         },
         {
           id: "popup-save",
           route: "/admin/popup",
-          anchor: "list-toolbar",
+          anchor: "popup-save",
           placement: "top",
           sandbox: true,
           title: "Try saving it",
@@ -353,7 +355,7 @@ const EVENT: Tour = {
           anchor: "page-header",
           placement: "bottom",
           title: "Pulling an event out of ChurchSuite",
-          body: "The list comes straight from ChurchSuite, so you never retype an event. Pick one and it's promoted across the site; the separate Event Popup page controls the wording if you want it in the pop-up too.",
+          body: "The list comes straight from ChurchSuite, so you never retype an event. Pick one and it's promoted across the site. If you want it in the pop-up too, the Event Popup page controls that wording.",
         },
       ],
     },
@@ -393,6 +395,14 @@ const TRAINING: Tour = {
           body: "A category is a team — Production, Hospitality. Inside it are sub-groups, and inside those are the actual training posts. Getting the category right first saves moving things later.",
         },
         {
+          id: "training-list",
+          route: "/admin/training",
+          anchor: "list-toolbar",
+          placement: "bottom",
+          title: "Open one to go deeper",
+          body: "Clicking a category takes you into its sub-groups, and a sub-group into its posts. The breadcrumbs at the top always climb back out.",
+        },
+        {
           id: "training-new",
           route: "/admin/training",
           anchor: "page-action",
@@ -400,16 +410,16 @@ const TRAINING: Tour = {
           sandbox: true,
           advanceOnClick: true,
           title: "Make a practice category",
-          body: "Press this and fill it in however you like. It won't be created.",
+          body: "Press this to open the form.",
         },
         {
-          id: "training-list",
+          id: "training-form",
           route: "/admin/training",
-          anchor: "list-toolbar",
-          placement: "bottom",
+          anchor: "modal",
+          placement: "right",
           sandbox: true,
-          title: "Open one to go deeper",
-          body: "Clicking a category takes you into its sub-groups, and a sub-group into its posts. The breadcrumbs at the top always climb back out.",
+          title: "Fill it in however you like",
+          body: "Give it a name and press Save. It will appear in the list as if it were real, but nothing is created.",
         },
       ],
     },

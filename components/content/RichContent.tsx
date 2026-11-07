@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { BLOCKS } from "@/components/blocks/registry";
 import { BLOCK_RE, decodeProps, unescapeAttr } from "@/components/blocks/serialize";
+import { SIZE_CLASS, blockSize } from "@/components/blocks/size";
 
 /**
  * Renders admin-authored rich text, upgrading any embedded content blocks into
@@ -21,6 +22,7 @@ export default function RichContent({
   html,
   className,
   jsonLd = true,
+  allowWide = false,
 }: {
   html: string | null | undefined;
   /** Applied to the wrapper. Callers pass `rte-content` plus type utilities. */
@@ -30,6 +32,11 @@ export default function RichContent({
    * already emit their own primary entity (e.g. shop products).
    */
   jsonLd?: boolean;
+  /**
+   * Honour blocks' Wide / Full width setting (components/blocks/size.ts). Only
+   * the Posts page passes it; everywhere else blocks stay in the column.
+   */
+  allowWide?: boolean;
 }) {
   if (!html) return null;
 
@@ -74,7 +81,7 @@ export default function RichContent({
       const props = decodeProps(def, unescapeAttr(rawProps), Number(version));
       const Component = def.Component;
       parts.push(
-        <div key={key++} data-dc-block={name}>
+        <div key={key++} data-dc-block={name} className={allowWide ? SIZE_CLASS[blockSize(props)] || undefined : undefined}>
           <Component {...props} mode="view" />
         </div>,
       );

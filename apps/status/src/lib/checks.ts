@@ -17,7 +17,10 @@ const TIMEOUT_MS = 8_000;
 /** A response slower than this still counts as up, but degraded. */
 const SLOW_MS = 4_000;
 
-export const SITE_URL = (process.env.STATUS_SITE_URL || "https://destinytees.uk").replace(/\/$/, "");
+// The Vercel origin that serves this repo's Next.js site and Destiny One's API,
+// the same base the apps use. destinytees.uk still points at the old nginx
+// site, which 404s every /api route; switch once that domain moves to Vercel.
+export const SITE_URL = (process.env.STATUS_SITE_URL || "https://destinychurch.vercel.app").replace(/\/$/, "");
 const SUPABASE_URL = process.env.STATUS_SUPABASE_URL?.replace(/\/$/, "") || null;
 const SUPABASE_KEY = process.env.STATUS_SUPABASE_PUBLISHABLE_KEY || null;
 

@@ -23,6 +23,7 @@ import { haptic } from "@/lib/haptics";
 import { SaveRefusedError, downloadAttachment, isPhoto, savePhoto, shareFile, type Photo } from "@/lib/media";
 import { useGroupMedia, useMessages } from "@/lib/queries";
 import { refreshAttachmentUrls } from "@/lib/useConversation";
+import { noteLoaded } from "@/state/dataSettings";
 import { errorMessage } from "@/state/session";
 
 const MAX_ZOOM = 4;
@@ -235,7 +236,15 @@ function ZoomablePhoto({ photo, width, height, onTap, onZoomChange }: { photo: P
     >
       <Pressable onPress={tap} accessibilityRole="image" accessibilityLabel={`Photo from ${photo.mine ? "you" : photo.sender?.displayName ?? "a former member"}. Double tap to zoom.`}>
         {photo.attachment.url ? (
-          <Image source={{ uri: photo.attachment.url }} style={{ width, height }} resizeMode="contain" onLoad={() => setLoaded(true)} />
+          <Image
+            source={{ uri: photo.attachment.url }}
+            style={{ width, height }}
+            resizeMode="contain"
+            onLoad={() => {
+              setLoaded(true);
+              noteLoaded(photo.attachment, photo.mine);
+            }}
+          />
         ) : (
           <View style={{ width, height }} />
         )}

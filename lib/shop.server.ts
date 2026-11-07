@@ -1,5 +1,6 @@
 // Server-only data fetchers for the public /shop pages.
 import "server-only";
+import { cache } from "react";
 import { createServiceClient } from "@/utils/supabase/service";
 import type {
   Product,
@@ -39,7 +40,7 @@ export async function getPublishedProducts(): Promise<ProductWithVariants[]> {
 }
 
 /** A single published product (with variants) by slug, or null. */
-export async function getProductBySlug(
+async function loadProductBySlug(
   slug: string,
 ): Promise<ProductWithVariants | null> {
   const supabase = createServiceClient();
@@ -58,6 +59,8 @@ export async function getProductBySlug(
   const product = data as ProductWithVariants;
   return { ...product, variants: sortVariants(product.variants ?? []) };
 }
+// cache(): generateMetadata and the page both ask, but it's one query per request.
+export const getProductBySlug = cache(loadProductBySlug);
 
 /** Every product (published or draft) with variants — used by the admin list. */
 export async function getAllProductsAdmin(): Promise<ProductWithVariants[]> {

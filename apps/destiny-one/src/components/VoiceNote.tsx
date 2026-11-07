@@ -11,7 +11,7 @@
 // Playing: nothing loads until Play is tapped (a chat can have dozens), and
 // only one voice note plays at a time across the app.
 
-import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
+import { useEffect, useImperativeHandle, useRef, type Ref } from "react";
 import { useIsPreview } from "expo-router";
 import { Alert, Animated, Linking, Text, View } from "react-native";
 import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, useAudioRecorderState, type AudioPlayer } from "expo-audio";
@@ -19,6 +19,8 @@ import { MAX_VOICE_MS, VOICE_MIME_TYPE } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
 import { PressableScale } from "@/components/Motion";
 import { haptic } from "@/lib/haptics";
+import { useConnection } from "@/lib/network";
+import { autoDownloads, noteLoaded, useDataSettings } from "@/state/dataSettings";
 import { ORANGE, useTheme } from "@/theme/tokens";
 
 const VOICE_OPTIONS = { ...RecordingPresets.HIGH_QUALITY, numberOfChannels: 1, bitRate: 64000 };
@@ -144,8 +146,19 @@ export function VoiceRecorder({ onDone, controlRef, locked, slideX }: { onDone: 
 
 let playing: AudioPlayer | null = null;
 
+type VoiceNoteProps = {
+  url: string | null;
+  durationMs: number | null;
+  color: string;
+  track: string;
+  fill: string;
+  /** The sent attachment, for the auto-download setting and network usage. */
+  attachment?: { id: string; mimeType: string; sizeBytes: number | null };
+  mine?: boolean;
+};
+
 /** A voice note in a bubble: play/pause, a progress bar, the time. `url` null while it's still uploading. */
-export function VoiceNote(props: { url: string | null; durationMs: number | null; color: string; track: string; fill: string }) {
+export function VoiceNote(props: VoiceNoteProps) {
   // A chat peek shows a static note: no audio player per note on every peek.
   return useIsPreview() ? <VoiceNoteStatic {...props} /> : <VoiceNotePlayer {...props} />;
 }
@@ -164,10 +177,22 @@ function VoiceNoteStatic({ durationMs, color, track, fill }: { durationMs: numbe
   );
 }
 
-function VoiceNotePlayer({ url, durationMs, color, track, fill }: { url: string | null; durationMs: number | null; color: string; track: string; fill: string }) {
+function VoiceNotePlayer({ url, durationMs, color, track, fill, attachment, mine = false }: VoiceNoteProps) {
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
-  const [loaded, setLoaded] = useState(false);
+  // Whether the player has its source yet. A ref: nothing on screen depends on it.
+  const loaded = useRef(false);
+  // Storage and data: someone else's voice note is fetched ahead when the setting allows it on this connection.
+  const settings = useDataSettings();
+  const on = useConnection();
+  const preload = !!url && !mine && autoDownloads(settings.voice, on);
+
+  useEffect(() => {
+    if (!preload || loaded.current || !url) return;
+    player.replace({ uri: url });
+    loaded.current = true;
+    if (attachment) noteLoaded(attachment, mine);
+  }, [preload, url, player, attachment, mine]);
 
   useEffect(() => {
     if (status.didJustFinish) {
@@ -192,9 +217,10 @@ function VoiceNotePlayer({ url, durationMs, color, track, fill }: { url: string 
     if (playing && playing !== player) playing.pause();
     playing = player;
     await setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
-    if (!loaded) {
+    if (!loaded.current) {
       player.replace({ uri: url });
-      setLoaded(true);
+      loaded.current = true;
+      if (attachment) noteLoaded(attachment, mine);
     }
     player.play();
   }

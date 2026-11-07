@@ -4,7 +4,8 @@ import { z } from "zod";
 import { createServiceClient } from "@/utils/supabase/service";
 import { clientIp } from "@/lib/rateLimit";
 import { sendEmailCard } from "@/lib/emailCard";
-import { limit, oneJson, oneRoute, readBody } from "@/lib/destinyOne/http";
+import { OUTAGE_MESSAGE } from "@destiny/shared";
+import { OneError, limit, oneJson, oneRoute, readBody, supabaseDown } from "@/lib/destinyOne/http";
 
 // POST /api/app/v1/one/auth/code  { email }   (no sign-in needed)
 //
@@ -36,6 +37,9 @@ export const POST = oneRoute(async (request) => {
   await limit("auth-code-ip", clientIp(request), 10);
   const { email } = await readBody(request, schema);
   await limit("auth-code-email", hashed(email), 3);
+  // The code is made and checked by Supabase: while it's down, say so rather
+  // than "sent" and a code that never comes. The same answer for every email.
+  if (await supabaseDown()) throw new OneError("outage", OUTAGE_MESSAGE);
 
   after(async () => {
     const supabase = createServiceClient();

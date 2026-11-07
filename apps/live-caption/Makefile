@@ -15,7 +15,7 @@ BUNDLE_ID   := uk.destinytees.livecaption
 WHISPER_DIR := Vendor/whisper.cpp
 WHISPER_TAG := v1.7.6
 
-.PHONY: project build test run clean whisper-submodule whisper-build ndi-setup app-path
+.PHONY: project build test run clean whisper-submodule whisper-build ndi-setup app-path dmg
 
 project:
 	xcodegen generate
@@ -34,6 +34,11 @@ test: project
 
 run: build
 	open "$(DD)/Build/Products/Debug/Live Caption.app"
+
+# Release build packaged as build/Live-Caption-<version>.dmg. Ad-hoc signed
+# unless SIGN_IDENTITY is set; see Scripts/make-dmg.sh.
+dmg:
+	SIGN_IDENTITY="$(SIGN_IDENTITY)" NOTARY_PROFILE="$(NOTARY_PROFILE)" ./Scripts/make-dmg.sh
 
 app-path:
 	@echo "$(DD)/Build/Products/Debug/Live Caption.app"

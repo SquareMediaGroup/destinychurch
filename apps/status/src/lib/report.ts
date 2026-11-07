@@ -1,19 +1,46 @@
 // "Report a problem" emails to the super admins. Sent straight to Resend's
-// HTTP API, not through the website or Supabase, so a report still arrives
-// while those are the thing that's down.
+// HTTP API, not through the website, so a report still arrives while the site
+// is the thing that's down.
 //
-// Recipients are STATUS_REPORT_RECIPIENTS (comma-separated). It is a fixed
-// list rather than a lookup of super_admin roles, because that lookup needs
-// Supabase. Keep it in step with who holds super_admin.
+// Recipients are everyone with super_admin in `admin_roles`, read from
+// Supabase's REST API at send time (service-only table, so this needs the
+// secret key). If Supabase can't be read, which is exactly when reports
+// matter most, the report goes to the church office address instead.
 
 const RESEND_URL = "https://api.resend.com/emails";
 const FROM = process.env.STATUS_REPORT_FROM || "Destiny Status <noreply@support.squaremediagroup.org>";
+const FALLBACK_RECIPIENT = "admin@destinytees.uk";
 
-export function reportRecipients(): string[] {
-  return (process.env.STATUS_REPORT_RECIPIENTS || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+const SUPABASE_URL = process.env.STATUS_SUPABASE_URL?.replace(/\/$/, "") || null;
+const SUPABASE_SECRET = process.env.STATUS_SUPABASE_SECRET_KEY || null;
+
+async function superAdminEmails(): Promise<string[]> {
+  if (!SUPABASE_URL || !SUPABASE_SECRET) return [];
+  // New secret keys (sb_secret_…) go in `apikey` only; a legacy service_role
+  // JWT also needs to be the bearer token.
+  const headers: Record<string, string> = { apikey: SUPABASE_SECRET };
+  if (SUPABASE_SECRET.startsWith("eyJ")) headers.Authorization = `Bearer ${SUPABASE_SECRET}`;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/admin_roles?select=email&super_admin=eq.true`, {
+      headers,
+      cache: "no-store",
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (!res.ok) {
+      console.error(`⚠️ Couldn't read super admins (${res.status}), using the fallback address`);
+      return [];
+    }
+    const rows = (await res.json()) as { email: string | null }[];
+    return [...new Set(rows.map((r) => r.email?.trim()).filter((e): e is string => !!e))];
+  } catch (err) {
+    console.error("⚠️ Couldn't reach Supabase for super admins, using the fallback address", err);
+    return [];
+  }
+}
+
+export async function reportRecipients(): Promise<{ to: string[]; fallback: boolean }> {
+  const admins = await superAdminEmails();
+  return admins.length > 0 ? { to: admins, fallback: false } : { to: [FALLBACK_RECIPIENT], fallback: true };
 }
 
 function escapeHtml(s: string): string {
@@ -31,11 +58,11 @@ export interface Report {
 
 export async function sendReport(report: Report): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
-  const to = reportRecipients();
-  if (!key || to.length === 0) {
-    console.warn("⚠️ RESEND_API_KEY or STATUS_REPORT_RECIPIENTS not set — report not sent");
+  if (!key) {
+    console.warn("⚠️ RESEND_API_KEY not set — report not sent");
     return false;
   }
+  const { to, fallback } = await reportRecipients();
 
   const rows: [string, string][] = [
     ["Service", report.service],
@@ -44,6 +71,7 @@ export async function sendReport(report: Report): Promise<boolean> {
     ["Reported at", new Date().toUTCString()],
     ["Reply to", report.email ?? "Not given"],
     ["Device", report.userAgent ?? "Unknown"],
+    ...(fallback ? ([["Note", "Sent here because the super admin list couldn't be read"]] as [string, string][]) : []),
   ];
 
   const html = `<!doctype html>

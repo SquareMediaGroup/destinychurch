@@ -21,6 +21,12 @@ class ShowState {
     this.golden = false;
   }
 
+  // Changing which judges are in use clears the buzzers.
+  setSeats(seats) {
+    this.seats = seats.map(String);
+    this.reset();
+  }
+
   setLocked(locked) {
     this.locked = Boolean(locked);
   }

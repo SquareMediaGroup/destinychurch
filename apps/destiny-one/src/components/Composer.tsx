@@ -1,18 +1,17 @@
 // The message composer: attach (image or PDF, 20 MB) from files or the photo
-// library, take a photo with the in-app camera (every image is re-encoded first so no
+// library, take a photo with the camera in the + menu (every image is re-encoded first so no
 // location or other hidden details leave the phone: src/lib/cleanImage.ts), a
 // glass text field, the reply bar,
 // and the send button that swaps in for the attach shortcut once there's text.
 
-import { forwardRef, useRef, useState } from "react";
-import { Animated, PanResponder, Pressable, Text, TextInput, View, type TextInputInstance } from "react-native";
+import { forwardRef, useEffect, useRef, useState } from "react";
+import { Animated, PanResponder, Pressable, Text, TextInput, View, type TextInputInstance, type ViewInstance } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_MESSAGE_LENGTH, mentionQuery, mentionSuggestions, type Mentionable } from "@destiny/shared";
-import { AttachSheet } from "@/components/AttachSheet";
+import { AttachSheet, type MenuAnchor } from "@/components/AttachSheet";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
-import { takePhoto as openCamera } from "@/lib/camera";
 import { Appear, PressableScale } from "@/components/Motion";
 import { SendAsMenu } from "@/components/SendAsMenu";
 import { VoiceRecorder, type VoiceRecorderHandle } from "@/components/VoiceNote";
@@ -20,6 +19,7 @@ import { Avatar } from "@/components/ui";
 import type { Account } from "@/lib/accounts";
 import { cleanImage } from "@/lib/cleanImage";
 import { haptic } from "@/lib/haptics";
+import { dataSettings } from "@/state/dataSettings";
 import { ORANGE, useTheme } from "@/theme/tokens";
 
 /** How far (points) the finger slides left to cancel / up to lock, and what counts as a tap. */
@@ -75,6 +75,13 @@ export const Composer = forwardRef<TextInputInstance, Props>(function Composer({
     onTextChange?.(text);
   };
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Where the + button is, so the menu grows out of it; and its spin to a × while the menu is open.
+  const plusRef = useRef<ViewInstance>(null);
+  const [anchor, setAnchor] = useState<MenuAnchor | null>(null);
+  const [plusTurn] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    Animated.spring(plusTurn, { toValue: sheetOpen ? 1 : 0, stiffness: 420, damping: 24, mass: 1, useNativeDriver: true }).start();
+  }, [sheetOpen, plusTurn]);
   // Voice recording: "held" while the finger is down on the microphone,
   // "locked" once slid up (hands-free).
   const [recording, setRecording] = useState<null | "held" | "locked">(null);
@@ -146,7 +153,7 @@ export const Composer = forwardRef<TextInputInstance, Props>(function Composer({
     if (a.mimeType.startsWith("image/")) {
       // A fresh copy with no hidden details (above all, no GPS location).
       try {
-        const clean = await cleanImage(a.uri, a.name, a.mimeType);
+        const clean = await cleanImage(a.uri, a.name, a.mimeType, { quality: dataSettings.get().uploadQuality });
         onAttach({ uri: clean.uri, name: clean.name, mimeType: clean.mimeType, size: null });
       } catch {
         onError("Couldn't prepare that photo. Try another one.");
@@ -177,13 +184,6 @@ export const Composer = forwardRef<TextInputInstance, Props>(function Composer({
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 1 });
     if (res.canceled || !res.assets[0]) return;
     await imagePickerAsset(res.assets[0], "Photo.jpg");
-  }
-
-  async function takePhoto() {
-    // The in-app camera (src/app/camera.tsx) asks for permission itself.
-    const uri = await openCamera();
-    if (!uri) return;
-    await acceptAsset({ uri, name: "Photo.jpg", mimeType: "image/jpeg", size: null });
   }
 
   /** Holding Send: offer the other signed-in accounts that can send this message. */
@@ -282,10 +282,13 @@ export const Composer = forwardRef<TextInputInstance, Props>(function Composer({
             </GlassSurface>
           </Appear>
         ) : null}
-        {textOnly ? null : <PressableScale
+        {textOnly ? null : <View ref={plusRef} collapsable={false}><PressableScale
           onPress={() => {
             haptic.selection();
-            setSheetOpen(true);
+            plusRef.current?.measureInWindow((x, y, width, height) => {
+              setAnchor({ x, y, width, height });
+              setSheetOpen(true);
+            });
           }}
           disabled={!!editing}
           style={{ opacity: editing ? 0.35 : 1 }}
@@ -296,10 +299,12 @@ export const Composer = forwardRef<TextInputInstance, Props>(function Composer({
         >
           {({ pressed }) => (
             <GlassSurface interactive style={[{ width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.75 : 1 }, t.shadow]}>
-              <Icon name="plus" size={22} color={t.text} />
+              <Animated.View style={{ transform: [{ rotate: plusTurn.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "45deg"] }) }] }}>
+                <Icon name="plus" size={22} color={t.text} />
+              </Animated.View>
             </GlassSurface>
           )}
-        </PressableScale>}
+        </PressableScale></View>}
 
         <View style={{ flex: 1 }}>
           <GlassSurface style={{ minHeight: 41, borderRadius: 21.5, flexDirection: "row", alignItems: "flex-end", gap: 6, paddingLeft: 16, paddingRight: 4, paddingVertical: 4 }}>
@@ -380,6 +385,7 @@ export const Composer = forwardRef<TextInputInstance, Props>(function Composer({
 
       <AttachSheet
         visible={sheetOpen}
+        anchor={anchor}
         onClose={() => setSheetOpen(false)}
         onPhotos={() => {
           setSheetOpen(false);
@@ -388,9 +394,9 @@ export const Composer = forwardRef<TextInputInstance, Props>(function Composer({
             void pickPhoto().catch(() => onError("Couldn't open your photos. Try again."));
           }, 350);
         }}
-        onCamera={() => {
+        onPhoto={(uri) => {
           setSheetOpen(false);
-          void takePhoto();
+          void acceptAsset({ uri, name: "Photo.jpg", mimeType: "image/jpeg", size: null });
         }}
         onDocument={() => {
           setSheetOpen(false);

@@ -23,7 +23,7 @@ import { AppState } from "react-native";
 import { useIsRestoring, useQuery } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 import type { D1CommunitySummary, D1GroupSummary, D1Me } from "@destiny/shared";
-import { canCreateGroup, checkAddedAccount } from "@destiny/shared";
+import { OUTAGE_MESSAGE, canCreateGroup, checkAddedAccount } from "@destiny/shared";
 import { router, useSegments } from "expo-router";
 import * as accounts from "@/lib/accounts";
 import type { Account } from "@/lib/accounts";
@@ -68,6 +68,8 @@ interface SessionValue {
   isLeader: boolean;
   communities: D1CommunitySummary[] | null;
   communitiesError: string | null;
+  /** The last load of my account or chats failed because Destiny One is down (not the phone being offline). */
+  outage: boolean;
   /** My one-to-one chat with DestinyAI (in no community), once loaded. */
   assistant: D1GroupSummary | null;
   /** Pull-to-refresh and "Try again". Everything else updates by itself. */
@@ -148,6 +150,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const communitiesQuery = useQuery({ queryKey: keys.communities, queryFn: () => api.communities(), enabled: active && !restoring && !switching });
   const communities = active ? (communitiesQuery.data ?? null) : null;
   const communitiesError = communitiesQuery.error ? errorMessage(communitiesQuery.error, "Couldn't load your chats.") : null;
+  const outage = isOutage(meQuery.error) || isOutage(communitiesQuery.error);
   // Made on the server the first time it's asked for. Never blocks the chat list.
   const assistantQuery = useQuery({ queryKey: keys.assistant, queryFn: () => api.assistant(), enabled: active && !restoring && !switching });
   const assistant = active ? (assistantQuery.data ?? null) : null;
@@ -389,6 +392,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       isLeader: me ? canCreateGroup(me) : false,
       communities,
       communitiesError,
+      outage,
       assistant,
       refreshCommunities,
       signOut,
@@ -399,7 +403,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       finishAdding,
       removeAccount,
     }),
-    [ready, session, me, setMe, refreshMe, communities, communitiesError, assistant, refreshCommunities, signOut, accountList, activeSlot, switching, switchTo, finishAdding, removeAccount],
+    [ready, session, me, setMe, refreshMe, communities, communitiesError, outage, assistant, refreshCommunities, signOut, accountList, activeSlot, switching, switchTo, finishAdding, removeAccount],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
@@ -455,8 +459,14 @@ function findGroupSummary(communities: D1CommunitySummary[] | null, assistant: D
   return null;
 }
 
+/** Destiny One's backend is down (the server says so); see OUTAGE_MESSAGE. */
+export function isOutage(err: unknown): boolean {
+  return err instanceof D1ApiError && err.code === "outage";
+}
+
 export function errorMessage(err: unknown, fallback = "Something went wrong. Please try again."): string {
   if (err instanceof D1ApiError) {
+    if (err.code === "outage") return OUTAGE_MESSAGE;
     if (err.code === "rate_limited") return "You're doing that a lot. Try again in a few minutes.";
     if (err.code === "network") return "You're offline. Check your connection and try again.";
     return err.message || fallback;

@@ -148,9 +148,13 @@ export async function submitHireEnquiry(formData: FormData) {
 
   try {
     const supabase = createServiceClient();
+    // hire_enquiries has no event_type_other column, and PostgREST rejects an
+    // insert naming a column that doesn't exist — so sending it failed every
+    // enquiry. The description rides along in event_type instead, worded the
+    // same way as the email.
     const { error } = await supabase.from("hire_enquiries").insert({
-      name, email, phone, organisation, event_type: eventType,
-      event_type_other: eventTypeOther || null,
+      name, email, phone, organisation,
+      event_type: eventTypeOther ? `${eventType} — ${eventTypeOther}` : eventType,
       space, date, start_time: startTime, end_time: endTime,
       attendance, requirements, message,
       church_member: churchMember || null,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEditor, EditorContent, type Editor } from "@tiptap/react";
+import { useEditor, useEditorState, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Youtube from "@tiptap/extension-youtube";
@@ -19,6 +19,7 @@ import { createBlockNode } from "./blocks/createBlockNode";
 import { UnknownBlock } from "./blocks/UnknownBlockNode";
 import { BlockDocument } from "./blocks/BlockDocument";
 import { blockDropHandler } from "./blocks/insertBlock";
+import { MediaLibraryModal } from "./posts/MediaLibraryModal";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -120,6 +121,15 @@ function ToolbarButton({
   );
 }
 
+const ALT_HELP =
+  "A short description for people using screen readers, and for Google. Leave it empty if the image is only decoration.";
+
+/** Image files carried by a paste or a drop, if any. */
+function imageFilesFrom(data: DataTransfer | null): File[] {
+  if (!data) return [];
+  return Array.from(data.files).filter((f) => f.type.startsWith("image/"));
+}
+
 function Toolbar({
   editor,
   enableImages,
@@ -134,6 +144,24 @@ function Toolbar({
   const [uploading, setUploading] = useState(false);
   const { prompt } = useDialog();
   const toast = useToast();
+
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
+
+  /**
+   * Asked straight away, while the picture is in mind. Cancel inserts it
+   * without one; the Posts checklist will flag it later.
+   */
+  async function insertWithAlt(src: string) {
+    const alt = await prompt({
+      title: "Describe this image",
+      message: ALT_HELP,
+      placeholder: "e.g. People worshipping at the Sunday service",
+      confirmLabel: "Insert image",
+      cancelLabel: "Skip",
+    });
+    editor.chain().focus().setImage({ src, alt: alt?.trim() ?? "" }).run();
+  }
 
   async function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -150,10 +178,60 @@ function Toolbar({
         toast.error(result.error);
         return;
       }
-      editor.chain().focus().setImage({ src: result.url }).run();
+      await insertWithAlt(result.url);
     } finally {
       setUploading(false);
     }
+  }
+
+  // The toolbar doesn't re-render on selection changes by itself (only content
+  // changes reach the parent), so subscribe to just this one fact.
+  const imageSelected = useEditorState({
+    editor,
+    selector: ({ editor: e }) => Boolean(enableImages && e?.isActive("image")),
+  });
+
+  async function editAlt() {
+    const current = (editor.getAttributes("image").alt as string | undefined) ?? "";
+    const alt = await prompt({
+      title: "Image description",
+      message: ALT_HELP,
+      defaultValue: current,
+      confirmLabel: "Save",
+    });
+    if (alt === null) return;
+    editor.chain().focus().updateAttributes("image", { alt: alt.trim() }).run();
+  }
+
+  /** Writing help: a suggested description to edit, never applied unseen. */
+  async function suggestAlt() {
+    const src = editor.getAttributes("image").src as string | undefined;
+    if (!src || suggesting) return;
+    setSuggesting(true);
+    let suggestion = "";
+    try {
+      const res = await fetch("/api/admin/posts/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "alt", src }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.suggestion) {
+        toast.error(data.error || "Couldn't suggest a description.");
+        return;
+      }
+      suggestion = data.suggestion;
+    } finally {
+      setSuggesting(false);
+    }
+    const alt = await prompt({
+      title: "Suggested description",
+      message: "Check it's right and edit it before saving. It describes what's in the picture, not who.",
+      defaultValue: suggestion,
+      confirmLabel: "Save",
+    });
+    if (alt === null) return;
+    editor.chain().focus().updateAttributes("image", { alt: alt.trim() }).run();
   }
 
   async function setLink() {
@@ -301,6 +379,28 @@ function Toolbar({
             icon={uploading ? "hourglass_top" : "add_photo_alternate"}
             onClick={() => !uploading && fileInputRef.current?.click()}
           />
+          {advanced && (
+            <ToolbarButton label="Choose from image library" icon="photo_library" onClick={() => setLibraryOpen(true)} />
+          )}
+          {imageSelected && (
+            <ToolbarButton label="Image description (alt text)" icon="closed_caption" onClick={editAlt} />
+          )}
+          {imageSelected && advanced && (
+            <ToolbarButton
+              label={suggesting ? "Writing a description…" : "Suggest a description"}
+              icon={suggesting ? "hourglass_top" : "auto_awesome"}
+              onClick={suggestAlt}
+            />
+          )}
+          {libraryOpen && (
+            <MediaLibraryModal
+              onClose={() => setLibraryOpen(false)}
+              onPick={(url) => {
+                setLibraryOpen(false);
+                void insertWithAlt(url);
+              }}
+            />
+          )}
         </>
       )}
       {/*
@@ -373,6 +473,13 @@ export default function RichTextEditor({
     return [BlockDocument, ...blocks.map(createBlockNode), UnknownBlock];
   }, [blocks]);
 
+  // Pasted or dropped image files are uploaded and inserted where they landed.
+  // Without this, base64 being disallowed meant a pasted screenshot silently
+  // vanished. The handler is read through a ref because the editor config
+  // below is captured once, before the editor (which it needs) exists.
+  const toast = useToast();
+  const uploadDropped = useRef<(files: File[], pos?: number) => void>(() => {});
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -431,9 +538,26 @@ export default function RichTextEditor({
           blockExtensions.length > 0 ? " pb-24 lg:pb-3" : ""
         }`,
       },
-      // Returns false for anything that isn't a palette drag, leaving
-      // ProseMirror's own drop handling (node moves, text) untouched.
-      ...(blockExtensions.length > 0 ? { handleDrop: blockDropHandler } : {}),
+      // The block handler returns false for anything that isn't a palette
+      // drag, leaving ProseMirror's own drop handling (node moves, text) and
+      // image files to the rest of this chain.
+      handleDrop: (view, event, slice, moved) => {
+        if (blockExtensions.length > 0 && blockDropHandler(view, event, slice, moved)) return true;
+        if (!enableImages || moved) return false;
+        const files = imageFilesFrom(event.dataTransfer);
+        if (files.length === 0) return false;
+        event.preventDefault();
+        uploadDropped.current(files, view.posAtCoords({ left: event.clientX, top: event.clientY })?.pos);
+        return true;
+      },
+      handlePaste: (_view, event) => {
+        if (!enableImages) return false;
+        const files = imageFilesFrom(event.clipboardData);
+        if (files.length === 0) return false;
+        event.preventDefault();
+        uploadDropped.current(files);
+        return true;
+      },
     },
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
@@ -461,6 +585,22 @@ export default function RichTextEditor({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor]);
+
+  useEffect(() => {
+    uploadDropped.current = async (files, pos) => {
+      if (!editor) return;
+      for (const file of files) {
+        const result = await uploadPostImage(file);
+        if ("error" in result) {
+          toast.error(result.error);
+          continue;
+        }
+        const image = { type: "image", attrs: { src: result.url, alt: "" } };
+        const chain = editor.chain().focus();
+        (pos === undefined ? chain.insertContent(image) : chain.insertContentAt(pos, image)).run();
+      }
+    };
+  });
 
   // Publish the instance so a parent can drive the blocks sidebar and inspector.
   // Kept in an effect (not render) so the parent's setState never fires during

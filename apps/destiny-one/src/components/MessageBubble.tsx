@@ -20,8 +20,9 @@ import { SermonPlayer, sermonWatchUrl, useSermonCardWidth } from "@/components/S
 import { SwipeToReply } from "@/components/Swipe";
 import { VoiceNote } from "@/components/VoiceNote";
 import { Avatar, MemberTag, withAlpha } from "@/components/ui";
-import { clock, dayLabel, eventWhen, fileMeta, messageSummary, plural, sameDay } from "@/lib/format";
+import { clock, dayLabel, eventWhen, fileMeta, formatBytes, messageSummary, plural, sameDay } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
+import { noteLoaded, useAutoDownload } from "@/state/dataSettings";
 import type { Rect } from "@/lib/menuLayout";
 import type { LocalMessage } from "@/lib/useConversation";
 import { PHOTO_CHIP_ALPHA } from "@/theme/appearance";
@@ -411,15 +412,21 @@ function Attachment({ m, onOpen }: { m: LocalMessage; onOpen: (url: string) => v
   const url = a?.url ?? null;
 
   if (mime.startsWith("audio/")) {
-    return <VoiceNote url={m.status ? null : url} durationMs={a?.durationMs ?? local?.durationMs ?? null} color={k.text} track={k.track} fill={k.panel} />;
+    return (
+      <VoiceNote
+        url={m.status ? null : url}
+        durationMs={a?.durationMs ?? local?.durationMs ?? null}
+        color={k.text}
+        track={k.track}
+        fill={k.panel}
+        attachment={a ?? undefined}
+        mine={m.mine}
+      />
+    );
   }
 
-  if (mime.startsWith("image/") && url) {
-    return (
-      <PressableScale onPress={() => onOpen(url)} accessibilityRole="imagebutton" accessibilityLabel="Photo. Opens full screen." scaleTo={0.97} wrapStyle={{ marginTop: 2, marginHorizontal: -8 }}>
-        <Image source={{ uri: url }} style={{ width: 220, height: 220, borderRadius: 14, backgroundColor: t.fill }} resizeMode="cover" />
-      </PressableScale>
-    );
+  if (mime.startsWith("image/") && url && a) {
+    return <PhotoAttachment attachment={a} url={url} mine={m.mine} onOpen={onOpen} />;
   }
 
   const fileName = local?.name ?? (mime === "application/pdf" ? "PDF document" : mime.startsWith("image/") ? "Photo" : "File");
@@ -440,6 +447,42 @@ function Attachment({ m, onOpen }: { m: LocalMessage; onOpen: (url: string) => v
         <Text style={{ fontSize: 12, color: k.soft }}>{m.status === "sending" ? "Uploading..." : fileMeta(mime, a?.sizeBytes ?? local?.sizeBytes ?? null)}</Text>
       </View>
     </Pressable>
+  );
+}
+
+/**
+ * A photo in a bubble. When the Storage and data setting says photos don't
+ * load by themselves on this connection, it shows a download button (with
+ * the size) instead, and loads on a tap.
+ */
+function PhotoAttachment({ attachment, url, mine, onOpen }: { attachment: NonNullable<LocalMessage["attachment"]>; url: string; mine: boolean; onOpen: (url: string) => void }) {
+  const t = useTheme();
+  const auto = useAutoDownload("photos", attachment.id, mine);
+  const [tapped, setTapped] = useState(false);
+
+  if (!auto && !tapped) {
+    return (
+      <PressableScale
+        onPress={() => setTapped(true)}
+        accessibilityRole="button"
+        accessibilityLabel={`Photo, ${fileMeta(attachment.mimeType, attachment.sizeBytes)}. Download`}
+        scaleTo={0.97}
+        wrapStyle={{ marginTop: 2, marginHorizontal: -8 }}
+      >
+        <View style={{ width: 220, height: 220, borderRadius: 14, backgroundColor: t.fill, alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" }}>
+            <Icon name="download" size={22} color="#FFFFFF" strokeWidth={2.2} />
+          </View>
+          {attachment.sizeBytes != null ? <Text style={{ fontSize: 13, fontWeight: "600", color: t.muted }}>{formatBytes(attachment.sizeBytes)}</Text> : null}
+        </View>
+      </PressableScale>
+    );
+  }
+
+  return (
+    <PressableScale onPress={() => onOpen(url)} accessibilityRole="imagebutton" accessibilityLabel="Photo. Opens full screen." scaleTo={0.97} wrapStyle={{ marginTop: 2, marginHorizontal: -8 }}>
+      <Image source={{ uri: url }} style={{ width: 220, height: 220, borderRadius: 14, backgroundColor: t.fill }} resizeMode="cover" onLoad={() => noteLoaded(attachment, mine)} />
+    </PressableScale>
   );
 }
 

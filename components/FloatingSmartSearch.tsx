@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useFloatingSmartSearchHidden } from "@/lib/smartSearchVisibility";
 import SmartSearchWidget from "@/components/smartSearch/SmartSearchWidget";
-import { isLinksPagePath, isSongRequestsPath } from "@/lib/linkPages/paths";
+import { isLinksPagePath, isSongRequestsPath, isTalentShowPath } from "@/lib/linkPages/paths";
 
 export default function FloatingSmartSearch({
   searchEnabled = true,
@@ -19,9 +19,10 @@ export default function FloatingSmartSearch({
   // /portal is the staff self-service area: its own minimal shell, no site nav.
   if (
     pathname.startsWith("/admin") ||
+    pathname.startsWith("/login") ||
     pathname.startsWith("/training") ||
     pathname.startsWith("/nfc") ||
-    isLinksPagePath(pathname) || isSongRequestsPath(pathname) ||
+    isLinksPagePath(pathname) || isSongRequestsPath(pathname) || isTalentShowPath(pathname) ||
     pathname.startsWith("/portal")
   )
     return null;

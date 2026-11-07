@@ -285,7 +285,7 @@ export default function AdminNfcPage() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
       <div className="max-w-3xl">
-        <div className="mb-6 flex items-start justify-between gap-4">
+        <div data-tour="page-header" className="mb-6 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-black text-destiny-grey dark:text-white">NFC Page</h1>
             <p className="mt-1 text-sm text-destiny-grey/50 dark:text-white/50">

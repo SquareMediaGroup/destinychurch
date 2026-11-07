@@ -348,3 +348,17 @@ h1 {
 .report-error {
   color: var(--bad);
 }
+
+.timeline {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0 0 0 12px;
+  border-left: 2px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.update-body {
+  white-space: pre-wrap;
+}

@@ -9,8 +9,9 @@ import { CodeBoxes } from "@/components/CodeBoxes";
 import { FormError, LargeTitle, Lead, PrimaryButton, TextButton } from "@/components/ui";
 import { isAdding } from "@/lib/accounts";
 import { D1ApiError } from "@/lib/api";
-import { checkEmailCode, finishSignIn, requestEmailCode } from "@/lib/auth";
-import { errorMessage, routeFor, useSession } from "@/state/session";
+import { OUTAGE_MESSAGE } from "@destiny/shared";
+import { checkEmailCode, finishSignIn, isAuthOutage, requestEmailCode } from "@/lib/auth";
+import { errorMessage, isOutage, routeFor, useSession } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
 import { haptic } from "@/lib/haptics";
 
@@ -63,6 +64,9 @@ export default function Code() {
       if (err instanceof D1ApiError) {
         // The code was fine; Destiny One couldn't be reached. Verify tries that step again.
         setError(errorMessage(err, "Couldn't finish signing in. Try again."));
+      } else if (await isAuthOutage(err)) {
+        // Supabase is down: the code may well be right, so keep it.
+        setError(OUTAGE_MESSAGE);
       } else if (isAuthRetryableFetchError(err)) {
         setError("You're offline. Check your connection and try again.");
       } else {
@@ -81,8 +85,8 @@ export default function Code() {
     setWait(RESEND_AFTER);
     try {
       await requestEmailCode(email);
-    } catch {
-      setError("Please wait a minute and try again.");
+    } catch (err) {
+      setError(isOutage(err) ? OUTAGE_MESSAGE : "Please wait a minute and try again.");
     }
   }
 

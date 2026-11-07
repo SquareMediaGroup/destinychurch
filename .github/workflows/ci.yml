@@ -104,6 +104,26 @@ jobs:
       - name: Build
         run: npm run build
 
+  campaign-videos:
+    name: Campaign videos (lint, typecheck)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: apps/campaign-videos
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/campaign-videos/package-lock.json
+      # A Remotion project with its own package.json; nothing here ships with the site.
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint and typecheck
+        run: npm run lint
+
   destiny-subtitles:
     name: Destiny Subtitles app (engine tests, UI build)
     runs-on: ubuntu-latest

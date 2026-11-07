@@ -194,6 +194,14 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         description: "Let guests request songs at an event, straight into the Spotify queue.",
         keywords: ["spotify", "music", "dj", "party", "playlist", "new year"],
       },
+      {
+        href: "/admin/talent-show",
+        label: "Talent Show Voting",
+        icon: "how_to_vote",
+        role: "event_admin",
+        description: "Add the acts, open audience voting by QR code and show the results on screen.",
+        keywords: ["vote", "votes", "acts", "audience", "qr", "results", "screen", "competition"],
+      },
     ],
   },
   {
@@ -409,6 +417,14 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         keywords: ["short link", "vanity", "url", "shortener", "qr"],
       },
       {
+        href: "/admin/status",
+        label: "Status page",
+        icon: "monitor_heart",
+        role: "site_admin",
+        description: "Post outages and amber alerts on status.destinytees.uk, with updates as the fix goes.",
+        keywords: ["outage", "incident", "amber alert", "maintenance", "downtime", "status"],
+      },
+      {
         href: "/admin/analytics",
         label: "Analytics",
         icon: "monitoring",
@@ -561,6 +577,16 @@ export const ADMIN_QUICK_ACTIONS: AdminQuickAction[] = [
     keywords: ["revalidate", "purge", "stale", "rebuild"],
   },
   {
+    // Handled by OnboardingProvider, which picks up ?tour=1 on any admin page.
+    // Also the only way back to a checklist someone hid or already finished.
+    id: "take-tour",
+    label: "Take the admin tour",
+    icon: "rocket_launch",
+    role: null,
+    href: "/admin?tour=1",
+    keywords: ["onboarding", "get started", "walkthrough", "help", "guide", "checklist", "welcome"],
+  },
+  {
     id: "view-site",
     label: "View live site",
     icon: "open_in_new",
@@ -598,7 +624,9 @@ export function visibleGroups(
   return ADMIN_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter(
-      (item) => (includeUnlisted || !item.unlisted) && canSee(roles, item.role),
+      (item) =>
+        (includeUnlisted || !item.unlisted) &&
+        canSee(roles, item.role),
     ),
   })).filter((group) => group.items.length > 0);
 }

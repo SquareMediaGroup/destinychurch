@@ -5,7 +5,14 @@
 // Each photo ships twice: full size for the chat, and a small thumbnail for the
 // picker so ten photos don't all have to be decoded at chat size.
 //
-// Source: Unsplash (https://unsplash.com/license), 900x1800 crops.
+// Source: Unsplash (https://unsplash.com/license). Full height, centred crops at
+// the iPhone Pro Max screen shape, 1290x2796 (valley and stars are as large as
+// their originals allow); thumbnails 450x975. Originals, as images.unsplash.com/photo-<id>:
+//   woodland 1448375240586-882707db888b   alpine    1464822759023-fed622ff2c3b
+//   valley   1469474968028-56623f02e42e   meadow    1472214103451-9374bd1c798e
+//   dusk     1475924156734-496f6cac6ec1   sunrise   1470252649378-9c29740c9fa8 (cropped to the sun)
+//   lake     1501785888041-af3ef285b470   clouds    1506905925346-21bda4d32df4
+//   shoreline 1507525428034-b723cf961d3e  stars     1519681393784-d120267933ba
 
 import type { ImageSourcePropType } from "react-native";
 import { customWallpaperUri } from "@/lib/customWallpaper";

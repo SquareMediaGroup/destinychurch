@@ -15,6 +15,7 @@ const connectLinks = [
   { label: "Baptism", href: "/baptism" },
   { label: "Child Dedication", href: "/child-dedication" },
   { label: "Destiny 12:2", href: "/twelvetwo" },
+  { label: "Destiny One app", href: "/app" },
 ];
 
 const legalLinks = [
@@ -24,6 +25,7 @@ const legalLinks = [
   { label: "Terms of Use", href: "/terms" },
   { label: "Privacy Policy", href: "/privacy" },
   { label: "Accessibility", href: "/accessibility" },
+  { label: "Behind the build", href: "/discover" },
   { label: "Contact Us", href: "/contact" },
 ];
 
@@ -66,14 +68,19 @@ export default async function ChurchFooter() {
             </p>
             <MapsLink
               className="group block text-sm text-on-dark-muted transition hover:text-white focus-visible:text-white"
-              aria-label={`Open ${ADDRESS.venue}, ${ADDRESS.street}, ${ADDRESS.locality}, ${ADDRESS.postcode} in maps`}
+              // Starts with the visible address, word for word: a voice-control
+              // user says what they see ("Destiny Centre ..."), and a label
+              // that opened with "Open" didn't match it (WCAG 2.5.3).
+              aria-label={`${ADDRESS.venue} ${ADDRESS.street} ${ADDRESS.locality} ${ADDRESS.postcode}, opens in maps`}
             >
+              {/* The {" "} between lines collapse away visually (block spans)
+                  but make the text read the same as the label for checkers. */}
               <address className="not-italic">
                 <span className="block font-bold text-white/90 transition group-hover:text-white group-focus-visible:text-white">
                   {ADDRESS.venue}
-                </span>
-                <span className="block">{ADDRESS.street}</span>
-                <span className="block">{ADDRESS.locality}</span>
+                </span>{" "}
+                <span className="block">{ADDRESS.street}</span>{" "}
+                <span className="block">{ADDRESS.locality}</span>{" "}
                 <span className="block">{ADDRESS.postcode}</span>
               </address>
             </MapsLink>

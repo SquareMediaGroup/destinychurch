@@ -10,8 +10,12 @@ function timerSecret(): Buffer {
   if (process.env.TRAINING_TIMER_SECRET) {
     return Buffer.from(process.env.TRAINING_TIMER_SECRET);
   }
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return createHmac("sha256", process.env.SUPABASE_SERVICE_ROLE_KEY)
+  // The new secret key first, then the legacy service_role JWT — the same
+  // order as utils/supabase/service.ts, so revoking the legacy key doesn't
+  // quietly drop every instance back to a per-boot random secret.
+  const serviceKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (serviceKey) {
+    return createHmac("sha256", serviceKey)
       .update("training-timer")
       .digest();
   }
@@ -46,7 +50,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const body = await request.json();
+  const body = ((await request.json().catch(() => null)) ?? {}) as { action?: unknown; token?: unknown };
 
   if (body.action === "start") {
     const token = sign({ postId: id, startedAt: Date.now() });
@@ -55,7 +59,7 @@ export async function POST(
 
   if (body.action === "verify") {
     const { token } = body;
-    if (!token) {
+    if (typeof token !== "string" || !token) {
       return NextResponse.json({ error: "Missing token" }, { status: 400 });
     }
 

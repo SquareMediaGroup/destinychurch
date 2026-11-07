@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import PhotoSlideshow from "@/components/ui/PhotoSlideshow";
 import AnimateIn from "@/components/AnimateIn";
 
 interface Topic {
@@ -118,17 +118,13 @@ export default function AlphaTopics() {
             </div>
           </AnimateIn>
           <AnimateIn delay={100} className="w-full md:w-1/2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="relative h-48 overflow-hidden rounded-2xl">
-                <Image src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_02.webp" alt="" fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" />
-              </div>
-              <div className="relative h-48 overflow-hidden rounded-2xl">
-                <Image src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_03.webp" alt="" fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" />
-              </div>
-              <div className="relative col-span-2 h-40 overflow-hidden rounded-2xl">
-                <Image src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_04.webp" alt="" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
-              </div>
-            </div>
+            <PhotoSlideshow
+              photos={[
+                { src: "/img/Alpha/Alpha/WiA-SC_V2-Carousel_02.webp", alt: "Join a series of group conversations that freely explore the basics of the Christian faith in an open, friendly environment. At each Alpha session, you'll be hosted in a small group and watch an episode on a different question of faith." },
+                { src: "/img/Alpha/Alpha/WiA-SC_V2-Carousel_03.webp", alt: "Then you have a chance to share your thoughts and hear what others think. You can say anything you like, or nothing at all." },
+                { src: "/img/Alpha/Alpha/WiA-SC_V2-Carousel_04.webp", alt: "Everyone's welcome. You're invited, no matter your background or beliefs. It's free and there's no pressure to come back." },
+              ]}
+            />
           </AnimateIn>
         </div>
       </div>

@@ -42,7 +42,7 @@ interface DeviceVerdict {
  *  - navigator.hardwareConcurrency  (CPU cores)
  *  - navigator.deviceMemory         (Chrome-only, GB RAM; absent → assume 4)
  *  - prefers-reduced-motion         (OS accessibility preference)
- *  - Short JS throughput benchmark  (5M additions)
+ *  - Short JS throughput benchmark  (5M additions, best of 3)
  */
 function scoreDevice(): DeviceVerdict {
   const cores = navigator.hardwareConcurrency ?? 4;
@@ -53,11 +53,17 @@ function scoreDevice(): DeviceVerdict {
   ).matches;
 
   // Benchmark: 5M additions. Capable desktop ≈ 5ms; slow device ≈ 80ms+.
-  const t0 = performance.now();
-  let acc = 0;
-  for (let i = 0; i < 5_000_000; i++) acc += i;
-  void acc;
-  const benchMs = performance.now() - t0;
+  // Best of 3: this runs during first-load hydration, where a single sample
+  // can catch a GC pause or a cold JIT and flag a fast device as slow (a
+  // fresh origin, e.g. a preview deploy, re-runs the gate as a first visit).
+  let benchMs = Infinity;
+  for (let run = 0; run < 3; run++) {
+    const t0 = performance.now();
+    let acc = 0;
+    for (let i = 0; i < 5_000_000; i++) acc += i;
+    void acc;
+    benchMs = Math.min(benchMs, performance.now() - t0);
+  }
 
   const slowCPU = cores <= 2 || benchMs > 60;
   const lowRAM = ram <= 2;

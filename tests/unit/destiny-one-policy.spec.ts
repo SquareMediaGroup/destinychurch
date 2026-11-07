@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import {
   toPrefixQuery,
   appGate,
+  optionalUpdate,
   contentPreview,
   PUSH_PREVIEW_CHARS,
   pushPreviewText,
@@ -237,6 +238,40 @@ test.describe("appGate (forced update / maintenance)", () => {
     const down = { ...config, maintenanceMessage: "Back at 3pm." };
     expect(appGate(down, "ios", 99)).toBe("maintenance");
     expect(appGate(down, "web", null)).toBe("maintenance");
+  });
+});
+
+test.describe("optionalUpdate (update available prompt)", () => {
+  const config = {
+    minBuild: { ios: 1, android: 1 },
+    forceUpdateMessage: null,
+    maintenanceMessage: null,
+    storeUrl: { ios: "itms-beta://", android: "https://play.google.com/store/apps/details?id=uk.destinytees.one" },
+    latestVersion: "0.13",
+    latestVersionNotes: [],
+  };
+
+  test("off when there's no config or no latest version", () => {
+    expect(optionalUpdate(undefined, "0.12.0")).toBeNull();
+    expect(optionalUpdate({ ...config, latestVersion: null }, "0.12.0")).toBeNull();
+    expect(optionalUpdate({ ...config, latestVersion: undefined }, "0.12.0")).toBeNull();
+  });
+  test("an older X.X is offered the update", () => {
+    expect(optionalUpdate(config, "0.12.0")).toBe("0.13");
+    expect(optionalUpdate(config, "0.9.4")).toBe("0.13");
+  });
+  test("patch releases never prompt", () => {
+    expect(optionalUpdate({ ...config, latestVersion: "0.13.1" }, "0.13.0")).toBeNull();
+    expect(optionalUpdate(config, "0.13.2")).toBeNull();
+  });
+  test("same or newer apps aren't prompted", () => {
+    expect(optionalUpdate(config, "0.13.0")).toBeNull();
+    expect(optionalUpdate(config, "0.14.0")).toBeNull();
+    expect(optionalUpdate(config, "1.0.0")).toBeNull();
+  });
+  test("compares numbers, not text", () => {
+    expect(optionalUpdate({ ...config, latestVersion: "0.10" }, "0.9.0")).toBe("0.10");
+    expect(optionalUpdate({ ...config, latestVersion: "1.0" }, "0.13.0")).toBe("1.0");
   });
 });
 

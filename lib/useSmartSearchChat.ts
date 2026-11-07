@@ -3,6 +3,7 @@ import { cooldownAnswer, parseAnswer } from "@/lib/smartSearch";
 import type {
   ProductResult,
   SermonResult,
+  EventResult,
   WeatherToolResult,
   DirectionsToolResult,
   SearchWebResult,
@@ -22,6 +23,7 @@ function visibleProse(raw: string): string {
 export interface ToolCards {
   products?: ProductResult[];
   sermons?: SermonResult[];
+  events?: EventResult[];
   weather?: WeatherToolResult;
   directions?: DirectionsToolResult;
   web?: SearchWebResult;
@@ -38,6 +40,7 @@ export interface ChatMessage extends ToolCards {
 export const TOOL_STATUS_LABELS: Record<string, string> = {
   find_products: "Searching the shop…",
   find_sermons: "Searching the sermon archive…",
+  find_events: "Checking the calendar…",
   get_weather: "Checking the forecast…",
   get_directions: "Looking up directions…",
   search_web: "Searching the web…",
@@ -144,6 +147,9 @@ export function useSmartSearchChat() {
                 break;
               case "find_sermons":
                 cards.sermons = (evt.data as { sermons?: SermonResult[] }).sermons;
+                break;
+              case "find_events":
+                cards.events = (evt.data as { events?: EventResult[] }).events;
                 break;
               case "get_weather":
                 cards.weather = evt.data as WeatherToolResult;

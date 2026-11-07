@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import PhotoSlideshow from "@/components/ui/PhotoSlideshow";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import VisitSlideshow from "@/components/visit/VisitSlideshow";
@@ -73,36 +73,42 @@ const timeline = [
     title: "Park up",
     time: null,
     body: "Free parking on site — pull straight in, no need to book.",
+    image: null,
   },
   {
     icon: "door_front",
     title: "Doors open",
     time: SCHEDULE.doorsOpen,
     body: "Arrive early to settle in and grab a coffee. Our Welcome Team will point you in the right direction.",
+    image: "/img/photos/Welcome-Gift-Bags.webp",
   },
   {
     icon: "self_improvement",
     title: "Prayer Service (optional)",
     time: SCHEDULE.prayerServiceStart,
     body: "A quieter, shorter gathering before the main service. Come for this too, or skip straight to 11am — both are completely normal.",
+    image: "/img/photos/Prayer-During-Worship.webp",
   },
   {
     icon: "child_care",
     title: "Kids check in",
     time: SCHEDULE.kidsCheckIn,
     body: "Age-appropriate classes for babies through Year 6. All leaders are DBS-checked and trained.",
+    image: "/img/photos/Kids-Church-Sunday.webp",
   },
   {
     icon: "groups",
     title: "Main service",
     time: SCHEDULE.mainServiceStart,
     body: `About ${SCHEDULE.mainServiceDurationMinutes} minutes — worship, Bible teaching and prayer. Sit anywhere; nothing is assigned.`,
+    image: "/img/photos/WorshipMoment2.webp",
   },
   {
     icon: "waving_hand",
     title: "Meet the team",
     time: null,
     body: "We hang around after for coffee. No pressure to talk to anyone — but we'd love to say hello.",
+    image: "/img/photos/Conversation.webp",
   },
 ] as const;
 
@@ -311,16 +317,16 @@ export default function VisitPage() {
               ))}
             </div>
           </AnimateIn>
-          <AnimateIn delay={100} className="grid w-full grid-cols-2 gap-3 md:w-1/2">
-            <div className="col-span-2 overflow-hidden rounded-panel">
-              <Image src="/img/photos/Plan a Visit.webp" alt="Destiny Church" width={640} height={300} className="w-full object-cover" />
-            </div>
-            <div className="overflow-hidden rounded-card">
-              <Image src="/img/photos/Gallery/Speaker.webp" alt="" width={300} height={220} className="w-full object-cover" />
-            </div>
-            <div className="overflow-hidden rounded-card">
-              <Image src="/img/photos/Gallery/Speaker2.webp" alt="" width={300} height={220} className="w-full object-cover" />
-            </div>
+          <AnimateIn delay={100} className="w-full md:w-1/2">
+            <PhotoSlideshow
+              className="rounded-panel"
+              photos={[
+                { src: "/img/photos/Plan a Visit.webp", alt: "The congregation worshipping with hands raised during a Sunday service" },
+                { src: "/img/photos/Gallery/Speaker.webp", alt: "A speaker preaching from the stage" },
+                { src: "/img/photos/Prayer-During-Worship.webp", alt: "A woman praying quietly with an open hand during worship" },
+                { src: "/img/photos/After-Service-Chat.webp", alt: "Men chatting together after the Sunday service" },
+              ]}
+            />
           </AnimateIn>
         </div>
       </Section>

@@ -12,6 +12,7 @@ import {
   TONE_SURFACE,
   safeUrl,
 } from "../tokens";
+import type { BlockSize } from "../size";
 
 export interface CardItem {
   id: string;
@@ -29,6 +30,8 @@ export interface CardGridProps {
   columns: "2" | "3";
   marker: "icon" | "number" | "none";
   tone: Tone;
+  /** Posts only: how far it reaches past the column. See ../size.ts. */
+  size: BlockSize;
 }
 
 /**

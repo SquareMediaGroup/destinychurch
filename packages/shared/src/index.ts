@@ -21,6 +21,7 @@ export * from "./design/tokens";
 export * from "./destinyOne/types";
 export * from "./destinyOne/policy";
 export * from "./destinyOne/accountRules";
+export * from "./destinyOne/outage";
 export * from "./destinyOne/client";
 export * from "./destinyOne/signedUrls";
 export * from "./destinyOne/adminTypes";

@@ -6,12 +6,14 @@
 # Usage: ./Scripts/fetch-whisper-model.sh <model-name>
 #   e.g. ./Scripts/fetch-whisper-model.sh large-v3-turbo
 #        ./Scripts/fetch-whisper-model.sh medium
+#        ./Scripts/fetch-whisper-model.sh silero-v5.1.2   (speech detection
+#            model that filters out applause, music and noise; under 1MB)
 
 set -euo pipefail
 
 MODEL_NAME="${1:-}"
 if [[ -z "$MODEL_NAME" ]]; then
-  echo "Usage: $0 <model-name>   (e.g. large-v3-turbo, medium)" >&2
+  echo "Usage: $0 <model-name>   (e.g. large-v3-turbo, medium, silero-v5.1.2)" >&2
   exit 1
 fi
 
@@ -20,7 +22,12 @@ DEST_DIR="$SCRIPT_DIR/../Vendor/Models"
 mkdir -p "$DEST_DIR"
 
 FILENAME="ggml-${MODEL_NAME}.bin"
-URL="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/${FILENAME}"
+# The Silero voice-activity model is published separately from the whisper
+# models, by the same ggml-org project.
+case "$MODEL_NAME" in
+  silero-*) URL="https://huggingface.co/ggml-org/whisper-vad/resolve/main/${FILENAME}" ;;
+  *)        URL="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/${FILENAME}" ;;
+esac
 DEST_PATH="$DEST_DIR/$FILENAME"
 
 # SHA256 checksums are intentionally NOT hardcoded here — do not paste in a

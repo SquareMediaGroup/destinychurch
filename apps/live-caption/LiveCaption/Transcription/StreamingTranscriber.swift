@@ -13,6 +13,12 @@ import Foundation
 /// on its own — every entry point that mutates state dispatches through it.
 final class StreamingTranscriber: AudioSourceDelegate, @unchecked Sendable {
     private let engine: WhisperEngine
+    /// Optional speech gate. Nil means every window is transcribed as-is (no
+    /// VAD model installed, or the operator turned filtering off).
+    private let speechDetector: SpeechDetector?
+    /// How far outside a detected speech range a word's start may fall and
+    /// still be kept. Whisper's word times are approximate.
+    private let speechTolerance: TimeInterval = 0.6
     private let vocabularyPrompt: () -> String
     private let onEvent: (TranscriptEvent) -> Void
     private let onFailure: (AudioSourceError) -> Void
@@ -46,11 +52,13 @@ final class StreamingTranscriber: AudioSourceDelegate, @unchecked Sendable {
 
     init(
         engine: WhisperEngine,
+        speechDetector: SpeechDetector? = nil,
         vocabularyPrompt: @escaping () -> String,
         onEvent: @escaping (TranscriptEvent) -> Void,
         onFailure: @escaping (AudioSourceError) -> Void = { _ in }
     ) {
         self.engine = engine
+        self.speechDetector = speechDetector
         self.vocabularyPrompt = vocabularyPrompt
         self.onEvent = onEvent
         self.onFailure = onFailure
@@ -107,8 +115,23 @@ final class StreamingTranscriber: AudioSourceDelegate, @unchecked Sendable {
         windowCounter += 1
         let currentWindowID = windowCounter
 
+        // nil: no detector, or detection failed — transcribe the window as
+        // is rather than risk dropping real speech.
+        let speechRanges = speechDetector?.speechRanges(in: windowSamples)
+        if let speechRanges, speechRanges.isEmpty {
+            // Applause, music, silence: nothing to transcribe. Still
+            // reconciled, so words already pending are finalized on time.
+            reconcile(words: [], windowStart: windowStart, windowID: currentWindowID)
+            return
+        }
+
         do {
-            let rawTokens = try engine.transcribe(samples: windowSamples, initialPrompt: vocabularyPrompt())
+            var rawTokens = try engine.transcribe(samples: windowSamples, initialPrompt: vocabularyPrompt())
+            if let speechRanges {
+                rawTokens.removeAll { token in
+                    !TranscriptCleaner.isWithinSpeech(token.startTime, ranges: speechRanges, tolerance: speechTolerance)
+                }
+            }
             // Offset whisper.cpp's window-relative timestamps to
             // stream-absolute time.
             let words = rawTokens.map { token in
@@ -135,7 +158,12 @@ final class StreamingTranscriber: AudioSourceDelegate, @unchecked Sendable {
     /// (see Captioning/CaptionStabilizer.swift) already absorbs most of the
     /// resulting flicker before anything reaches the screen.
     private func reconcile(words: [WordToken], windowStart: TimeInterval, windowID: Int) {
-        let newFinalizationCutoff = windowStart - overlapDuration
+        // The next window starts one stride later, so nothing before that
+        // point will ever be re-transcribed: it's final now. (This used to be
+        // `windowStart - overlapDuration`, which is before the window even
+        // begins, so no word was ever finalized: the caption only ever showed
+        // the latest window and the transcript stayed empty.)
+        let newFinalizationCutoff = windowStart + strideLength
 
         let newlyFinalized = words.filter { $0.startTime < newFinalizationCutoff && $0.startTime >= finalizationCutoff }
         let stillPending = words.filter { $0.startTime >= newFinalizationCutoff }

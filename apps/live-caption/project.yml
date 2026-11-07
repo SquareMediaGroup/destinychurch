@@ -76,6 +76,11 @@ targets:
         INFOPLIST_FILE: LiveCaption/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: LiveCaption/Resources/LiveCaption.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # libndi.dylib is embedded in Contents/Frameworks and must load from
+        # there, so the app runs on a Mac without the NDI SDK installed.
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "@executable_path/../Frameworks"
         SWIFT_OBJC_BRIDGING_HEADER: LiveCaption/Bridging/LiveCaption-Bridging-Header.h
         OTHER_LDFLAGS:
           - "-lc++"

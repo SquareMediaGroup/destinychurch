@@ -11,7 +11,7 @@ import { Stack, router, usePathname, useSegments } from "expo-router";
 import * as Notifications from "expo-notifications";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { UpdateScreen } from "@/components/UpdateScreen";
@@ -205,6 +205,14 @@ function ShakeToReport() {
 
 function App() {
   const t = useTheme();
+  // iPhone Duo puts the status bar, Dynamic Island and camera on the side of
+  // the display in some poses, so every screen keeps its content clear of the
+  // left/right safe area (0 on other iPhones in portrait, so nothing moves
+  // there). Screens that draw edge to edge (tabs, the chat and its wallpaper,
+  // the photo viewer) opt out with their own contentStyle and inset what's on
+  // top themselves. See components/ScreenInsets.tsx.
+  const insets = useSafeAreaInsets();
+  const content = (backgroundColor: string) => ({ backgroundColor, paddingLeft: insets.left, paddingRight: insets.right });
   return (
     <SessionProvider>
       <StatusBar style="auto" />
@@ -213,35 +221,36 @@ function App() {
       <ReleaseSplash />
       <UpdatePrompt />
       <ShakeToReport />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg } }}>
-        <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: content(t.bg) }}>
+        <Stack.Screen name="(tabs)" options={{ animation: "fade", contentStyle: { backgroundColor: t.bg } }} />
+        <Stack.Screen name="group/[id]/index" options={{ contentStyle: { backgroundColor: t.bg } }} />
         <Stack.Screen name="welcome" options={{ animation: "fade" }} />
         <Stack.Screen name="waiting" options={{ animation: "fade", gestureEnabled: false }} />
         <Stack.Screen name="setup" options={{ animation: "fade", gestureEnabled: false }} />
         <Stack.Screen name="notices" options={{ animation: "fade", gestureEnabled: false }} />
-        <Stack.Screen name="new-group" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
-        <Stack.Screen name="report" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
+        <Stack.Screen name="new-group" options={{ presentation: "modal", contentStyle: content(t.grouped) }} />
+        <Stack.Screen name="report" options={{ presentation: "modal", contentStyle: content(t.grouped) }} />
         <Stack.Screen name="report-sent" options={{ presentation: "modal", gestureEnabled: false }} />
-        <Stack.Screen name="feedback" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
-        <Stack.Screen name="beta" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
-        <Stack.Screen name="message-info" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
-        <Stack.Screen name="send-event" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
-        <Stack.Screen name="forward" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
-        <Stack.Screen name="share" options={{ presentation: "modal", gestureEnabled: false, contentStyle: { backgroundColor: t.grouped } }} />
+        <Stack.Screen name="feedback" options={{ presentation: "modal", contentStyle: content(t.grouped) }} />
+        <Stack.Screen name="beta" options={{ presentation: "modal", contentStyle: content(t.grouped) }} />
+        <Stack.Screen name="message-info" options={{ presentation: "modal", contentStyle: content(t.grouped) }} />
+        <Stack.Screen name="send-event" options={{ presentation: "modal", contentStyle: content(t.grouped) }} />
+        <Stack.Screen name="forward" options={{ presentation: "modal", contentStyle: content(t.grouped) }} />
+        <Stack.Screen name="share" options={{ presentation: "modal", gestureEnabled: false, contentStyle: content(t.grouped) }} />
         <Stack.Screen name="release" options={{ presentation: "fullScreenModal", animation: "fade", gestureEnabled: false }} />
         <Stack.Screen name="search" options={{ animation: "fade" }} />
         <Stack.Screen name="viewer" options={{ presentation: "transparentModal", animation: "fade", contentStyle: { backgroundColor: "transparent" } }} />
         <Stack.Screen
           name="add-account"
-          options={sheetOptions(t.grouped)}
+          options={sheetOptions(content(t.grouped))}
         />
         <Stack.Screen
           name="accounts"
-          options={sheetOptions(t.grouped)}
+          options={sheetOptions(content(t.grouped))}
         />
         <Stack.Screen
           name="update-available"
-          options={sheetOptions(t.grouped)}
+          options={sheetOptions(content(t.grouped))}
         />
       </Stack>
       <SwitchBanner />
@@ -254,12 +263,12 @@ function App() {
  * follow the device's own screen radius, so we leave both to it (no fixed
  * radius, transparent content background). Older iOS keeps a solid sheet.
  */
-function sheetOptions(solid: string) {
+function sheetOptions(solid: { backgroundColor: string; paddingLeft: number; paddingRight: number }) {
   return {
     presentation: "formSheet" as const,
     sheetAllowedDetents: "fitToContents" as const,
     sheetGrabberVisible: true,
-    ...(liquidGlass ? { contentStyle: { backgroundColor: "transparent" } } : { sheetCornerRadius: 28, contentStyle: { backgroundColor: solid } }),
+    ...(liquidGlass ? { contentStyle: { ...solid, backgroundColor: "transparent" } } : { sheetCornerRadius: 28, contentStyle: solid }),
   };
 }
 

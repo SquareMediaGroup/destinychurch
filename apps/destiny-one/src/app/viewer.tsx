@@ -148,9 +148,11 @@ export default function Viewer() {
         />
       </Animated.View>
 
+      {/* Photos run edge to edge; the bars keep their buttons clear of the side
+          status bar and camera on iPhone Duo. */}
       {chrome ? (
         <>
-          <View style={{ position: "absolute", top: 0, left: 0, right: 0, paddingTop: insets.top + 6, paddingHorizontal: 12, paddingBottom: 10, flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "rgba(0,0,0,0.45)" }}>
+          <View style={{ position: "absolute", top: 0, left: 0, right: 0, paddingTop: insets.top + 6, paddingLeft: insets.left + 12, paddingRight: insets.right + 12, paddingBottom: 10, flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "rgba(0,0,0,0.45)" }}>
             <BarButton icon="close" label="Close" onPress={() => router.back()} />
             <View style={{ flex: 1, alignItems: "center" }}>
               <Text numberOfLines={1} style={{ color: "#FFF", fontSize: 16, fontWeight: "600" }}>{who}</Text>
@@ -161,7 +163,7 @@ export default function Viewer() {
             </View>
             <View style={{ width: 44 }} />
           </View>
-          <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, paddingBottom: insets.bottom + 10, paddingTop: 10, paddingHorizontal: 24, flexDirection: "row", justifyContent: "space-between", backgroundColor: "rgba(0,0,0,0.45)" }}>
+          <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, paddingBottom: insets.bottom + 10, paddingTop: 10, paddingLeft: insets.left + 24, paddingRight: insets.right + 24, flexDirection: "row", justifyContent: "space-between", backgroundColor: "rgba(0,0,0,0.45)" }}>
             <BarButton icon="share" label="Share" busy={busy === "share"} onPress={() => void act("share")} />
             <BarButton icon="download" label="Save to Photos" busy={busy === "save"} onPress={() => void act("save")} />
           </View>

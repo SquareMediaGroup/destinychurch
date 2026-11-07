@@ -89,16 +89,18 @@ export function AttachSheet({ visible, anchor, onClose, onPhotos, onPhoto, onDoc
   const close = () => (camera === "on" ? morph(0) : onClose());
 
   // The menu: above the + button, left edges lined up, kept on screen whatever the anchor.
-  const menuLeft = Math.min(Math.max(12, anchor?.x ?? 12), screenW - MENU_WIDTH - 12);
+  // Kept clear of the side safe area too (the side status bar and camera on iPhone Duo; 0 elsewhere).
+  const menuLeft = Math.min(Math.max(insets.left + 12, anchor?.x ?? 12), screenW - insets.right - MENU_WIDTH - 12);
   const menuBottom = anchor ? screenH - anchor.y + 10 : 110;
   // The camera card: nearly full width, from about a fifth of the way down to just above the home indicator.
-  const cardLeft = 10;
+  const cardLeft = insets.left + 10;
+  const cardWidth = screenW - insets.left - insets.right - 20;
   const cardBottom = Math.max(insets.bottom - 14, 10);
   const cardH = screenH - Math.max(insets.top + 80, screenH * 0.2) - cardBottom;
   const frame = {
     left: m.interpolate({ inputRange: [0, 1], outputRange: [menuLeft, cardLeft] }),
     bottom: m.interpolate({ inputRange: [0, 1], outputRange: [menuBottom, cardBottom] }),
-    width: m.interpolate({ inputRange: [0, 1], outputRange: [MENU_WIDTH, screenW - cardLeft * 2] }),
+    width: m.interpolate({ inputRange: [0, 1], outputRange: [MENU_WIDTH, cardWidth] }),
     height: m.interpolate({ inputRange: [0, 1], outputRange: [menuH, cardH] }),
   };
   const radius = m.interpolate({ inputRange: [0, 1], outputRange: [MENU_RADIUS, CARD_RADIUS] });

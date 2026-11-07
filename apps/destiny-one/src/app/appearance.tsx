@@ -60,8 +60,10 @@ export default function AppearanceScreen() {
 
   const { width: windowWidth } = useWindowDimensions();
   // Three across on a phone; more on a wide screen (the inside of a foldable), so tiles stay phone-sized.
-  const gridWidth = Math.min(windowWidth, 900) - 32 - RING_GAP * 2;
-  const columns = gridWidth > 560 ? 5 : 3;
+  // An even count there, so a partly folded iPhone Duo splits the grid cleanly at the fold (Apple HIG).
+  // The root stack pads the sides by the safe area (the side status bar on iPhone Duo).
+  const gridWidth = Math.min(windowWidth - insets.left - insets.right, 900) - 32 - RING_GAP * 2;
+  const columns = gridWidth > 560 ? 4 : 3;
   const tileWidth = Math.floor((gridWidth - TILE_GAP * (columns - 1)) / columns);
 
   /** Choose (or replace) your own photo and switch to it. The old file is deleted once the new one is in place. */

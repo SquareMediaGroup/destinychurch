@@ -311,7 +311,10 @@ export async function submitContactForm(formData: FormData) {
       html: buildContactEmailHtml(name, email, subject, message),
     });
 
-    if (emailError) throw new Error(emailError.message);
+    // The message is already saved and the admin notification below still
+    // reaches site admins, so a failed forward is logged, not shown: telling
+    // the visitor "something went wrong" here made them send it again.
+    if (emailError) console.error("📧 Contact form forward not sent:", emailError);
 
     await recordNotification({
       section: "site",

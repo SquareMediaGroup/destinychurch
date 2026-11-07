@@ -170,7 +170,7 @@ export async function submitApplication(formData: FormData) {
       return { success: false, error: "Something went wrong. Please try again." };
     }
 
-    await resend.emails.send({
+    const { error: emailError } = await resend.emails.send({
       from: "Destiny Church <noreply@support.squaremediagroup.org>",
       to: "techteam@destinytees.uk",
       subject: `Job Application: ${jobTitle} — ${firstName} ${lastName}`,
@@ -183,6 +183,9 @@ export async function submitApplication(formData: FormData) {
         cvName: cvName || undefined,
       }),
     });
+    // Resend reports a rejected send in its response rather than by throwing.
+    // The application is saved and HR still gets the notification below.
+    if (emailError) console.error("📧 Job application forward not sent:", emailError);
 
     await recordNotification({
       section: "hr",

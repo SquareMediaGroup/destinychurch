@@ -96,6 +96,50 @@ enum TranscriptCleaner {
 
     private static let nonSpeechScalars: Set<Unicode.Scalar> = ["♪", "♫", "♬", "♩", "*", " "]
 
+    /// A phrase repeated back-to-back at least this many times is treated as
+    /// a decoding loop. Deliberately above three, so "Holy, holy, holy" or
+    /// "He is risen, he is risen, he is risen" survive.
+    static let repetitionLoopThreshold = 4
+    /// Longest phrase (in words) checked for looping.
+    static let maxLoopPhraseLength = 10
+
+    /// Collapses a Whisper decoding loop — the same phrase written over and
+    /// over ("and the Lord said and the Lord said and the Lord said ...") —
+    /// down to a single occurrence. Comparison ignores case and punctuation.
+    static func removingRepetitionLoops(_ words: [Word]) -> [Word] {
+        let keys = words.map { word in
+            word.text.lowercased().unicodeScalars
+                .filter { CharacterSet.alphanumerics.contains($0) }
+                .map(String.init).joined()
+        }
+        var kept: [Word] = []
+        var index = 0
+
+        while index < words.count {
+            var collapsed = false
+            for length in 1...maxLoopPhraseLength where index + length * repetitionLoopThreshold <= words.count {
+                let phrase = keys[index..<index + length]
+                guard phrase.contains(where: { !$0.isEmpty }) else { continue }
+                var repeats = 1
+                while index + (repeats + 1) * length <= words.count,
+                      keys[index + repeats * length..<index + (repeats + 1) * length].elementsEqual(phrase) {
+                    repeats += 1
+                }
+                if repeats >= repetitionLoopThreshold {
+                    kept += words[index..<index + length]
+                    index += repeats * length
+                    collapsed = true
+                    break
+                }
+            }
+            if !collapsed {
+                kept.append(words[index])
+                index += 1
+            }
+        }
+        return kept
+    }
+
     /// Stock phrases Whisper invents on silence or noise, learned from the
     /// end credits of web-video subtitles. Matched against a whole segment,
     /// so a speaker who genuinely says "thank you" is never dropped.

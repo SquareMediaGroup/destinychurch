@@ -51,7 +51,14 @@ final class WhisperEngine {
         params.print_timestamps = false
         params.token_timestamps = true
         params.single_segment = false
-        params.no_context = false
+        // Each window must be decoded on its own. With context on, whisper.cpp
+        // keeps the previous window's text in `state` and feeds it back as
+        // the prompt — but consecutive windows share most of their audio
+        // (`StreamingTranscriber`'s overlap), so the prompt already contains
+        // what's being said, the model copies it, and the copy compounds
+        // window over window into the same lines repeating forever. The
+        // vocabulary `initial_prompt` below is still applied every window.
+        params.no_context = true
         // Leave Whisper free to write its own "[Applause]"/"(music)" labels:
         // they're stripped by `TranscriptCleaner`, and with them suppressed
         // the model is pushed to write *words* for non-speech instead.
@@ -118,7 +125,9 @@ final class WhisperEngine {
                 ))
             }
 
-            let segmentWords = TranscriptCleaner.removingAnnotations(TranscriptCleaner.words(from: tokens))
+            let segmentWords = TranscriptCleaner.removingRepetitionLoops(
+                TranscriptCleaner.removingAnnotations(TranscriptCleaner.words(from: tokens))
+            )
             let segmentText = segmentWords.map(\.text).joined(separator: " ")
             guard !TranscriptCleaner.isKnownHallucination(segmentText) else { continue }
 

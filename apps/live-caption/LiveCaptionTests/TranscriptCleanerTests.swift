@@ -75,4 +75,32 @@ struct TranscriptCleanerTests {
         #expect(!TranscriptCleaner.isWithinSpeech(5.0, ranges: ranges, tolerance: 0.5))
         #expect(!TranscriptCleaner.isWithinSpeech(1.0, ranges: [], tolerance: 0.5))
     }
+
+    // MARK: - Repetition loops
+
+    private func loopCleaned(_ sentence: String) -> String {
+        let words = sentence.split(separator: " ").enumerated().map { index, text in
+            (text: String(text), startTime: Double(index), confidence: Float(1))
+        }
+        return TranscriptCleaner.removingRepetitionLoops(words).map(\.text).joined(separator: " ")
+    }
+
+    @Test func collapsesRepeatedPhraseLoop() {
+        let looped = "and the Lord said, and the Lord said, and the Lord said, and the Lord said, and the Lord said, let there be light"
+        #expect(loopCleaned(looped) == "and the Lord said, let there be light")
+    }
+
+    @Test func collapsesSingleWordLoop() {
+        #expect(loopCleaned("Amen amen amen amen amen amen. Please sit") == "Amen Please sit")
+    }
+
+    @Test func keepsDeliberateThreefoldRepetition() {
+        #expect(loopCleaned("Holy, holy, holy is the Lord") == "Holy, holy, holy is the Lord")
+        #expect(loopCleaned("He is risen, he is risen, he is risen!") == "He is risen, he is risen, he is risen!")
+    }
+
+    @Test func leavesOrdinarySpeechAlone() {
+        let sentence = "Turn with me to Deuteronomy chapter six, verse four"
+        #expect(loopCleaned(sentence) == sentence)
+    }
 }

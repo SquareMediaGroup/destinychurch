@@ -18,6 +18,15 @@ struct VocabularyPromptTests {
 
     @Test func dropsEmptyVocabularyEntries() {
         let prompt = VocabularyPrompt.build(preamble: "", vocabulary: ["", "  ", "Genesis"])
-        #expect(prompt.trimmingCharacters(in: .whitespaces) == "Genesis")
+        #expect(prompt == "Genesis")
+    }
+
+    @Test func separatesTermsWithCommas() {
+        let prompt = VocabularyPrompt.build(preamble: "", vocabulary: ["Malachi", "Song of Solomon", "Zephaniah"])
+        #expect(prompt == "Malachi, Song of Solomon, Zephaniah")
+    }
+
+    @Test func noVocabularyLeavesJustThePreamble() {
+        #expect(VocabularyPrompt.build(preamble: "Welcome.", vocabulary: []) == "Welcome.")
     }
 }

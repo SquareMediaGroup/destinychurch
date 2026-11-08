@@ -116,13 +116,46 @@ lower shows words sooner but lets them rewrite themselves on screen. Words
 that have passed the sliding window's re-transcription horizon are
 structurally final and appear immediately regardless.
 
+How windows fit together (`StreamingTranscriber`), and why:
+
+- **Each window is decoded independently** (`no_context`). Feeding the
+  previous window's text back as a prompt made whisper copy it, and because
+  windows overlap the copy compounded into the same lines repeating forever.
+- **Words are finalized from the middle of a window**, not its edges — the
+  first second may start mid-word and the last may be cut off.
+- **Windows are stitched on text, not timestamps.** Whisper's word times
+  drift between windows, so a time cutoff showed seam words twice or lost
+  them. The new window is aligned on the last few finalized words instead.
+- **Word times use DTW alignment** (`dtw_token_timestamps`), which stays
+  accurate across pauses where the default timestamps slide by seconds.
+- As a last line of defence, a phrase repeated 4+ times back-to-back is
+  collapsed (`TranscriptCleaner.removingRepetitionLoops`).
+
+### Pipeline check
+
+`make pipeline-check` runs a synthesized sermon (macOS `say`, script in
+`Scripts/TestAudio/sermon.txt`) through the real model and the full streaming
+pipeline, and fails on caption loops, duplicated words, a word error rate
+over 15%, or a window too slow for real time. It's headless — it compiles the
+transcription sources directly rather than running an app-hosted test — so it
+works with the screen locked. Run it after any change to transcription.
+
+Useful knobs (environment variables): `PIPELINE_NOISE_DB=15` mixes in
+background noise at that SNR; `PIPELINE_DEBUG=1` prints every window's
+finalized and pending words; `PIPELINE_WINDOWS=14,17.5` prints whisper's raw
+output for single windows; `PIPELINE_PROMPT="..."` tries a different
+vocabulary prompt. Pass a different WAV and script as arguments.
+
 ### Vocabulary
 
 Settings > Vocabulary biases decoding toward names the model would otherwise
 miss — speakers, local place names. The 66 books of the Bible are included by
 default. This is a decoding bias, not a dictionary: only the first
 `VocabularyPrompt.maxWordCount` words are sent, custom terms first, because a
-bloated prompt crowds out real audio context and hurts accuracy.
+bloated prompt crowds out real audio context and hurts accuracy. The terms
+are sent as a plain comma-separated list: framing them as a sentence made
+whisper skip the half-sentence each window starts on (measured with
+`make pipeline-check`).
 
 ## Packaging (.dmg)
 

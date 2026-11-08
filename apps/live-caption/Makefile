@@ -69,3 +69,33 @@ ndi-setup:
 
 clean:
 	rm -rf "$(DD)" $(PROJECT) $(WHISPER_DIR)/build
+
+# --- End-to-end pipeline check -------------------------------------------
+# Runs a synthesized sermon through the real model + streaming pipeline and
+# fails on caption loops, duplicated words or a high word error rate. Headless
+# (no app, no XCTest host), so it works with the screen locked.
+# Needs the large-v3-turbo + silero models in Vendor/Models.
+
+PIPELINE_SOURCES := Scripts/PipelineCheck/main.swift \
+	LiveCaption/Audio/AudioSource.swift \
+	LiveCaption/Transcription/Hypothesis.swift \
+	LiveCaption/Transcription/TranscriptCleaner.swift \
+	LiveCaption/Transcription/VocabularyPrompt.swift \
+	LiveCaption/Transcription/WhisperEngine.swift \
+	LiveCaption/Transcription/SpeechDetector.swift \
+	LiveCaption/Transcription/StreamingTranscriber.swift \
+	LiveCaption/Captioning/CaptionStabilizer.swift
+PIPELINE_BIN := $(WHISPER_DIR)/build/pipeline-check
+
+.PHONY: pipeline-check
+pipeline-check:
+	@test -f Vendor/TestAudio/sermon.wav || ./Scripts/TestAudio/make-test-audio.sh
+	swiftc -O -swift-version 6 -parse-as-library -o $(PIPELINE_BIN) \
+		-import-objc-header Scripts/PipelineCheck/Bridging.h \
+		-Xcc -I$(WHISPER_DIR)/include -Xcc -I$(WHISPER_DIR)/ggml/include \
+		-L$(WHISPER_DIR)/build/src -L$(WHISPER_DIR)/build/ggml/src \
+		-L$(WHISPER_DIR)/build/ggml/src/ggml-metal -L$(WHISPER_DIR)/build/ggml/src/ggml-blas \
+		-lc++ -lwhisper -lggml -lggml-base -lggml-cpu -lggml-metal -lggml-blas \
+		-framework Metal -framework MetalKit -framework Accelerate -framework Foundation \
+		$(PIPELINE_SOURCES)
+	$(PIPELINE_BIN)

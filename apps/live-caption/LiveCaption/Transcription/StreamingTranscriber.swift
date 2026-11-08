@@ -31,6 +31,16 @@ final class StreamingTranscriber: AudioSourceDelegate, @unchecked Sendable {
     /// whisper.cpp acoustic context across the boundary and reducing
     /// boundary-cut errors. Derived, not independently configurable.
     private var overlapDuration: TimeInterval { max(0, windowLength - strideLength) }
+    /// Words in a window's last this-many seconds stay provisional; anything
+    /// earlier is finalized. Whisper is least reliable at a window's edges —
+    /// the first second may start mid-word, the last may be cut off — so
+    /// words are locked in from the *middle* of the window, where they have
+    /// audio on both sides. Must leave at least `strideLength` of window
+    /// before it, so consecutive windows' finalized stretches meet.
+    private let finalizationLookahead: TimeInterval = 3.0
+    /// The last few finalized words, used to find where the next window's
+    /// text picks up (see `newContentStart`).
+    private var finalizedTail: [WordToken] = []
 
     /// Ring buffer of resampled 16kHz mono samples not yet dropped from the
     /// working window. `bufferStartTime` is the stream-relative time (in the
@@ -41,9 +51,6 @@ final class StreamingTranscriber: AudioSourceDelegate, @unchecked Sendable {
 
     private var windowCounter = 0
     private var segmentCounter = 0
-    /// Words already promoted to `.finalized` — anything at or after this
-    /// timestamp is still subject to revision by the next window's overlap.
-    private var finalizationCutoff: TimeInterval = -.infinity
     /// The most recent window's still-unfinalized words, replaced wholesale
     /// by each new window run (see the note on reconciliation below).
     private var pendingWords: [WordToken] = []
@@ -145,36 +152,72 @@ final class StreamingTranscriber: AudioSourceDelegate, @unchecked Sendable {
         }
     }
 
-    /// Merges a new window's output with prior state.
+    /// Merges a new window's output with what's already been finalized.
     ///
-    /// v1 reconciliation strategy: trust the newest window's transcription
-    /// fully for anything at or after `finalizationCutoff` (i.e. everything
-    /// still eligible for revision), and rely on `finalizationCutoff` itself
-    /// — not text-diffing — to guarantee already-locked words never change.
-    /// A true longest-common-subsequence stitch across the overlap region
-    /// would reduce word-order jitter in the *partial* (not-yet-final)
-    /// region further; that refinement is deferred, not required for
-    /// structurally-correct output, since `CaptionStabilizer`'s debounce
-    /// (see Captioning/CaptionStabilizer.swift) already absorbs most of the
-    /// resulting flicker before anything reaches the screen.
+    /// Consecutive windows share most of their audio, so each new window
+    /// re-transcribes words that are already final. Telling old words from
+    /// new ones by timestamp alone doesn't work: whisper.cpp's word times
+    /// drift by a few hundred ms between windows, so a word near the seam
+    /// either lands on both sides (shown twice) or neither (lost). Instead the
+    /// new window is aligned on *text*: find the finalized tail ("carrying a
+    /// lot") in the new window's words, and everything after it is new.
+    /// Timestamps only break ties and serve as the fallback.
     private func reconcile(words: [WordToken], windowStart: TimeInterval, windowID: Int) {
-        // The next window starts one stride later, so nothing before that
-        // point will ever be re-transcribed: it's final now. (This used to be
-        // `windowStart - overlapDuration`, which is before the window even
-        // begins, so no word was ever finalized: the caption only ever showed
-        // the latest window and the transcript stayed empty.)
-        let newFinalizationCutoff = windowStart + strideLength
+        let newFinalizationCutoff = windowStart + windowLength - finalizationLookahead
 
-        let newlyFinalized = words.filter { $0.startTime < newFinalizationCutoff && $0.startTime >= finalizationCutoff }
-        let stillPending = words.filter { $0.startTime >= newFinalizationCutoff }
+        let start = Self.newContentStart(in: words, afterFinalized: finalizedTail)
+        let fresh = words[start...]
+        let newlyFinalized = Array(fresh.prefix { $0.startTime < newFinalizationCutoff })
+        let stillPending = Array(fresh.dropFirst(newlyFinalized.count))
 
         if !newlyFinalized.isEmpty {
             segmentCounter += 1
             onEvent(.finalized(FinalizedSegment(words: newlyFinalized, segmentID: segmentCounter)))
+            finalizedTail = Array((finalizedTail + newlyFinalized).suffix(8))
         }
 
-        finalizationCutoff = max(finalizationCutoff, newFinalizationCutoff)
         pendingWords = stillPending
         onEvent(.partial(PartialHypothesis(words: stillPending, windowID: windowID)))
+    }
+
+    /// How far (seconds) a re-transcribed word's time may drift and still be
+    /// matched to the finalized word it repeats.
+    static let alignmentTolerance: TimeInterval = 1.5
+
+    /// Index in `words` where text that hasn't been finalized yet begins.
+    ///
+    /// Looks for the last few finalized words (longest match first) in the new
+    /// window, close to where they were originally heard. A single-word match
+    /// ("the") is only trusted when it's very close in time. With no match —
+    /// after a silence, or when the new window heard the seam differently —
+    /// falls back to the first word after the last finalized one.
+    static func newContentStart(in words: [WordToken], afterFinalized tail: [WordToken]) -> Int {
+        let keys = words.map { alignmentKey($0.text) }
+        let tailKeys = tail.map { alignmentKey($0.text) }
+
+        if let lastFinalizedTime = tail.last?.startTime {
+            for length in stride(from: min(4, tailKeys.count), through: 1, by: -1) {
+                let needle = Array(tailKeys.suffix(length))
+                guard needle.contains(where: { !$0.isEmpty }) else { continue }
+                let tolerance = length == 1 ? 0.6 : alignmentTolerance
+                for index in stride(from: words.count - length, through: 0, by: -1) {
+                    let last = index + length - 1
+                    guard abs(words[last].startTime - lastFinalizedTime) <= tolerance,
+                          keys[index...last].elementsEqual(needle) else { continue }
+                    return last + 1
+                }
+            }
+        }
+        // Go by the last word actually finalized, not by how far the cutoff
+        // has advanced: whisper sometimes skips a half-sentence at the start
+        // of a window, and if the next window hears it, it must be kept.
+        let resumeAfter = tail.last.map { $0.startTime + 0.1 } ?? -.infinity
+        return words.firstIndex { $0.startTime > resumeAfter } ?? words.count
+    }
+
+    /// Case- and punctuation-insensitive form of a word for alignment, so
+    /// "lot." in one window matches "lot," in the next.
+    static func alignmentKey(_ text: String) -> String {
+        String(text.lowercased().unicodeScalars.filter { CharacterSet.alphanumerics.contains($0) }.map(Character.init))
     }
 }

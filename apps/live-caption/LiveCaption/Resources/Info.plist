@@ -20,6 +20,8 @@
 	</array>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.video</string>
+	<key>LiveCaptionDevSourceRoot</key>
+	<string>$(LIVE_CAPTION_DEV_SOURCE_ROOT)</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>© Destiny Church</string>
 </dict>

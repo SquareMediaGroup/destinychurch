@@ -70,10 +70,21 @@ enum ModelCatalog {
         return directories
     }
 
-    /// Walks up from the app binary to find a `Vendor/Models` alongside the
-    /// checkout. Only ever resolves during development — in an installed copy
-    /// there's no such directory above the .app and this returns nil.
+    /// Finds the checkout's `Vendor/Models`. Debug builds carry the checkout
+    /// path in Info.plist (`LiveCaptionDevSourceRoot`), which is what makes
+    /// this work when the .app lives in DerivedData. Failing that, walks up
+    /// from the app bundle. Only ever resolves during development — in an
+    /// installed Release copy both come up empty and this returns nil.
     private static func vendorModelsDirectory() -> URL? {
+        if let sourceRoot = Bundle.main.object(forInfoDictionaryKey: "LiveCaptionDevSourceRoot") as? String,
+           !sourceRoot.isEmpty {
+            let candidate = URL(fileURLWithPath: sourceRoot, isDirectory: true)
+                .appendingPathComponent("Vendor/Models", isDirectory: true)
+            if FileManager.default.fileExists(atPath: candidate.path) {
+                return candidate
+            }
+        }
+
         var directory = Bundle.main.bundleURL
         for _ in 0..<8 {
             directory = directory.deletingLastPathComponent()

@@ -53,6 +53,11 @@ settings:
   configs:
     Debug:
       SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+      # Baked into Info.plist (LiveCaptionDevSourceRoot) so a Debug build can
+      # find the checkout's Vendor/Models even though `make build` puts the
+      # .app in DerivedData, outside the checkout. Empty in Release, so an
+      # installed copy never points at a developer's machine.
+      LIVE_CAPTION_DEV_SOURCE_ROOT: "$(PROJECT_DIR)"
     Release:
       SWIFT_COMPILATION_MODE: wholemodule
 

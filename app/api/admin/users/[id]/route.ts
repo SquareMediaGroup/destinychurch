@@ -6,9 +6,20 @@ import { deleteLogin, updateLoginEmail } from "@/lib/staffLogins";
 import { ADMIN_ROLES, roleList, type AdminRole } from "@/lib/adminRoles";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
 
-function rolesFromBody(body: Record<string, unknown>): Record<AdminRole, boolean> {
+/**
+ * The roles this save leaves the account with. A role the body doesn't mention
+ * keeps its stored value: treating "absent" as "off" meant a save from a tab
+ * opened before a new access level shipped (its form has no such checkbox)
+ * silently took that level away, as would any caller sending only an email.
+ */
+function rolesFromBody(
+  body: Record<string, unknown>,
+  current: Record<string, unknown> | null,
+): Record<AdminRole, boolean> {
   const roles = {} as Record<AdminRole, boolean>;
-  for (const role of ADMIN_ROLES) roles[role] = Boolean(body[role]);
+  for (const role of ADMIN_ROLES) {
+    roles[role] = role in body ? body[role] === true : current?.[role] === true;
+  }
   return roles;
 }
 
@@ -42,7 +53,17 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
   const supabase = createServiceClient();
-  const nextRoles = rolesFromBody(body);
+
+  const before = await readForAudit("admin_roles", id, "*", "auth_user_id");
+  // Without the stored row there is nothing to keep unmentioned roles from, so
+  // stop rather than save a guess. (A missing row used to fail at the update.)
+  if (!before) {
+    return NextResponse.json(
+      { error: "That admin login couldn't be loaded. Refresh the page and try again." },
+      { status: 404 },
+    );
+  }
+  const nextRoles = rolesFromBody(body, before);
 
   if (await wouldRemoveLastSuperAdmin(supabase, id, nextRoles.super_admin)) {
     return NextResponse.json(
@@ -50,8 +71,6 @@ export async function PATCH(
       { status: 400 },
     );
   }
-
-  const before = await readForAudit("admin_roles", id, "*", "auth_user_id");
 
   // Email is optional so role-only saves keep working. The auth login is
   // changed first: if it fails (e.g. address taken) admin_roles stays in step.

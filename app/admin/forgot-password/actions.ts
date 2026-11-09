@@ -5,8 +5,47 @@ import { headers } from "next/headers";
 import { createServiceClient } from "@/utils/supabase/service";
 import { buildPasswordResetEmailHtml } from "@/lib/passwordResetEmail";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
+import { SITE_ORIGIN } from "@/lib/appApi";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+const hostOf = (value: string) =>
+  value.trim().replace(/^https?:\/\//i, "").replace(/\/.*$/, "").toLowerCase();
+
+/**
+ * The origin to build the reset link on: the one the request came in on when
+ * that is a host this app is served from, otherwise the site's own.
+ *
+ * The link carries the one-time recovery token, and Origin / Host /
+ * X-Forwarded-Host are all request headers. Vercel overwrites them today, but
+ * behind any proxy that passes them through, a request naming someone else's
+ * host would email the victim a genuine reset link pointing at that host, and
+ * clicking it would hand over the token. So the headers only ever choose
+ * between hosts we already know.
+ */
+function ownOrigin(candidate: string | null): string {
+  const known = [
+    SITE_ORIGIN,
+    "destinytees.uk",
+    "www.destinytees.uk",
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+    process.env.VERCEL_BRANCH_URL,
+    process.env.VERCEL_URL,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .map(hostOf);
+  try {
+    const url = new URL(candidate ?? "");
+    const host = url.host.toLowerCase();
+    if (known.includes(host)) return url.origin;
+    const local = /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host);
+    if (local && process.env.NODE_ENV !== "production") return url.origin;
+  } catch {
+    // No usable origin on the request: fall through to the site's own.
+  }
+  return SITE_ORIGIN;
+}
 
 // Always return the same message whether or not the account exists, so the
 // form can't be used to enumerate registered admin emails.
@@ -41,16 +80,14 @@ export async function requestPasswordReset(
     return { success: false, error: "Email service is not configured." };
   }
 
-  // Derive the real origin from the request so the link points at the
-  // deployment the user is actually on (not a hard-coded localhost fallback).
+  // Derive the origin from the request so the link points at the deployment
+  // the user is actually on, but only if it is one of ours (see ownOrigin).
   const hdrs = await headers();
   const forwardedHost = hdrs.get("x-forwarded-host") ?? hdrs.get("host");
   const forwardedProto = hdrs.get("x-forwarded-proto") ?? "https";
-  const origin =
-    hdrs.get("origin") ??
-    (forwardedHost ? `${forwardedProto}://${forwardedHost}` : null) ??
-    process.env.NEXT_PUBLIC_APP_URL ??
-    "http://localhost:3000";
+  const origin = ownOrigin(
+    hdrs.get("origin") ?? (forwardedHost ? `${forwardedProto}://${forwardedHost}` : null),
+  );
 
   try {
     // Generate the recovery token server-side so we can send our own branded

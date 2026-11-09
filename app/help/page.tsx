@@ -4,6 +4,7 @@ import AnimateIn from "@/components/AnimateIn";
 import HelpAccordion from "@/components/help/HelpAccordion";
 import { ADDRESS_ONE_LINE, SCHEDULE } from "@/lib/churchInfo";
 import Button from "@/components/ui/Button";
+import { jsonLdHtml } from "@/lib/jsonLd";
 
 export const metadata: Metadata = {
   title: "Help",
@@ -208,7 +209,7 @@ export default function HelpPage() {
     <div className="help-page relative min-h-screen overflow-hidden bg-white text-destiny-grey">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(faqSchema) }}
       />
 
       {/* page-scoped styling — shared visual language with /links */}

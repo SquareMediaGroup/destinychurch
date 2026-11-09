@@ -3,6 +3,17 @@
 import { headers } from "next/headers";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
+/**
+ * A Markdown code block GitHub shows exactly as typed: no mentions, links or
+ * formatting. The fence is one backtick longer than any run in the text, so the
+ * text can't close it early.
+ */
+function fenced(text: string): string {
+  const longestRun = Math.max(2, ...(text.match(/`+/g) ?? []).map((run) => run.length));
+  const fence = "`".repeat(longestRun + 1);
+  return `${fence}text\n${text}\n${fence}`;
+}
+
 // Public (every page's footer) and it opens GitHub issues with our token, so
 // it is throttled per IP and fenced with a honeypot — without these anyone
 // could script unlimited issues onto the repo.
@@ -41,13 +52,17 @@ export async function submitBugReport(formData: FormData) {
     return { success: false, error: "Server misconfiguration. Please try again later." };
   }
 
-  const issueTitle = `Bug Report: ${name}`;
+  // Everything the visitor typed goes inside fenced blocks. This form is open
+  // to anyone, and as plain Markdown it let a stranger @mention (and so email)
+  // any GitHub user from our repository, link wherever they liked, and write
+  // text addressed to whoever, or whatever tool, reads the issue next.
+  const issueTitle = `Bug Report: ${name.replace(/[@`<>\r\n]/g, " ").trim()}`;
   const issueBody = `
-**Reported by:** ${name} (${email})
-${pageUrl ? `**Page:** ${pageUrl}` : ""}
-
+**Reported by**
+${fenced(`${name} (${email})`)}
+${pageUrl ? `**Page**\n${fenced(pageUrl)}\n` : ""}
 ### How to reproduce
-${steps}
+${fenced(steps)}
 `;
 
   try {

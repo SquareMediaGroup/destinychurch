@@ -13,6 +13,9 @@ on:
     - cron: "*/10 * * * *"
   workflow_dispatch:
 
+# Only curls the site; the job needs nothing from the repository.
+permissions: {}
+
 jobs:
   check:
     runs-on: ubuntu-latest

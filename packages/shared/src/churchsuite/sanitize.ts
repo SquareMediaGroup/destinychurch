@@ -88,7 +88,12 @@ export function sanitizeEventHtml(html: string | null | undefined): string {
 
     // Emoji are stripped from *text only*, so an emoji inside an href can
     // never corrupt the URL.
-    const core = stripEmoji(normalised);
+    //
+    // Any angle bracket still in a text run is not a tag the pattern below
+    // recognised, so it is written out as an entity. Without this a tag the
+    // feed never closed ("<img src=x onerror=…" with no ">") passed through as
+    // text and was then completed by the next ">" this function emits itself.
+    const core = stripEmoji(normalised).replace(/</g, "&lt;").replace(/>/g, "&gt;");
     if (core) out.push(`${lead}${core}${trail}`);
     else if (lead || trail) out.push(" ");
   };

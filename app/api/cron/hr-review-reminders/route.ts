@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { fullName, REVIEW_TYPE_LABELS, type ReviewType } from "@/lib/hr";
 import { sendReviewReminderDigest } from "@/lib/hrEmail";
+import { refuseCron } from "@/lib/cronAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -26,19 +27,9 @@ interface DueReview {
 }
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-
-  // Fail closed. An unset secret would make this an open "send an email on
-  // demand" endpoint, which is worse than the cron silently not running.
-  if (!secret) {
-    console.error("⚠️ CRON_SECRET is not set — refusing to run HR review reminders.");
-    return NextResponse.json({ error: "Not configured." }, { status: 503 });
-  }
-
-  const auth = request.headers.get("authorization");
-  if (auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // CRON_SECRET bearer only, failing closed when it isn't set (lib/cronAuth.ts).
+  const refused = refuseCron(request, "run HR review reminders");
+  if (refused) return refused;
 
   const supabase = createServiceClient();
   const windowEnd = new Date();

@@ -25,6 +25,7 @@ import {
 import EventSignupButton from "@/components/events/EventSignupButton";
 import { getEventIndex } from "@/lib/events.server";
 import RichContent from "@/components/content/RichContent";
+import { jsonLdHtml } from "@/lib/jsonLd";
 
 // Rendered per request. This used to be ISR (revalidate + generateStaticParams
 // + dynamicParams), but the root layout reads live data with noStore(), so any
@@ -169,7 +170,7 @@ export default async function EventPage({ params }: Props) {
     <article className="bg-white pb-20">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(eventSchema(series)) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(eventSchema(series)) }}
       />
 
       <div className="mx-auto max-w-4xl px-4 pt-8 lg:px-8">

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getOpenAI, SMART_SEARCH_MODEL } from "@/lib/openaiClient";
 import { getSmartSearchStatus, setSmartSearchStatus } from "@/lib/serviceStatus";
 import { sendSmartSearchAlert } from "@/lib/smartSearchAlertEmail";
+import { refuseCron } from "@/lib/cronAuth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -10,14 +11,11 @@ const DAY_MS = 24 * 60 * 60_000;
 const HOUR_MS = 60 * 60_000;
 const PING_TIMEOUT_MS = 15_000;
 
-/** Authorize Vercel Cron (Authorization: Bearer <CRON_SECRET>) or a manual ?secret= run. */
-function authorized(req: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return true; // not configured (e.g. local/dev) → allow
-  const auth = req.headers.get("authorization");
-  if (auth === `Bearer ${secret}`) return true;
-  return req.nextUrl.searchParams.get("secret") === secret;
-}
+// Run hourly by .github/workflows/smart-search-health.yml (the Vercel Hobby
+// plan only allows daily crons, and a daily one couldn't retry hourly while
+// OpenAI is down). Same CRON_SECRET bearer guard as app/api/cron/*: it used to
+// run for anyone when the secret was unset and to accept the secret in the
+// query string, and this endpoint spends OpenAI credit and sends alert emails.
 
 /** Live OpenAI ping. Returns ok=false with a reason on any failure/timeout. */
 async function pingOpenAI(): Promise<{ ok: boolean; reason: string | null }> {
@@ -37,9 +35,8 @@ async function pingOpenAI(): Promise<{ ok: boolean; reason: string | null }> {
 }
 
 export async function GET(request: NextRequest) {
-  if (!authorized(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const refused = refuseCron(request, "run the Smart Search health check");
+  if (refused) return refused;
 
   const status = await getSmartSearchStatus();
   const now = Date.now();

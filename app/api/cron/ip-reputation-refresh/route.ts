@@ -25,6 +25,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { refuseCron } from "@/lib/cronAuth";
 
 export const dynamic = "force-dynamic";
 // Loading ~345k rows in ~10k-row chunks is comfortably under a minute in
@@ -93,14 +94,9 @@ function chunk<T>(items: T[], size: number): T[][] {
 }
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) {
-    console.error("⚠️ CRON_SECRET is not set — refusing to refresh IP reputation ranges.");
-    return NextResponse.json({ error: "Not configured." }, { status: 503 });
-  }
-  if (request.headers.get("authorization") !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // CRON_SECRET bearer only, failing closed when it isn't set (lib/cronAuth.ts).
+  const refused = refuseCron(request, "refresh IP reputation ranges");
+  if (refused) return refused;
 
   const supabase = createServiceClient();
   const batchId = randomUUID();

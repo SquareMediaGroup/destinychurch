@@ -18,25 +18,16 @@
 
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { refuseCron } from "@/lib/cronAuth";
 
 export const dynamic = "force-dynamic";
 
 const RETAIN_DAYS = Number(process.env.ANALYTICS_IP_RETENTION_DAYS) || 90;
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-
-  // Fail closed. An unset secret makes this an open "rewrite the click log"
-  // endpoint, which is worse than the cron silently not running.
-  if (!secret) {
-    console.error("⚠️ CRON_SECRET is not set — refusing to anonymise the click log.");
-    return NextResponse.json({ error: "Not configured." }, { status: 503 });
-  }
-
-  const auth = request.headers.get("authorization");
-  if (auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // CRON_SECRET bearer only, failing closed when it isn't set (lib/cronAuth.ts).
+  const refused = refuseCron(request, "anonymise the click log");
+  if (refused) return refused;
 
   const supabase = createServiceClient();
   const { data, error } = await supabase.rpc("engagement_anonymise_ips", {

@@ -217,7 +217,7 @@ destinychurch/
 │   │   ├── cron/                  # Vercel Cron — hr-review-reminders/, design-deliverables-purge/, … (Bearer CRON_SECRET)
 │   │   ├── chat/                  # POST /api/chat — Smart Search tool-calling chat
 │   │   ├── youtube/                # videos/, thumbnail/[id]/, status/, live/
-│   │   ├── alpha-ask/, alpha-events/ # Public Alpha info endpoints
+│   │   ├── alpha-events/           # Public Alpha info endpoint
 │   │   ├── store/                 # checkout/, checkout/bypass/ (public storefront)
 │   │   ├── training/               # unlock/, posts/[id]/timer/
 │   │   ├── health/                 # route.ts (public: database + Smart Search state for the status page), smart-search/ health check
@@ -475,7 +475,7 @@ destinychurch/
 │   └── ...
 │
 ├── .github/                       # GitHub workflows
-│   └── workflows/                 # ci.yml (every PR), playwright.yml (manual e2e), AI content jobs, talent-buzzer-release.yml
+│   └── workflows/                 # ci.yml (every PR), playwright.yml (manual e2e), talent-buzzer-release.yml, and two schedules that call the site with CRON_SECRET: status-outage-alerts.yml (every 10 min) and smart-search-health.yml (hourly)
 │
 ├── .claude/                       # Claude Code settings
 │   └── skills/                    # Project skills: vibe-security, remotion-* (Remotion video skills from remotion-dev/skills)
@@ -5085,10 +5085,12 @@ Smart Search is reported `unknown` when the database is down, because `getSmartS
 #### `GET /api/health/smart-search` — self-healing health check (cron)
 
 ```typescript
-// Vercel Cron endpoint that keeps Smart Search from showing a broken chat when
-// OpenAI is unreachable. Auth: Authorization: Bearer <CRON_SECRET> (Vercel Cron)
-// or a manual ?secret=<CRON_SECRET> run; if CRON_SECRET is unset (local/dev) it
-// runs open. maxDuration = 30.
+// Keeps Smart Search from showing a broken chat when OpenAI is unreachable.
+// Run hourly by .github/workflows/smart-search-health.yml (Vercel Hobby only
+// allows daily crons; needs the CRON_SECRET repository secret). Auth is the same
+// refuseCron() guard as /api/cron/* (lib/cronAuth.ts): Authorization: Bearer
+// <CRON_SECRET> only, 503 when the secret is unset. It no longer accepts
+// ?secret= or runs open without a secret. maxDuration = 30.
 //
 //   1. Reads service_status via getSmartSearchStatus(). While healthy it only
 //      actually pings once next_check_at is due (daily), so an hourly cron can
@@ -5111,6 +5113,8 @@ POST /api/training/unlock
 //   Body: { subgroupId, password }. Verifies a sub-group password against the
 //   hashed password_hash (server-side only; the hash is never sent to clients).
 //   On success sets a scoped cookie so the gated sub-group's posts render.
+//   Guesses are capped per IP by lib/rateLimit.ts (30 a minute, then its
+//   escalating cooldown), keyed `training-unlock:<ip>`.
 
 POST /api/training/posts/[id]/timer
 //   Enforces a training post's min_read_seconds "minimum read time" before the
@@ -6413,6 +6417,23 @@ export async function executeTool(name: string, rawArgs: string, ctx: ToolContex
   the admin API), and the "backup code used" / "two-factor reset" emails.
 
 See [Two-factor sign-in](#two-factor-sign-in-admins) for the rules.
+
+### `lib/cronAuth.ts`
+
+`refuseCron(request, job)` is the one guard every scheduled endpoint shares
+(`app/api/cron/*` and `GET /api/health/smart-search`). It returns the response
+to send when the call may not run the job, or `null` when it may: 503 and a
+logged warning naming the job when `CRON_SECRET` isn't set (fail closed), 401
+unless the header is exactly `Authorization: Bearer <CRON_SECRET>` (compared in
+constant time). A new scheduled route starts with
+`const refused = refuseCron(request, "do the thing"); if (refused) return refused;`.
+
+### `lib/jsonLd.ts`
+
+`jsonLdHtml(data)` is the text for a `<script type="application/ld+json">`
+block: `JSON.stringify` with `<` written as `\u003c`, so a value containing
+`</script>` (a product name, a ChurchSuite event title, a YouTube title) can't
+end the block. Every JSON-LD block on the site goes through it.
 
 ### `lib/rateLimit.ts`
 
@@ -7771,8 +7792,10 @@ GITHUB_TOKEN=ghp_...
 #                                                    Relay range lists behind ip_category
 #   /api/cron/design-deliverables-purge (daily 04:00) — deletes design deliverables the
 #                                                    requester confirmed >=48h ago
-# and the self-healing Smart Search health check (GET /api/health/smart-search).
-CRON_SECRET=            # every /api/cron job FAILS CLOSED (503) if unset; the health check runs unauthenticated (local/dev)
+# and the self-healing Smart Search health check (GET /api/health/smart-search),
+# which .github/workflows/smart-search-health.yml calls hourly.
+# All of them share one guard, refuseCron() in lib/cronAuth.ts.
+CRON_SECRET=            # every /api/cron job and the health check FAIL CLOSED (503) if unset
 
 # Audit log (both optional)
 #   AUDIT_REPORT_EMAIL   — comma-separated override for who gets the weekly report.
@@ -8139,6 +8162,8 @@ feed normalisation of its own, because the BFF already does all of it.
   - `src/churchsuite/sanitize.ts` — `sanitizeEventHtml`. An allowlist rewriter that drops every
     attribute except a validated `href`, because the live feed carries `class="branded"` and
     `style="color:#f9c100"` (invisible on white) written against ChurchSuite's own stylesheet.
+    Any `<` or `>` left in a text run is written as an entity, so a tag the feed never closed
+    can't be completed by the closing tags the rewriter adds (`tests/unit/event-html.spec.ts`).
     Dependency-free on purpose: `isomorphic-dompurify` drags jsdom into the server bundle, which is
     the trap commit `2185023` had to unwind at the 250MB function limit.
   - `src/churchsuite/ics.ts` — `buildIcs`. Emits local wall-clock times with `TZID=Europe/London`

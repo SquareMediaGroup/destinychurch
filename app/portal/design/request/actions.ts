@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { createServiceClient } from "@/utils/supabase/service";
-import { checkRateLimit, clientIp } from "@/lib/rateLimit";
+import { clientIp, limitKey, sharedRateLimit } from "@/lib/rateLimit";
 import { isValidEmail } from "@/lib/formEmail";
 import {
   hashIp,
@@ -65,7 +65,7 @@ export async function submitDesignRequest(formData: FormData): Promise<DesignReq
     : "other";
 
   const ip = clientIp(await headers());
-  const { limited } = checkRateLimit(`design-request:${ip}`);
+  const limited = await sharedRateLimit(await limitKey("design-request", ip));
   if (limited) {
     return {
       success: false,

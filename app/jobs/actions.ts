@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Resend } from "resend";
-import { checkRateLimit, clientIp } from "@/lib/rateLimit";
+import { clientIp, limitKey, sharedRateLimit } from "@/lib/rateLimit";
 import { escapeHtmlMultiline, isValidEmail } from "@/lib/formEmail";
 import { recordNotification } from "@/lib/notify.server";
 
@@ -135,7 +135,7 @@ export async function submitApplication(formData: FormData) {
 
   // Per-IP rate limit — applications upload files and send email, so the
   // action must not be scriptable for spam or storage flooding.
-  const { limited } = checkRateLimit(`jobs:${clientIp(await headers())}`);
+  const limited = await sharedRateLimit(await limitKey("jobs", clientIp(await headers())));
   if (limited) {
     return { success: false, error: "Too many submissions. Please wait a few minutes and try again." };
   }

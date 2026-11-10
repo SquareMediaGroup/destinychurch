@@ -1,7 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
-import { checkRateLimit, clientIp } from "@/lib/rateLimit";
+import { clientIp, limitKey, sharedRateLimit } from "@/lib/rateLimit";
 
 /**
  * A Markdown code block GitHub shows exactly as typed: no mentions, links or
@@ -23,7 +23,7 @@ export async function submitBugReport(formData: FormData) {
     return { success: true };
   }
 
-  const { limited } = checkRateLimit(`bugreport:${clientIp(await headers())}`, 3);
+  const limited = await sharedRateLimit(await limitKey("bugreport", clientIp(await headers())), 3);
   if (limited) {
     return { success: false, error: "Too many reports. Please wait a few minutes and try again." };
   }

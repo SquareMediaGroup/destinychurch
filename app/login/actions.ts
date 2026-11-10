@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { REMEMBER_COOKIE_NAME } from "@/utils/supabase/sessionCookie";
 import { checkRateLimit, resetRateLimit } from "@/lib/loginRateLimit";
+import { limitKey, sharedRateLimit } from "@/lib/rateLimit";
 import { getSystemAccess, type SystemAccess } from "@/lib/staffPortalAuth";
 import { ADMIN_ROLES, getRoles } from "@/lib/adminRoles";
 import { recordAudit } from "@/lib/audit.server";
@@ -59,6 +60,20 @@ async function signInCore(
 
   if (!email || !password) {
     return { success: false, error: "Email and password are required." };
+  }
+
+  // The limiter above counts in this server instance's memory, and a script
+  // spread across instances gets that allowance from each. These two are
+  // counted in the database, which every instance shares: per address being
+  // signed in to (so one account can't be guessed at from many places) and
+  // per connection (looser, because an office shares one).
+  const FIFTEEN_MINUTES = 15 * 60;
+  const [emailLimited, ipLimited] = await Promise.all([
+    sharedRateLimit(await limitKey("login-email", email), 10, FIFTEEN_MINUTES),
+    sharedRateLimit(await limitKey("login-ip", ip), 30, FIFTEEN_MINUTES),
+  ]);
+  if (emailLimited || ipLimited) {
+    return { success: false, error: "Too many login attempts. Please try again in 15 minutes." };
   }
 
   const remember = formData.get("remember") === "on";

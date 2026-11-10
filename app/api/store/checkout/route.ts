@@ -2,21 +2,21 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { createServiceClient } from "@/utils/supabase/service";
 import { getStripe } from "@/lib/stripe";
-import { checkRateLimit, clientIp } from "@/lib/rateLimit";
+import { clientIp, limitKey, sharedRateLimit } from "@/lib/rateLimit";
 import {
   buildPendingOrder,
   checkoutSchema,
-  claimFreeItem,
   deleteOrder,
-  finalizeOrderPaid,
+  startFreeItemCheck,
 } from "@/lib/checkout.server";
-import { FREE_ITEM_LIMIT_MESSAGE } from "@/lib/shop";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  // Rate-limit: checkout creates DB rows + a Stripe PaymentIntent.
-  const { limited } = checkRateLimit(`checkout:${clientIp(await headers())}`);
+  // Rate-limit: checkout creates DB rows + a Stripe PaymentIntent. Counted
+  // across every server instance; 30 a minute because a Sunday queue on the
+  // church Wi-Fi shares one address.
+  const limited = await sharedRateLimit(await limitKey("checkout", clientIp(await headers())), 30);
   if (limited) {
     return NextResponse.json(
       { error: "Too many attempts. Please wait a moment and try again." },
@@ -34,29 +34,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: built.error }, { status: built.status });
   }
 
-  // Nothing to pay (a basket holding only the one free item): take the
-  // customer's free-item claim and complete the order straight away.
+  // Nothing to pay (a basket holding only the one free item). The order stays
+  // pending until the customer types in a code emailed to the address they
+  // gave: the free item is one per address, and without this any made-up
+  // address was good for another one (lib/checkout.server.ts).
   if (built.total === 0) {
-    let claimed = false;
     try {
-      claimed = await claimFreeItem(parsed.data.customer.email, built.orderDbId);
+      const ticket = await startFreeItemCheck(built.orderDbId, built.orderNumber, parsed.data.customer.email);
+      return NextResponse.json({ verifyEmail: true, orderNumber: built.orderNumber, ticket });
     } catch (err) {
-      console.error("Free item claim error:", err);
+      console.error("Free item code not sent:", err);
       await deleteOrder(built.orderDbId);
       return NextResponse.json(
-        { error: "Your order could not be placed. Please try again." },
-        { status: 500 },
+        { error: "We couldn't email your confirmation code. Please check the address and try again." },
+        { status: 502 },
       );
     }
-    if (!claimed) {
-      await deleteOrder(built.orderDbId);
-      return NextResponse.json(
-        { error: `You've already had your free item. ${FREE_ITEM_LIMIT_MESSAGE}` },
-        { status: 409 },
-      );
-    }
-    await finalizeOrderPaid(built.orderDbId);
-    return NextResponse.json({ orderNumber: built.orderNumber, free: true });
   }
 
   try {

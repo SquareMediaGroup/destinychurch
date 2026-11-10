@@ -63,8 +63,7 @@ export function trackClick(
 
   // Fallback for browsers where sendBeacon is unavailable or refused (Safari
   // disables it under some Lockdown Mode and ITP configurations). `keepalive`
-  // is what lets this outlive the navigation — the same approach
-  // components/shop/ShopDiagnostics.tsx already uses for its reports.
+  // is what lets this outlive the navigation.
   try {
     void fetch(ENDPOINT, {
       method: "POST",

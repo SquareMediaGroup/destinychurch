@@ -50,6 +50,9 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showTestOrderPrompt, setShowTestOrderPrompt] = useState(false);
+  // A free-only order waits here for the code emailed to the customer.
+  const [verify, setVerify] = useState<{ ticket: string; orderNumber: string } | null>(null);
+  const [code, setCode] = useState("");
 
 
   const subtotal = useMemo(() => cartSubtotal(items), [items]);
@@ -101,17 +104,46 @@ export default function CheckoutPage() {
         setLoading(false);
         return;
       }
-      // A basket with only the free item needs no payment — the order is
-      // already complete.
-      if (data.free) {
-        clear();
-        router.push(
-          `/shop/checkout/success?order=${encodeURIComponent(data.orderNumber)}&redirect_status=succeeded`,
-        );
+      // A basket with only the free item needs no payment, but the order
+      // only completes once the emailed code is typed in (confirmFreeOrder).
+      if (data.verifyEmail) {
+        setCode("");
+        setVerify({ ticket: data.ticket, orderNumber: data.orderNumber });
         return;
       }
       setClientSecret(data.clientSecret);
       setOrderNumber(data.orderNumber);
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function confirmFreeOrder(e: React.FormEvent) {
+    e.preventDefault();
+    if (!verify) return;
+    setError(null);
+    if (!/^\d{6}$/.test(code.trim())) {
+      setError("Enter the 6-digit code from the email.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/store/checkout/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticket: verify.ticket, code: code.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Something went wrong. Please try again.");
+        return;
+      }
+      clear();
+      router.push(
+        `/shop/checkout/success?order=${encodeURIComponent(data.orderNumber)}&redirect_status=succeeded`,
+      );
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -228,7 +260,54 @@ export default function CheckoutPage() {
 
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_18rem]">
           <div>
-            {!clientSecret ? (
+            {verify ? (
+              /* Free-only order — confirm the email address */
+              <form onSubmit={confirmFreeOrder} className="space-y-5">
+                <h2 className="font-[family-name:var(--font-heading)] text-lg font-black text-destiny-grey">
+                  Check your email
+                </h2>
+                <p className="text-sm text-muted">
+                  We&apos;ve sent a 6-digit code to{" "}
+                  <span className="font-semibold text-destiny-grey">{customer.email.trim()}</span>. Enter it
+                  below to confirm your order. It expires in 15 minutes.
+                </p>
+                <div>
+                  <label htmlFor="checkout-code" className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-subtle">
+                    Code
+                  </label>
+                  <input
+                    id="checkout-code"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    required
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                    className="w-full rounded-xl border border-black/15 px-4 py-3 text-lg tracking-[0.3em] outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/20"
+                  />
+                </div>
+
+                {error && (
+                  <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {error}
+                  </div>
+                )}
+
+                <Button type="submit" size="cta" fullWidth loading={loading}>
+                  {loading ? "Confirming…" : "Confirm order"}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVerify(null);
+                    setError(null);
+                  }}
+                  className="block w-full text-center text-sm font-semibold text-muted underline-offset-4 hover:underline"
+                >
+                  Use a different email
+                </button>
+              </form>
+            ) : !clientSecret ? (
               /* Step 1 — contact details */
               <form onSubmit={handleContinueClick} className="space-y-5">
                 <h2 className="font-[family-name:var(--font-heading)] text-lg font-black text-destiny-grey">

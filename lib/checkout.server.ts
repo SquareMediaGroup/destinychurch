@@ -14,6 +14,9 @@ import {
   type OrderWithItems,
 } from "@/lib/shop";
 import { recordNotification } from "@/lib/notify.server";
+import { sendEmailCard } from "@/lib/emailCard";
+import { unseal } from "@/lib/destinyOne/churchsuite";
+import { checkTicket, issueTicket, newEmailCode } from "@/lib/destinyOne/emailChange";
 
 const orderId = customAlphabet("ACDEFGHJKLMNPQRSTUVWXYZ23456789", 8);
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -207,6 +210,91 @@ export async function claimFreeItem(email: string, orderDbId: string): Promise<b
   if (!error) return true;
   if (error.code === "23505") return false;
   throw new Error(`Could not record free item claim: ${error.message}`);
+}
+
+// ── Free-item email check ───────────────────────────────────────────────────
+// "One free item per customer" is counted per email address, and an address
+// typed into a form proves nothing: with a different made-up address each
+// time, the same person could take the free item again and again, with no
+// card payment in the way. So an order that costs nothing only completes once
+// a 6-digit code sent to that address comes back.
+//
+// The ticket is the same sealed, stateless kind Destiny One uses for changing
+// a sign-in email (lib/destinyOne/emailChange.ts): good for one order, one
+// address and 15 minutes. Orders with something to pay are unchanged.
+
+function ticketSecret(): string {
+  const value = process.env.DESTINY_ONE_SECRET || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!value) throw new Error("No secret available to seal the free-item ticket");
+  return value;
+}
+
+/** Emails the code for a free-only order. Returns the ticket the page sends back with it. */
+export async function startFreeItemCheck(orderDbId: string, orderNumber: string, email: string): Promise<string> {
+  const address = normalizeEmail(email);
+  const code = newEmailCode();
+  const ticket = issueTicket(orderDbId, address, code, ticketSecret());
+  const sent = await sendEmailCard({
+    to: address,
+    subject: `Your code to confirm order ${orderNumber}`,
+    badge: "Destiny Church Shop",
+    heading: "Confirm your order",
+    intro:
+      "Type this code into the checkout page to confirm your order. It expires in 15 minutes. If you didn't place an order, you can ignore this email.",
+    rows: [
+      ["Code", code],
+      ["Order", orderNumber],
+    ],
+  });
+  // Without the code the customer can't finish, so a refused send is a failure here.
+  if (!sent) throw new Error("The confirmation code email was refused");
+  return ticket;
+}
+
+export type FreeItemCheck =
+  | { ok: true; orderDbId: string; email: string }
+  | { ok: false; reason: "expired" | "wrong_code" };
+
+/** Which order and address a ticket is for, if `code` is the one that was emailed. */
+export function checkFreeItemTicket(ticket: string, code: string): FreeItemCheck {
+  const secret = ticketSecret();
+  const sealed = unseal<{ uid?: unknown }>(ticket, secret);
+  if (!sealed || typeof sealed.uid !== "string") return { ok: false, reason: "expired" };
+  const check = checkTicket(ticket, sealed.uid, code, secret);
+  return check.ok ? { ok: true, orderDbId: sealed.uid, email: check.email } : check;
+}
+
+/**
+ * Completes a free-only order whose email has just been confirmed: takes the
+ * customer's one claim and marks the order paid. Refuses anything that isn't
+ * still a pending, zero-total order for that address.
+ */
+export async function completeFreeOrder(
+  orderDbId: string,
+  email: string,
+): Promise<{ ok: true; orderNumber: string } | { ok: false; status: number; error: string }> {
+  const supabase = createServiceClient();
+  const { data: order } = await supabase
+    .from("orders")
+    .select("id, order_number, status, total_pennies, customer_email")
+    .eq("id", orderDbId)
+    .maybeSingle();
+  if (!order || normalizeEmail(order.customer_email) !== email || order.total_pennies !== 0) {
+    return { ok: false, status: 404, error: "That order couldn't be found. Please start again." };
+  }
+  // Already done (a second tap, or a retry after a lost reply).
+  if (order.status === "paid" || order.status === "fulfilled") return { ok: true, orderNumber: order.order_number };
+  if (order.status !== "pending") {
+    return { ok: false, status: 409, error: "That order was cancelled. Please start again." };
+  }
+
+  const claimed = await claimFreeItem(email, order.id);
+  if (!claimed) {
+    await deleteOrder(order.id);
+    return { ok: false, status: 409, error: `You've already had your free item. ${FREE_ITEM_LIMIT_MESSAGE}` };
+  }
+  await finalizeOrderPaid(order.id);
+  return { ok: true, orderNumber: order.order_number };
 }
 
 /** Delete a pending order (used to roll back if Stripe setup fails). */

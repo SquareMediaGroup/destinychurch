@@ -88,3 +88,53 @@ export function checkRateLimit(ip: string, max: number = MAX_PER_WINDOW): RateLi
 
   return { limited: false, retryAfterMs: 0 };
 }
+
+// ── Shared across instances ─────────────────────────────────────────────────
+// checkRateLimit above counts in this instance's memory, and on Vercel every
+// serverless instance has its own count, so it slows a script down without
+// capping it. For the public forms that send email, spend money or guard a
+// password, sharedRateLimit also counts in the database (rate_limit_hit,
+// migration 20261110_01), which every instance shares.
+
+/**
+ * A rate-limit key for something that identifies a person (an IP or email
+ * address): hashed, so the counters table never holds one as typed.
+ */
+export async function limitKey(scope: string, subject: string): Promise<string> {
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(subject.trim().toLowerCase()));
+  const hex = Array.from(new Uint8Array(bytes).slice(0, 16), (b) => b.toString(16).padStart(2, "0")).join("");
+  return `${scope}:${hex}`;
+}
+
+/**
+ * True when the caller is over the limit: more than `max` hits for `key` in the
+ * current window of `windowSeconds` (default a minute), counted across every
+ * server instance.
+ *
+ * Two layers, as in lib/destinyOne/http.ts: this instance's memory first
+ * (free, and it adds the escalating cooldowns) when the window is a minute,
+ * then the database. If the database can't be reached, or hasn't had the
+ * migration yet, the request is let through and the problem logged: a rate
+ * limit must never be the reason a form stops working.
+ */
+export async function sharedRateLimit(key: string, max: number = MAX_PER_WINDOW, windowSeconds = 60): Promise<boolean> {
+  if (windowSeconds === 60 && checkRateLimit(key, max).limited) return true;
+  try {
+    // Imported here, not at the top: this module is also loaded where the
+    // service client isn't wanted (unit tests of the in-memory limiter).
+    const { createServiceClient } = await import("@/utils/supabase/service");
+    const { data, error } = await createServiceClient().rpc("rate_limit_hit", {
+      p_key: key,
+      p_max: max,
+      p_window_seconds: windowSeconds,
+    });
+    if (error) {
+      console.error("⚠️ Shared rate limit unavailable:", error.message);
+      return false;
+    }
+    return data === false;
+  } catch (err) {
+    console.error("⚠️ Shared rate limit unavailable:", (err as Error).message);
+    return false;
+  }
+}

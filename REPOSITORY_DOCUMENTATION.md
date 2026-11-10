@@ -1048,9 +1048,9 @@ CREATE TABLE admin_roles (
 A trigger, `enforce_last_super_admin()`, refuses any change that would leave no Super Admin (including a
 single UPDATE that demotes everyone); `20261017_01_bug_fixes.sql` fixed it so it actually fires.
 
-**Leftover tables:** `admin_agent_plans` / `admin_agent_actions` (`20261105_01_admin_destinyai.sql`) belonged
-to the admin DestinyAI assistant, which was removed (#189). No code reads them; the applied migration is kept
-as history. Destiny One's member DestinyAI (§29, part 18) is separate and still live.
+**Removed tables:** `admin_agent_plans` / `admin_agent_actions` (`20261105_01_admin_destinyai.sql`) belonged
+to the admin DestinyAI assistant, which was removed (#189). `20261110_03_drop_admin_agent_tables.sql` drops
+them (both were empty); the banner/popup `starts_at` / `ends_at` columns from the same migration stay. Destiny One's member DestinyAI (§29, part 18) is separate and still live.
 
 Distinct from the legacy, unused `admin_users` table in `supabase/schema.sql`
 (username/password_hash — predates the Supabase Auth migration; not read by
@@ -1588,8 +1588,14 @@ CREATE TABLE order_items (
 > `shop_free_item_claims` (email primary key, `order_id`, service-only RLS) holds
 > the claims. `buildPendingOrder` turns away a basket with more than one free
 > unit or an email that already has a claim. A basket of only the free item has
-> nothing to pay: `POST /api/store/checkout` takes the claim (the unique key
-> stops two racing checkouts) and completes the order without Stripe. A paid
+> nothing to pay, and nothing would otherwise stop the same person using a new
+> made-up address each time. So `POST /api/store/checkout` leaves that order
+> pending, emails a 6-digit code to the address (`startFreeItemCheck`) and
+> returns `{ verifyEmail, orderNumber, ticket }`; the checkout page asks for the
+> code and `POST /api/store/checkout/confirm` takes the claim (the unique key
+> stops two racing checkouts) and completes the order (`completeFreeOrder`). The
+> ticket is the sealed, stateless kind from `lib/destinyOne/emailChange.ts`:
+> one order, one address, 15 minutes. A paid
 > order carrying a free item takes the claim in `finalizeOrderPaid`. The basket
 > (`lib/cart-store.ts`) caps free units at one for display. To let someone have
 > another free item, delete their row from `shop_free_item_claims`.
@@ -4018,52 +4024,6 @@ stay: they're consent and legal, not chrome.
 - `ProductBuyPanel.tsx` — colour swatches + size pills + quantity + add-to-basket (client)
 - `CartButton.tsx` — header basket icon with live item-count badge (client)
 - `CheckoutForm.tsx` — Stripe Express Checkout Element (Apple Pay / Google Pay / Link, shown only when a wallet is available) above the Payment Element card form; both confirm the same PaymentIntent (client)
-- `ShopDiagnostics.tsx` — **TEMPORARY.** Mounted for every `/shop` route by
-  `app/shop/layout.tsx` to chase an intermittent blank/white page in Chrome.
-  Renders nothing. See "Shop blank-page diagnostic" below; delete this component,
-  the layout and `/api/shop-diagnostics` once the cause is confirmed.
-
-##### Shop blank-page diagnostic (temporary)
-
-The bug: `/shop` and its sub-routes intermittently paint blank/white in Chrome.
-Ruled out by investigation — server errors (12/12 identical 200s), JS heap growth
-(flat ~15MB), image weight (largest source image 110KB), console errors (none) and
-a renderer crash (Chrome's Crashpad directory empty). Not reproducible on demand,
-hence instrumentation rather than a speculative fix.
-
-Two candidate failure modes need different evidence, which is what the payload is
-shaped around:
-
-| Mode | What the report looks like |
-|---|---|
-| React/JS died | `dom.mainChildren === 0`, plus a `js-error` / `dom-blank` reason |
-| Compositing failed | DOM completely intact, **no** error — the GPU simply never painted |
-
-The second mode is invisible to any automatic check, which is why a **manual
-hotkey (Ctrl/Cmd + Shift + 9)** exists: a `manual` report showing a healthy DOM and
-zero errors is itself the finding, because it eliminates the first mode.
-
-Automatic tripwires: `window.onerror`, `unhandledrejection`, a 1x1 WebGL context
-listening for `webglcontextlost` (the only JS-visible signal of a GPU process
-reset), a `PerformanceObserver` for long tasks, and a 3s poll for an emptied
-`<main>`. Observation is deliberately passive — `PerformanceObserver` rather than a
-`requestAnimationFrame` loop — so the instrument does not perturb the compositing
-behaviour it is measuring.
-
-`render.refractActive` is the key field: it records whether the SVG refraction
-`backdrop-filter: url(#glass-refract)` is live at that moment. It differs by route
-— the `/shop` index disables it via `html:has(.shop-page)` in `globals.css`, the
-sub-routes do not — so it discriminates the prime suspect automatically.
-
-Per-route state: the report budget, event buffer and timers all reset on `pathname`
-change. The component lives in the shop layout and survives client-side navigation,
-so without that reset the budget would be spent once per browsing session and the
-instrument would fall silent exactly when the bug next appeared.
-
-> **Apple Pay:** enabled automatically by `automatic_payment_methods` — no extra API params. The only prerequisite is a **registered payment-method domain**; Stripe hosts the Apple domain-association file, so there is no `/.well-known` file to deploy. Register the live domain(s) once via Stripe Dashboard → Settings → Payment methods → Apple Pay, or run `scripts/register-apple-pay-domain.mjs` with the live `STRIPE_SECRET_KEY` (e.g. `destinytees.uk` and `www.destinytees.uk`). Apple Pay renders on supported devices/browsers only (Safari on Apple hardware).
-
----
-
 ## API Routes & Server Actions
 
 ### Server Actions vs. API Routes
@@ -4933,8 +4893,8 @@ lives in Supabase too, so during an outage set `D1_MAINTENANCE_MESSAGE` in Verce
 | `auth/churchsuite/start` → `callback` → `exchange` | GET, GET, POST | Sign in with ChurchSuite (below) |
 | `me` | GET, PATCH, DELETE | PATCH `{ firstName, lastName }` changes my own name (5/min; at most 2 changes in any 30 days, else `rule_violation` with the date it reopens; Profile tab → Change name, `edit-name.tsx`, which shows a live preview of a message from you). `D1Me.nameChangesLeft` / `nextNameChangeAt` carry the allowance. DELETE = GDPR erasure (`{ "confirm": "DELETE" }`): erases the member and deletes the sign-in, except when the same auth user has an `admin_roles` row or is linked to `hr_staff`, where the Destiny One data is erased and detached but the website sign-in is kept (deleting it would cascade their admin roles away). `D1Me` includes `firstName`, `lastName`, `blocked` (people I've blocked), `avatarUrl` (a signed link) and `isStaff` (has Destiny One / Safeguarding / Super Admin access; used only to check an "Add admin account") |
 | `me/avatar` | POST, DELETE | Profile picture (multipart `file`, 5 MB). Active members only; stored privately in `d1-avatars`. In the app, tapping your picture on Profile offers Choose photo / Remove picture |
-| `me/email` → `me/email/confirm` | POST, POST | Change my own sign-in email (Profile → Email, `src/app/change-email.tsx`). `{ email }` emails a 6-digit code to the new address through Resend and returns a sealed `ticket` (`lib/destinyOne/emailChange.ts`: account + address + code hash, 15 minutes); `{ ticket, code }` then sets the auth email with the admin API (`email_confirm: true`) and emails a notice to the old address. "Already has an account" is only said after the code checks out, so it never reveals who has one. Doesn't use `auth.updateUser({ email })`: Supabase's project-wide "Change email" template is link-based (the portal uses it) and secure email change would also need a code from the old inbox. Active members only; rate-limited per account. The app refreshes its Supabase session afterwards |
-| `me/password` | GET, POST | Set or change my password (Profile → Password, `src/app/set-password.tsx`). `GET` returns `{ hasPassword }` (`d1_has_password`, service role only, migration `20260929_04`). `POST { password, current? }`: if the account already has a password, `current` is required and checked server-side against Supabase with a throwaway client; then the password is set with the admin API. Accounts with no password yet are gated on the phone instead (Face ID / passcode via `confirmDeviceOwner`, refusing devices with no lock). Supabase weak/leaked refusals come back as `invalid` with message `password_rejected:<reasons>`. Rate-limited per account |
+| `me/email` → `me/email/confirm` | POST, POST | Change my own sign-in email (Profile → Email, `src/app/change-email.tsx`). `{ email }` emails a 6-digit code to the new address through Resend and returns a sealed `ticket` (`lib/destinyOne/emailChange.ts`: account + address + code hash, 15 minutes); `{ ticket, code }` then sets the auth email with the admin API (`email_confirm: true`) and emails a notice to the old address. "Already has an account" is only said after the code checks out, so it never reveals who has one. Doesn't use `auth.updateUser({ email })`: Supabase's project-wide "Change email" template is link-based (the portal uses it) and secure email change would also need a code from the old inbox. Active members only; rate-limited per account. The app refreshes its Supabase session afterwards Confirm is also capped at 10 tries an hour per account across all servers (`sharedRateLimit`), since the ticket holds no count of wrong codes. |
+| `me/password` | GET, POST | Set or change my password (Profile → Password, `src/app/set-password.tsx`). `GET` returns `{ hasPassword }` (`d1_has_password`, service role only, migration `20260929_04`). `POST { password, current? }`: if the account already has a password, `current` is required and checked server-side against Supabase with a throwaway client; then the password is set with the admin API. Accounts with no password yet are gated on the phone instead (Face ID / passcode via `confirmDeviceOwner`, refusing devices with no lock). Supabase weak/leaked refusals come back as `invalid` with message `password_rejected:<reasons>`. Rate-limited per account Setting a FIRST password (no `current` to check) needs a sign-in within the last 15 minutes, read from the access token's `amr` claim (`signedInAt`), else `rule_violation`; every set or change emails the account a notice. |
 | `members/[id]/block` | POST, DELETE | Block / unblock someone; returns `D1Me`. Hides their messages and notifications for me only; logged for safeguarding |
 | `me/consents` | POST | Current versions only (`REQUIRED_CONSENTS`) |
 | `me/export` | GET | GDPR access: profile (incl. access-request note, declared and staff-set 18th birthday, how and when verified, a link to the profile picture), consents, memberships, own messages (incl. deleted), files sent (24-hour links), reactions, blocks, own reports, feedback sent |
@@ -5160,15 +5120,11 @@ POST /api/store/checkout/bypass
 // Shared order logic (pricing recompute, order creation, paid-finalisation) lives
 // in lib/checkout.server.ts and is used by checkout, the webhook, and the bypass.
 
-POST /api/shop-diagnostics
-//   TEMPORARY — remove with components/shop/ShopDiagnostics.tsx once the /shop
-//   blank-page bug is identified. Receives a client snapshot captured when /shop
-//   renders blank and writes it to the Vercel runtime logs (console.error;
-//   search for "shop-diagnostics"). It used to also file GitHub issues; that was
-//   removed in the 2026-10-09 security audit because the Origin check is
-//   forgeable and the dedupe key is caller-chosen, so anyone could open
-//   unlimited issues with our token. Fenced: same-origin only (403), 32KB body
-//   cap (413), 5 reports per IP per 10 min (throttled).
+POST /api/store/checkout/confirm
+//   Body: { ticket, code }. Completes a free-only order once the customer types
+//   the 6-digit code emailed to them (see "free item" under Database Schema).
+//   30 a minute per connection and 5 an hour per ticket, both shared across
+//   server instances.
 
 // ADMIN (gated by middleware, site_editor role)
 GET|POST            /api/admin/store/products
@@ -6437,9 +6393,17 @@ end the block. Every JSON-LD block on the site goes through it.
 
 ### `lib/rateLimit.ts`
 
-Per-IP sliding-window rate limiter with escalating cooldowns, **in-memory** (a
-`Map`, not a database table) — adequate for this site's traffic, per-instance on
-serverless. Callers namespace keys (e.g. `contact:${ip}`) so endpoints don't trip
+Two limiters. `sharedRateLimit(key, max, windowSeconds)` counts in the database
+(`rate_limit_hit` / `rate_limits`, `20261110_01_shared_rate_limit.sql`), which
+every serverless instance shares; the public forms that send email, spend money
+or guard a password use it (contact, hire, jobs, design request, bug report,
+links forms, checkout, Smart Search chat, password reset, and sign-in at 10 per
+email and 30 per connection per 15 minutes). Keys go through `limitKey(scope,
+subject)`, which hashes the IP or email. It fails open: if the database can't be
+reached the request goes through and the problem is logged. `checkRateLimit` is
+the original per-IP sliding-window limiter with escalating cooldowns, **in-memory**
+(a `Map`), per-instance on serverless; `sharedRateLimit` runs it first for
+one-minute windows, and lower-stakes endpoints use it alone. Callers namespace keys (e.g. `contact:${ip}`) so endpoints don't trip
 each other's limits:
 
 ```typescript

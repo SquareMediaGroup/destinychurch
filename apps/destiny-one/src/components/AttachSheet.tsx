@@ -36,6 +36,8 @@ interface Props {
   anchor: MenuAnchor | null;
   onClose: () => void;
   onPhotos: () => void;
+  /** A video from the library. */
+  onVideo: () => void;
   /** A photo taken in the camera card (a local file uri). */
   onPhoto: (uri: string) => void;
   onDocument: () => void;
@@ -52,7 +54,7 @@ const CLOSE = { stiffness: 520, damping: 40, mass: 1 } as const;
 /** Menu to camera and back: a soft, slightly bouncy morph. */
 const MORPH = { stiffness: 230, damping: 25, mass: 1 } as const;
 
-export function AttachSheet({ visible, anchor, onClose, onPhotos, onPhoto, onDocument, onPoll, onEvent }: Props) {
+export function AttachSheet({ visible, anchor, onClose, onPhotos, onVideo, onPhoto, onDocument, onPoll, onEvent }: Props) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { width: screenW, height: screenH } = useWindowDimensions();
@@ -108,6 +110,7 @@ export function AttachSheet({ visible, anchor, onClose, onPhotos, onPhoto, onDoc
   const items: { icon: IconName; label: string; onPress: () => void }[] = [
     { icon: "camera", label: "Camera", onPress: () => morph(1) },
     { icon: "photo", label: "Photos", onPress: onPhotos },
+    { icon: "play", label: "Video", onPress: onVideo },
     { icon: "doc", label: "Document", onPress: onDocument },
     { icon: "poll", label: "Poll", onPress: onPoll },
     { icon: "calendar", label: "Event", onPress: onEvent },

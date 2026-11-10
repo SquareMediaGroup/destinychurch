@@ -76,6 +76,10 @@ and hold DPAs with each.
 - Messages, attachments, closed reports, resolved safeguarding events: **`D1_MESSAGE_RETENTION_DAYS`,
   1 year (365 days), agreed 2026-09-28**, enforced daily by `/api/cron/destiny-one-purge`
   (floor 30 days in SQL). ⚠️ **Must be set by the safeguarding policy (scoping doc D6)** before launch.
+- **Videos: 28 days.** The file is deleted from storage 28 days after it is sent, by
+  `/api/cron/destiny-one-video-expiry`; the message stays with an "expired" placeholder. A video under an
+  open report, or one a safeguarding lead has held, keeps its file. A member can Keep a copy on their own
+  phone, which the church can't remove. ⚠️ Confirm this period and the Keep button with safeguarding.
 - **A message under an open report is never purged**, however old, until the report is closed
   (`20260928_01_destiny_one_safeguarding.sql`).
 - Erased members' anonymised rows are removed once they own no remaining messages.

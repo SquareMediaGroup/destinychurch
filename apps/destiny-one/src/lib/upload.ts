@@ -20,7 +20,7 @@ function reason(err: unknown): string {
  * ("unsupported form data per implementation"). XMLHttpRequest streams the
  * file from disk natively.
  */
-function putForm(url: string, form: FormData): Promise<void> {
+function putForm(url: string, form: FormData, timeoutMs: number): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", url);
@@ -28,11 +28,11 @@ function putForm(url: string, form: FormData): Promise<void> {
       if (xhr.status >= 200 && xhr.status < 300) return resolve();
       const detail = String(xhr.responseText ?? "").slice(0, 120);
       console.warn("upload PUT rejected", xhr.status, detail);
-      reject(new Error(`Couldn't upload the photo (${xhr.status}${detail ? `: ${detail}` : ""}).`));
+      reject(new Error(`Couldn't upload the file (${xhr.status}${detail ? `: ${detail}` : ""}).`));
     };
-    xhr.onerror = () => reject(new Error("Couldn't send the photo (network error)."));
-    xhr.ontimeout = () => reject(new Error("Couldn't send the photo (timed out)."));
-    xhr.timeout = 60_000;
+    xhr.onerror = () => reject(new Error("Couldn't send the file (network error)."));
+    xhr.ontimeout = () => reject(new Error("Couldn't send the file (timed out)."));
+    xhr.timeout = timeoutMs;
     xhr.send(form);
   });
 }
@@ -44,14 +44,15 @@ export async function uploadAttachment(groupId: string, file: PickedFile): Promi
     try {
       sizeBytes = (await (await fetch(file.uri)).blob()).size;
     } catch (err) {
-      throw new Error(`Couldn't read the photo (${reason(err)}).`);
+      throw new Error(`Couldn't read the file (${reason(err)}).`);
     }
   }
   const ticket = await api.requestUpload(groupId, { mimeType: file.mimeType, sizeBytes, durationMs: file.durationMs });
   const form = new FormData();
   // React Native's FormData takes { uri, name, type } as a file part.
   form.append("file", { uri: file.uri, name: file.name, type: file.mimeType } as unknown as Blob);
-  await putForm(ticket.uploadUrl, form);
+  // A video is up to 150 MB, so it gets ten minutes on a slow connection; anything else, one.
+  await putForm(ticket.uploadUrl, form, file.mimeType.startsWith("video/") ? 600_000 : 60_000);
   networkUsage.record("sent", mediaKind(file.mimeType), sizeBytes, onWifi());
   return ticket.attachmentId;
 }

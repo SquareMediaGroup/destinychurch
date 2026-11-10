@@ -360,13 +360,13 @@ interface MessageRow {
   link_preview: string | null;
   forwarded_from: number | null;
   sender: { id: string; display_name: string } | null;
-  attachment: { id: string; storage_path: string; mime_type: string; size_bytes: number | null; duration_ms: number | null } | null;
+  attachment: { id: string; storage_path: string; mime_type: string; size_bytes: number | null; duration_ms: number | null; expires_at: string | null; expired_at: string | null } | null;
 }
 
 const MESSAGE_SELECT =
   "id, group_id, sender_id, body, reply_to, attachment_id, content, created_at, edited_at, deleted_at, mentions, link_preview, forwarded_from, " +
   "sender:d1_members!d1_messages_sender_id_fkey(id, display_name), " +
-  "attachment:d1_attachments!d1_messages_attachment_id_fkey(id, storage_path, mime_type, size_bytes, duration_ms)";
+  "attachment:d1_attachments!d1_messages_attachment_id_fkey(id, storage_path, mime_type, size_bytes, duration_ms, expires_at, expired_at)";
 
 /** A stored (sealed) link preview, opened. A bad one is dropped rather than breaking the chat. */
 function openLinkPreview(sealed: string | null, groupId: string): D1LinkPreview | null {
@@ -401,7 +401,7 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
   const supabase = createServiceClient();
   const ids = rows.map((r) => r.id);
 
-  const live = rows.filter((r) => !r.deleted_at && r.attachment);
+  const live = rows.filter((r) => !r.deleted_at && r.attachment && !r.attachment.expired_at);
   const pollIds = rows.filter((r) => !r.deleted_at && r.content?.kind === "poll").map((r) => r.id);
   const [{ data: reactions }, signed, { data: votes }] = await Promise.all([
     supabase.from("d1_reactions").select("message_id, member_id, emoji").in("message_id", ids),
@@ -441,6 +441,8 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
               mimeType: r.attachment.mime_type,
               sizeBytes: r.attachment.size_bytes,
               durationMs: r.attachment.duration_ms,
+              expiresAt: r.attachment.expires_at,
+              expired: r.attachment.expired_at !== null,
               url: urlFor.get(r.attachment.storage_path) ?? null,
             }
           : null,

@@ -25,6 +25,13 @@ export function isPhoto(m: LocalMessage): m is Photo {
   return !m.deleted && m.id > 0 && !!m.attachment && m.attachment.mimeType.startsWith("image/");
 }
 
+export type Video = LocalMessage & { attachment: NonNullable<LocalMessage["attachment"]> };
+
+/** A sent, undeleted message whose attachment is a video (it may have expired: the file is gone, the message stays). */
+export function isVideo(m: LocalMessage): m is Video {
+  return !m.deleted && m.id > 0 && !!m.attachment && m.attachment.mimeType.startsWith("video/");
+}
+
 const EXTENSION: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -34,6 +41,9 @@ const EXTENSION: Record<string, string> = {
   "audio/mp4": "m4a",
   "audio/m4a": "m4a",
   "audio/aac": "aac",
+  "video/mp4": "mp4",
+  "video/quicktime": "mov",
+  "video/x-m4v": "m4v",
 };
 
 /** A local copy of an attachment, named by its id so a second share reuses it. */
@@ -52,7 +62,7 @@ export class SaveRefusedError extends Error {
   }
 }
 
-/** iOS: adds the photo to the library. Android: opens the share sheet (see the note at the top). */
+/** iOS: adds the photo or video to the library. Android: opens the share sheet (see the note at the top). */
 export async function savePhoto(file: File, mimeType: string): Promise<"saved" | "shared"> {
   if (Platform.OS !== "ios") {
     await shareFile(file, mimeType);

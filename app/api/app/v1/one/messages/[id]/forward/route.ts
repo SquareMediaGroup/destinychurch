@@ -29,7 +29,7 @@ interface SourceRow {
   body: string | null;
   content: D1MessageContent | null;
   deleted_at: string | null;
-  attachment: { id: string; storage_path: string; mime_type: string; size_bytes: number | null; duration_ms: number | null } | null;
+  attachment: { id: string; storage_path: string; mime_type: string; size_bytes: number | null; duration_ms: number | null; expires_at: string | null; expired_at: string | null } | null;
 }
 
 export const POST = oneRoute<IdParams>(async (request, { params }) => {
@@ -41,7 +41,7 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("d1_messages")
-    .select("id, group_id, body, content, deleted_at, attachment:d1_attachments!d1_messages_attachment_id_fkey(id, storage_path, mime_type, size_bytes, duration_ms)")
+    .select("id, group_id, body, content, deleted_at, attachment:d1_attachments!d1_messages_attachment_id_fkey(id, storage_path, mime_type, size_bytes, duration_ms, expires_at, expired_at)")
     .eq("id", id)
     .maybeSingle();
   if (error) throw fromDbError(error);
@@ -64,6 +64,7 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
     // The file, copied into the target group's folder with its own record.
     let attachmentId: string | null = null;
     if (src.attachment) {
+      if (src.attachment.expired_at) throw new OneError("rule_violation", "That video has expired, so it can't be forwarded.");
       attachmentId = randomUUID();
       const path = `${target}/${attachmentId}`;
       const copied = await supabase.storage.from(MEDIA_BUCKET).copy(src.attachment.storage_path, path);
@@ -76,6 +77,8 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
         mime_type: src.attachment.mime_type,
         size_bytes: src.attachment.size_bytes,
         duration_ms: src.attachment.duration_ms,
+        // A forwarded video keeps the original's date, so forwarding can't extend how long it is kept.
+        expires_at: src.attachment.expires_at,
       });
       if (rowError) throw new OneError("unavailable", "Couldn't forward that file. Please try again.");
     }

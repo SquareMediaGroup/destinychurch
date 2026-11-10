@@ -17,20 +17,16 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { MEDIA_BUCKET } from "@/lib/destinyOne/chat.server";
 import { sendOpsAlert } from "@/lib/destinyOne/opsAlertEmail.server";
+import { refuseCron } from "@/lib/cronAuth";
 
 export const dynamic = "force-dynamic";
 
 const DEFAULT_RETAIN_DAYS = 365;
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) {
-    console.error("⚠️ CRON_SECRET is not set — refusing to purge Destiny One messages.");
-    return NextResponse.json({ error: "Not configured." }, { status: 503 });
-  }
-  if (request.headers.get("authorization") !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // CRON_SECRET bearer only, failing closed when it isn't set (lib/cronAuth.ts).
+  const refused = refuseCron(request, "purge Destiny One messages");
+  if (refused) return refused;
 
   const configured = Number(process.env.D1_MESSAGE_RETENTION_DAYS);
   const retainDays = Number.isFinite(configured) && configured > 0 ? Math.floor(configured) : DEFAULT_RETAIN_DAYS;

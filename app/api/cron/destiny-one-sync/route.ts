@@ -17,6 +17,7 @@ import { MEMBER_COLUMNS, type MemberRow } from "@/lib/destinyOne/auth.server";
 import { churchSuiteConfigured } from "@/lib/destinyOne/churchsuite.server";
 import { resyncMember } from "@/lib/destinyOne/identity.server";
 import { sendOpsAlert } from "@/lib/destinyOne/opsAlertEmail.server";
+import { refuseCron } from "@/lib/cronAuth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -24,14 +25,9 @@ export const maxDuration = 300;
 const PAGE = 200;
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) {
-    console.error("⚠️ CRON_SECRET is not set — refusing to run the Destiny One sync.");
-    return NextResponse.json({ error: "Not configured." }, { status: 503 });
-  }
-  if (request.headers.get("authorization") !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // CRON_SECRET bearer only, failing closed when it isn't set (lib/cronAuth.ts).
+  const refused = refuseCron(request, "run the Destiny One sync");
+  if (refused) return refused;
 
   const supabase = createServiceClient();
   const tally = { unchanged: 0, updated: 0, gone: 0, skipped: 0 };

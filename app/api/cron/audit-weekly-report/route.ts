@@ -34,6 +34,7 @@ import {
   siteDateTime,
   type AuditEntry,
 } from "@/lib/audit";
+import { refuseCron } from "@/lib/cronAuth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -148,17 +149,9 @@ ${lines.join("\n") || "(nothing was recorded this week)"}`,
 }
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-
-  // Fail closed, same as the other crons: an unset secret would make this an
-  // open "email every Super Admin on demand" endpoint.
-  if (!secret) {
-    console.error("⚠️ CRON_SECRET is not set — refusing to run the audit report.");
-    return NextResponse.json({ error: "Not configured." }, { status: 503 });
-  }
-  if (request.headers.get("authorization") !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // CRON_SECRET bearer only, failing closed when it isn't set (lib/cronAuth.ts).
+  const refused = refuseCron(request, "run the audit report");
+  if (refused) return refused;
 
   const supabase = createServiceClient();
   const periodEnd = new Date();

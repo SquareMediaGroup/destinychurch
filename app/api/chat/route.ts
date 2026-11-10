@@ -4,7 +4,7 @@ import { getOpenAI, SMART_SEARCH_MODEL } from "@/lib/openaiClient";
 import { buildSmartSearchPrompt } from "@/lib/siteKnowledge";
 import { FALLBACK_ANSWERS } from "@/lib/smartSearch";
 import { TOOL_DEFINITIONS, executeTool, createToolContext, modelPayload } from "@/lib/smartSearch/tools";
-import { checkRateLimit, clientIp } from "@/lib/rateLimit";
+import { clientIp, limitKey, sharedRateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -73,7 +73,9 @@ async function streamTurn(
     max_tokens: 500,
     temperature: 0.3,
     stream: true,
-    store: true,
+    // Not stored with OpenAI: visitors type whatever is on their mind here,
+    // and nothing in the product reads those logs back.
+    store: false,
   });
 
   let content = "";
@@ -103,7 +105,9 @@ async function streamTurn(
 }
 
 export async function POST(request: NextRequest) {
-  const { limited } = checkRateLimit(`chat:${clientIp(request)}`);
+  // Every message spends OpenAI credit, so the count is shared across server
+  // instances. 30 a minute per address (a room on one Wi-Fi shares it).
+  const limited = await sharedRateLimit(await limitKey("chat", clientIp(request)), 30);
   if (limited) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }

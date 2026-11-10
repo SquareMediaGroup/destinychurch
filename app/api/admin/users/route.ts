@@ -6,7 +6,7 @@ import { recordAudit } from "@/lib/audit.server";
 
 function rolesFromBody(body: Record<string, unknown>): Record<AdminRole, boolean> {
   const roles = {} as Record<AdminRole, boolean>;
-  for (const role of ADMIN_ROLES) roles[role] = Boolean(body[role]);
+  for (const role of ADMIN_ROLES) roles[role] = body[role] === true;
   return roles;
 }
 
@@ -26,14 +26,15 @@ export async function POST(request: Request) {
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
-  const email = body.email?.trim();
+  const email = typeof body.email === "string" ? body.email.trim() : "";
   if (!email) {
     return NextResponse.json({ error: "An email is required." }, { status: 400 });
   }
 
   const supabase = createServiceClient();
 
-  const result = await createLogin(supabase, { email, password: body.password ?? "" });
+  const password = typeof body.password === "string" ? body.password : "";
+  const result = await createLogin(supabase, { email, password });
   if ("status" in result) {
     return NextResponse.json({ error: result.message }, { status: result.status });
   }

@@ -14,6 +14,7 @@ import SermonDescription from "@/components/sermons/SermonDescription";
 import ShareButton from "@/components/sermons/ShareButton";
 import WatchOnYouTubeBand from "@/components/sermons/WatchOnYouTubeBand";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
+import { jsonLdHtml } from "@/lib/jsonLd";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -160,11 +161,9 @@ export default async function SermonPage({ params }: PageProps) {
     <>
       <script
         type="application/ld+json"
-        // Escape "<" so a title/description containing "</script>" can't
-        // break out of the JSON-LD block (video data comes from YouTube).
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(videoSchema).replace(/</g, "\\u003c"),
-        }}
+        // jsonLdHtml escapes "<", so a title/description containing
+        // "</script>" can't break out of the block (video data comes from YouTube).
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(videoSchema) }}
       />
 
       <div className="mx-auto max-w-5xl px-4 pb-12 pt-24 lg:px-8">

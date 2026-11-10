@@ -98,7 +98,8 @@ export function emailCardHtml({ badge, heading, intro, rows, ctaHref, ctaLabel }
 </html>`;
 }
 
-export async function sendEmailCard(opts: EmailCardOptions) {
+/** Sends the card. Resolves true when Resend accepted it, false when it refused (already logged). */
+export async function sendEmailCard(opts: EmailCardOptions): Promise<boolean> {
   const result = await resend.emails.send({
     from: EMAIL_FROM,
     to: opts.to,
@@ -117,9 +118,10 @@ export async function sendEmailCard(opts: EmailCardOptions) {
     console.error(
       `📧 Resend rejected "${opts.subject}" to ${to}: ${result.error.name} — ${result.error.message}`,
     );
-    return;
+    return false;
   }
 
   const to = Array.isArray(opts.to) ? opts.to.join(", ") : opts.to;
   console.log(`📧 Sent "${opts.subject}" to ${to}`);
+  return true;
 }

@@ -1,0 +1,38 @@
+name: Smart Search health check
+
+# Every hour, ask the site to check that Smart Search can still reach OpenAI
+# (app/api/health/smart-search). While healthy the endpoint only pings OpenAI
+# once a day and answers "skipped" the rest of the time; while down it retries
+# on every run, so Smart Search comes back within the hour of OpenAI doing so.
+#
+# Lives here rather than in vercel.json because the Vercel Hobby plan only
+# allows daily cron jobs. It was an hourly Vercel cron until vercel.json had to
+# be removed to unblock deploys, and was never rescheduled, so the check had
+# not run in production since.
+#
+# Needs the repository secret CRON_SECRET (the same value as the site's
+# CRON_SECRET env var), which status-outage-alerts.yml already uses.
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Run the health check
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SITE_URL: https://destinychurch.vercel.app
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "⚠️ CRON_SECRET repository secret is not set; skipping."
+            exit 0
+          fi
+          curl --fail-with-body -sS --max-time 60 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/health/smart-search"

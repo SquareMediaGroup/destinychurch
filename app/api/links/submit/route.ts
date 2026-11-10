@@ -6,13 +6,13 @@
 //   - values are checked against that block's own field list, so a request
 //     can't add fields, skip required ones, or smuggle in long strings;
 //   - a filled-in honeypot is answered with a quiet success and dropped;
-//   - rate-limited per IP at the site-wide default.
+//   - rate-limited per IP, counted across every server instance.
 // The notification email is sent after the response (after()), and a mail
 // failure never fails the submission — it is already stored.
 
 import { NextResponse, after } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
-import { checkRateLimit, clientIp } from "@/lib/rateLimit";
+import { clientIp, limitKey, sharedRateLimit } from "@/lib/rateLimit";
 import { isValidEmail } from "@/lib/formEmail";
 import { sendEmailCard } from "@/lib/emailCard";
 import { FormDataSchema, MAIN_SLUG } from "@/lib/linkPages/types";
@@ -25,7 +25,9 @@ const MAX_LEN: Record<string, number> = { name: 200, email: 254, phone: 40, text
 
 export async function POST(request: Request) {
   const ip = clientIp(request);
-  if (checkRateLimit(`links-form:${ip}`).limited)
+  // 120 a minute, counted across every server: a congregation filling in a
+  // seat-back form on the church Wi-Fi shares one address.
+  if (await sharedRateLimit(await limitKey("links-form", ip), 120))
     return NextResponse.json({ error: "Too many submissions — please wait a minute and try again." }, { status: 429 });
 
   const body = (await request.json().catch(() => null)) as {

@@ -10,6 +10,7 @@ import CookieBanner from "@/components/CookieBanner";
 import AnalyticsGate from "@/components/AnalyticsGate";
 import SiteBanner from "@/components/SiteBanner";
 import LiveBanner from "@/components/LiveBanner";
+import { jsonLdHtml } from "@/lib/jsonLd";
 import SitePopup from "@/components/SitePopup";
 import EventPopup from "@/components/events/EventPopup";
 import { getActiveEventPopup } from "@/lib/events.server";
@@ -349,7 +350,7 @@ export default async function RootLayout({
         <style dangerouslySetInnerHTML={{ __html: MATERIAL_SYMBOLS_CSS }} />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdHtml(orgSchema) }}
         />
         <script
           dangerouslySetInnerHTML={{

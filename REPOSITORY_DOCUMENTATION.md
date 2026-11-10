@@ -217,7 +217,7 @@ destinychurch/
 │   │   ├── cron/                  # Vercel Cron — hr-review-reminders/, design-deliverables-purge/, … (Bearer CRON_SECRET)
 │   │   ├── chat/                  # POST /api/chat — Smart Search tool-calling chat
 │   │   ├── youtube/                # videos/, thumbnail/[id]/, status/, live/
-│   │   ├── alpha-ask/, alpha-events/ # Public Alpha info endpoints
+│   │   ├── alpha-events/           # Public Alpha info endpoint
 │   │   ├── store/                 # checkout/, checkout/bypass/ (public storefront)
 │   │   ├── training/               # unlock/, posts/[id]/timer/
 │   │   ├── health/                 # route.ts (public: database + Smart Search state for the status page), smart-search/ health check
@@ -475,7 +475,7 @@ destinychurch/
 │   └── ...
 │
 ├── .github/                       # GitHub workflows
-│   └── workflows/                 # ci.yml (every PR), playwright.yml (manual e2e), AI content jobs, talent-buzzer-release.yml
+│   └── workflows/                 # ci.yml (every PR), playwright.yml (manual e2e), talent-buzzer-release.yml, and two schedules that call the site with CRON_SECRET: status-outage-alerts.yml (every 10 min) and smart-search-health.yml (hourly)
 │
 ├── .claude/                       # Claude Code settings
 │   └── skills/                    # Project skills: vibe-security, remotion-* (Remotion video skills from remotion-dev/skills)
@@ -1048,9 +1048,9 @@ CREATE TABLE admin_roles (
 A trigger, `enforce_last_super_admin()`, refuses any change that would leave no Super Admin (including a
 single UPDATE that demotes everyone); `20261017_01_bug_fixes.sql` fixed it so it actually fires.
 
-**Leftover tables:** `admin_agent_plans` / `admin_agent_actions` (`20261105_01_admin_destinyai.sql`) belonged
-to the admin DestinyAI assistant, which was removed (#189). No code reads them; the applied migration is kept
-as history. Destiny One's member DestinyAI (§29, part 18) is separate and still live.
+**Removed tables:** `admin_agent_plans` / `admin_agent_actions` (`20261105_01_admin_destinyai.sql`) belonged
+to the admin DestinyAI assistant, which was removed (#189). `20261110_03_drop_admin_agent_tables.sql` drops
+them (both were empty); the banner/popup `starts_at` / `ends_at` columns from the same migration stay. Destiny One's member DestinyAI (§29, part 18) is separate and still live.
 
 Distinct from the legacy, unused `admin_users` table in `supabase/schema.sql`
 (username/password_hash — predates the Supabase Auth migration; not read by
@@ -1588,8 +1588,14 @@ CREATE TABLE order_items (
 > `shop_free_item_claims` (email primary key, `order_id`, service-only RLS) holds
 > the claims. `buildPendingOrder` turns away a basket with more than one free
 > unit or an email that already has a claim. A basket of only the free item has
-> nothing to pay: `POST /api/store/checkout` takes the claim (the unique key
-> stops two racing checkouts) and completes the order without Stripe. A paid
+> nothing to pay, and nothing would otherwise stop the same person using a new
+> made-up address each time. So `POST /api/store/checkout` leaves that order
+> pending, emails a 6-digit code to the address (`startFreeItemCheck`) and
+> returns `{ verifyEmail, orderNumber, ticket }`; the checkout page asks for the
+> code and `POST /api/store/checkout/confirm` takes the claim (the unique key
+> stops two racing checkouts) and completes the order (`completeFreeOrder`). The
+> ticket is the sealed, stateless kind from `lib/destinyOne/emailChange.ts`:
+> one order, one address, 15 minutes. A paid
 > order carrying a free item takes the claim in `finalizeOrderPaid`. The basket
 > (`lib/cart-store.ts`) caps free units at one for display. To let someone have
 > another free item, delete their row from `shop_free_item_claims`.
@@ -4018,52 +4024,6 @@ stay: they're consent and legal, not chrome.
 - `ProductBuyPanel.tsx` — colour swatches + size pills + quantity + add-to-basket (client)
 - `CartButton.tsx` — header basket icon with live item-count badge (client)
 - `CheckoutForm.tsx` — Stripe Express Checkout Element (Apple Pay / Google Pay / Link, shown only when a wallet is available) above the Payment Element card form; both confirm the same PaymentIntent (client)
-- `ShopDiagnostics.tsx` — **TEMPORARY.** Mounted for every `/shop` route by
-  `app/shop/layout.tsx` to chase an intermittent blank/white page in Chrome.
-  Renders nothing. See "Shop blank-page diagnostic" below; delete this component,
-  the layout and `/api/shop-diagnostics` once the cause is confirmed.
-
-##### Shop blank-page diagnostic (temporary)
-
-The bug: `/shop` and its sub-routes intermittently paint blank/white in Chrome.
-Ruled out by investigation — server errors (12/12 identical 200s), JS heap growth
-(flat ~15MB), image weight (largest source image 110KB), console errors (none) and
-a renderer crash (Chrome's Crashpad directory empty). Not reproducible on demand,
-hence instrumentation rather than a speculative fix.
-
-Two candidate failure modes need different evidence, which is what the payload is
-shaped around:
-
-| Mode | What the report looks like |
-|---|---|
-| React/JS died | `dom.mainChildren === 0`, plus a `js-error` / `dom-blank` reason |
-| Compositing failed | DOM completely intact, **no** error — the GPU simply never painted |
-
-The second mode is invisible to any automatic check, which is why a **manual
-hotkey (Ctrl/Cmd + Shift + 9)** exists: a `manual` report showing a healthy DOM and
-zero errors is itself the finding, because it eliminates the first mode.
-
-Automatic tripwires: `window.onerror`, `unhandledrejection`, a 1x1 WebGL context
-listening for `webglcontextlost` (the only JS-visible signal of a GPU process
-reset), a `PerformanceObserver` for long tasks, and a 3s poll for an emptied
-`<main>`. Observation is deliberately passive — `PerformanceObserver` rather than a
-`requestAnimationFrame` loop — so the instrument does not perturb the compositing
-behaviour it is measuring.
-
-`render.refractActive` is the key field: it records whether the SVG refraction
-`backdrop-filter: url(#glass-refract)` is live at that moment. It differs by route
-— the `/shop` index disables it via `html:has(.shop-page)` in `globals.css`, the
-sub-routes do not — so it discriminates the prime suspect automatically.
-
-Per-route state: the report budget, event buffer and timers all reset on `pathname`
-change. The component lives in the shop layout and survives client-side navigation,
-so without that reset the budget would be spent once per browsing session and the
-instrument would fall silent exactly when the bug next appeared.
-
-> **Apple Pay:** enabled automatically by `automatic_payment_methods` — no extra API params. The only prerequisite is a **registered payment-method domain**; Stripe hosts the Apple domain-association file, so there is no `/.well-known` file to deploy. Register the live domain(s) once via Stripe Dashboard → Settings → Payment methods → Apple Pay, or run `scripts/register-apple-pay-domain.mjs` with the live `STRIPE_SECRET_KEY` (e.g. `destinytees.uk` and `www.destinytees.uk`). Apple Pay renders on supported devices/browsers only (Safari on Apple hardware).
-
----
-
 ## API Routes & Server Actions
 
 ### Server Actions vs. API Routes
@@ -4931,10 +4891,10 @@ lives in Supabase too, so during an outage set `D1_MAINTENANCE_MESSAGE` in Verce
 | `auth/code` | POST | No sign-in: `{ email }`. Sends the email sign-in code only if `d1_sign_in_status` says this email can get in (member, open invite, or requests open), from `after()`, and always answers `{ sent: true }`, so neither the reply nor its timing reveals who is a member. The code comes from the Supabase admin API (`generateLink`, which doesn't email) and is sent through Resend, so sign-in doesn't hit Supabase's per-IP limit for the server's address or its capped built-in sender. Rate-limited per IP and per (hashed) email. Replaced `auth/check` (2026-09-28), which said "no account" outright |
 | `me/access-request` | POST | `{ name, dateOfBirth?, note? }` — ask to join; a Destiny One Admin approves |
 | `auth/churchsuite/start` → `callback` → `exchange` | GET, GET, POST | Sign in with ChurchSuite (below) |
-| `me` | GET, PATCH, DELETE | PATCH `{ firstName, lastName }` changes my own name (5/min; at most 2 changes in any 30 days, else `rule_violation` with the date it reopens; Profile tab → Change name, `edit-name.tsx`, which shows a live preview of a message from you). `D1Me.nameChangesLeft` / `nextNameChangeAt` carry the allowance. DELETE = GDPR erasure (`{ "confirm": "DELETE" }`). `D1Me` includes `firstName`, `lastName`, `blocked` (people I've blocked), `avatarUrl` (a signed link) and `isStaff` (has Destiny One / Safeguarding / Super Admin access; used only to check an "Add admin account") |
+| `me` | GET, PATCH, DELETE | PATCH `{ firstName, lastName }` changes my own name (5/min; at most 2 changes in any 30 days, else `rule_violation` with the date it reopens; Profile tab → Change name, `edit-name.tsx`, which shows a live preview of a message from you). `D1Me.nameChangesLeft` / `nextNameChangeAt` carry the allowance. DELETE = GDPR erasure (`{ "confirm": "DELETE" }`): erases the member and deletes the sign-in, except when the same auth user has an `admin_roles` row or is linked to `hr_staff`, where the Destiny One data is erased and detached but the website sign-in is kept (deleting it would cascade their admin roles away). `D1Me` includes `firstName`, `lastName`, `blocked` (people I've blocked), `avatarUrl` (a signed link) and `isStaff` (has Destiny One / Safeguarding / Super Admin access; used only to check an "Add admin account") |
 | `me/avatar` | POST, DELETE | Profile picture (multipart `file`, 5 MB). Active members only; stored privately in `d1-avatars`. In the app, tapping your picture on Profile offers Choose photo / Remove picture |
-| `me/email` → `me/email/confirm` | POST, POST | Change my own sign-in email (Profile → Email, `src/app/change-email.tsx`). `{ email }` emails a 6-digit code to the new address through Resend and returns a sealed `ticket` (`lib/destinyOne/emailChange.ts`: account + address + code hash, 15 minutes); `{ ticket, code }` then sets the auth email with the admin API (`email_confirm: true`) and emails a notice to the old address. "Already has an account" is only said after the code checks out, so it never reveals who has one. Doesn't use `auth.updateUser({ email })`: Supabase's project-wide "Change email" template is link-based (the portal uses it) and secure email change would also need a code from the old inbox. Active members only; rate-limited per account. The app refreshes its Supabase session afterwards |
-| `me/password` | GET, POST | Set or change my password (Profile → Password, `src/app/set-password.tsx`). `GET` returns `{ hasPassword }` (`d1_has_password`, service role only, migration `20260929_04`). `POST { password, current? }`: if the account already has a password, `current` is required and checked server-side against Supabase with a throwaway client; then the password is set with the admin API. Accounts with no password yet are gated on the phone instead (Face ID / passcode via `confirmDeviceOwner`, refusing devices with no lock). Supabase weak/leaked refusals come back as `invalid` with message `password_rejected:<reasons>`. Rate-limited per account |
+| `me/email` → `me/email/confirm` | POST, POST | Change my own sign-in email (Profile → Email, `src/app/change-email.tsx`). `{ email }` emails a 6-digit code to the new address through Resend and returns a sealed `ticket` (`lib/destinyOne/emailChange.ts`: account + address + code hash, 15 minutes); `{ ticket, code }` then sets the auth email with the admin API (`email_confirm: true`) and emails a notice to the old address. "Already has an account" is only said after the code checks out, so it never reveals who has one. Doesn't use `auth.updateUser({ email })`: Supabase's project-wide "Change email" template is link-based (the portal uses it) and secure email change would also need a code from the old inbox. Active members only; rate-limited per account. The app refreshes its Supabase session afterwards Confirm is also capped at 10 tries an hour per account across all servers (`sharedRateLimit`), since the ticket holds no count of wrong codes. |
+| `me/password` | GET, POST | Set or change my password (Profile → Password, `src/app/set-password.tsx`). `GET` returns `{ hasPassword }` (`d1_has_password`, service role only, migration `20260929_04`). `POST { password, current? }`: if the account already has a password, `current` is required and checked server-side against Supabase with a throwaway client; then the password is set with the admin API. Accounts with no password yet are gated on the phone instead (Face ID / passcode via `confirmDeviceOwner`, refusing devices with no lock). Supabase weak/leaked refusals come back as `invalid` with message `password_rejected:<reasons>`. Rate-limited per account Setting a FIRST password (no `current` to check) needs a sign-in within the last 15 minutes, read from the access token's `amr` claim (`signedInAt`), else `rule_violation`; every set or change emails the account a notice. |
 | `members/[id]/block` | POST, DELETE | Block / unblock someone; returns `D1Me`. Hides their messages and notifications for me only; logged for safeguarding |
 | `me/consents` | POST | Current versions only (`REQUIRED_CONSENTS`) |
 | `me/export` | GET | GDPR access: profile (incl. access-request note, declared and staff-set 18th birthday, how and when verified, a link to the profile picture), consents, memberships, own messages (incl. deleted), files sent (24-hour links), reactions, blocks, own reports, feedback sent |
@@ -5085,10 +5045,12 @@ Smart Search is reported `unknown` when the database is down, because `getSmartS
 #### `GET /api/health/smart-search` — self-healing health check (cron)
 
 ```typescript
-// Vercel Cron endpoint that keeps Smart Search from showing a broken chat when
-// OpenAI is unreachable. Auth: Authorization: Bearer <CRON_SECRET> (Vercel Cron)
-// or a manual ?secret=<CRON_SECRET> run; if CRON_SECRET is unset (local/dev) it
-// runs open. maxDuration = 30.
+// Keeps Smart Search from showing a broken chat when OpenAI is unreachable.
+// Run hourly by .github/workflows/smart-search-health.yml (Vercel Hobby only
+// allows daily crons; needs the CRON_SECRET repository secret). Auth is the same
+// refuseCron() guard as /api/cron/* (lib/cronAuth.ts): Authorization: Bearer
+// <CRON_SECRET> only, 503 when the secret is unset. It no longer accepts
+// ?secret= or runs open without a secret. maxDuration = 30.
 //
 //   1. Reads service_status via getSmartSearchStatus(). While healthy it only
 //      actually pings once next_check_at is due (daily), so an hourly cron can
@@ -5111,6 +5073,8 @@ POST /api/training/unlock
 //   Body: { subgroupId, password }. Verifies a sub-group password against the
 //   hashed password_hash (server-side only; the hash is never sent to clients).
 //   On success sets a scoped cookie so the gated sub-group's posts render.
+//   Guesses are capped per IP by lib/rateLimit.ts (30 a minute, then its
+//   escalating cooldown), keyed `training-unlock:<ip>`.
 
 POST /api/training/posts/[id]/timer
 //   Enforces a training post's min_read_seconds "minimum read time" before the
@@ -5156,15 +5120,11 @@ POST /api/store/checkout/bypass
 // Shared order logic (pricing recompute, order creation, paid-finalisation) lives
 // in lib/checkout.server.ts and is used by checkout, the webhook, and the bypass.
 
-POST /api/shop-diagnostics
-//   TEMPORARY — remove with components/shop/ShopDiagnostics.tsx once the /shop
-//   blank-page bug is identified. Receives a client snapshot captured when /shop
-//   renders blank and writes it to the Vercel runtime logs (console.error;
-//   search for "shop-diagnostics"). It used to also file GitHub issues; that was
-//   removed in the 2026-10-09 security audit because the Origin check is
-//   forgeable and the dedupe key is caller-chosen, so anyone could open
-//   unlimited issues with our token. Fenced: same-origin only (403), 32KB body
-//   cap (413), 5 reports per IP per 10 min (throttled).
+POST /api/store/checkout/confirm
+//   Body: { ticket, code }. Completes a free-only order once the customer types
+//   the 6-digit code emailed to them (see "free item" under Database Schema).
+//   30 a minute per connection and 5 an hour per ticket, both shared across
+//   server instances.
 
 // ADMIN (gated by middleware, site_editor role)
 GET|POST            /api/admin/store/products
@@ -6414,11 +6374,36 @@ export async function executeTool(name: string, rawArgs: string, ctx: ToolContex
 
 See [Two-factor sign-in](#two-factor-sign-in-admins) for the rules.
 
+### `lib/cronAuth.ts`
+
+`refuseCron(request, job)` is the one guard every scheduled endpoint shares
+(`app/api/cron/*` and `GET /api/health/smart-search`). It returns the response
+to send when the call may not run the job, or `null` when it may: 503 and a
+logged warning naming the job when `CRON_SECRET` isn't set (fail closed), 401
+unless the header is exactly `Authorization: Bearer <CRON_SECRET>` (compared in
+constant time). A new scheduled route starts with
+`const refused = refuseCron(request, "do the thing"); if (refused) return refused;`.
+
+### `lib/jsonLd.ts`
+
+`jsonLdHtml(data)` is the text for a `<script type="application/ld+json">`
+block: `JSON.stringify` with `<` written as `\u003c`, so a value containing
+`</script>` (a product name, a ChurchSuite event title, a YouTube title) can't
+end the block. Every JSON-LD block on the site goes through it.
+
 ### `lib/rateLimit.ts`
 
-Per-IP sliding-window rate limiter with escalating cooldowns, **in-memory** (a
-`Map`, not a database table) — adequate for this site's traffic, per-instance on
-serverless. Callers namespace keys (e.g. `contact:${ip}`) so endpoints don't trip
+Two limiters. `sharedRateLimit(key, max, windowSeconds)` counts in the database
+(`rate_limit_hit` / `rate_limits`, `20261110_01_shared_rate_limit.sql`), which
+every serverless instance shares; the public forms that send email, spend money
+or guard a password use it (contact, hire, jobs, design request, bug report,
+links forms, checkout, Smart Search chat, password reset, and sign-in at 10 per
+email and 30 per connection per 15 minutes). Keys go through `limitKey(scope,
+subject)`, which hashes the IP or email. It fails open: if the database can't be
+reached the request goes through and the problem is logged. `checkRateLimit` is
+the original per-IP sliding-window limiter with escalating cooldowns, **in-memory**
+(a `Map`), per-instance on serverless; `sharedRateLimit` runs it first for
+one-minute windows, and lower-stakes endpoints use it alone. Callers namespace keys (e.g. `contact:${ip}`) so endpoints don't trip
 each other's limits:
 
 ```typescript
@@ -7771,8 +7756,10 @@ GITHUB_TOKEN=ghp_...
 #                                                    Relay range lists behind ip_category
 #   /api/cron/design-deliverables-purge (daily 04:00) — deletes design deliverables the
 #                                                    requester confirmed >=48h ago
-# and the self-healing Smart Search health check (GET /api/health/smart-search).
-CRON_SECRET=            # every /api/cron job FAILS CLOSED (503) if unset; the health check runs unauthenticated (local/dev)
+# and the self-healing Smart Search health check (GET /api/health/smart-search),
+# which .github/workflows/smart-search-health.yml calls hourly.
+# All of them share one guard, refuseCron() in lib/cronAuth.ts.
+CRON_SECRET=            # every /api/cron job and the health check FAIL CLOSED (503) if unset
 
 # Audit log (both optional)
 #   AUDIT_REPORT_EMAIL   — comma-separated override for who gets the weekly report.
@@ -8139,6 +8126,8 @@ feed normalisation of its own, because the BFF already does all of it.
   - `src/churchsuite/sanitize.ts` — `sanitizeEventHtml`. An allowlist rewriter that drops every
     attribute except a validated `href`, because the live feed carries `class="branded"` and
     `style="color:#f9c100"` (invisible on white) written against ChurchSuite's own stylesheet.
+    Any `<` or `>` left in a text run is written as an entity, so a tag the feed never closed
+    can't be completed by the closing tags the rewriter adds (`tests/unit/event-html.spec.ts`).
     Dependency-free on purpose: `isomorphic-dompurify` drags jsdom into the server bundle, which is
     the trap commit `2185023` had to unwind at the 250MB function limit.
   - `src/churchsuite/ics.ts` — `buildIcs`. Emits local wall-clock times with `TZID=Europe/London`

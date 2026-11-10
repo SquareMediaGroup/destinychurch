@@ -8,6 +8,7 @@ import { fromPrice, formatPrice, FIT_LABELS } from "@/lib/shop";
 import ProductGallery from "@/components/shop/ProductGallery";
 import ProductBuyPanel from "@/components/shop/ProductBuyPanel";
 import RichContent from "@/components/content/RichContent";
+import { jsonLdHtml } from "@/lib/jsonLd";
 
 export const revalidate = 60;
 
@@ -107,7 +108,7 @@ export default async function ProductPage({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: jsonLdHtml({
               "@context": "https://schema.org",
               "@type": "Product",
               name: product.name,

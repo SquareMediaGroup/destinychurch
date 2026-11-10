@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Resend } from "resend";
-import { checkRateLimit, clientIp } from "@/lib/rateLimit";
+import { clientIp, limitKey, sharedRateLimit } from "@/lib/rateLimit";
 import { escapeHtml, escapeHtmlMultiline, isValidEmail } from "@/lib/formEmail";
 import { recordNotification } from "@/lib/notify.server";
 
@@ -282,7 +282,7 @@ export async function submitContactForm(formData: FormData) {
 
   // Per-IP rate limit — the form writes to the database and sends email, so
   // it must not be scriptable for spam.
-  const { limited } = checkRateLimit(`contact:${clientIp(await headers())}`);
+  const limited = await sharedRateLimit(await limitKey("contact", clientIp(await headers())));
   if (limited) {
     return { success: false, error: "Too many messages sent. Please wait a few minutes and try again." };
   }

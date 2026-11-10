@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { headers } from "next/headers";
 import { createServiceClient } from "@/utils/supabase/service";
 import { recordAudit, readForAudit } from "@/lib/audit.server";
@@ -45,7 +45,9 @@ export async function DELETE(
   });
 
   const resetBy = (await headers()).get("x-dc-actor-email");
-  void sendTwoFactorResetEmail(email, resetBy);
+  // after(), not a bare `void`: on Vercel the function can be frozen the moment
+  // the response is sent, and an un-awaited send was then never delivered.
+  after(() => sendTwoFactorResetEmail(email, resetBy));
 
   return NextResponse.json({ ok: true });
 }

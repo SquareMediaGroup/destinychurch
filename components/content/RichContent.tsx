@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { BLOCKS } from "@/components/blocks/registry";
 import { BLOCK_RE, decodeProps, unescapeAttr } from "@/components/blocks/serialize";
 import { SIZE_CLASS, blockSize } from "@/components/blocks/size";
+import { jsonLdHtml } from "@/lib/jsonLd";
 
 /**
  * Renders admin-authored rich text, upgrading any embedded content blocks into
@@ -122,7 +123,7 @@ export default function RichContent({
       {jsonLd && entities.length > 0 && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(mergeEntities(entities)) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdHtml(mergeEntities(entities)) }}
         />
       )}
     </>

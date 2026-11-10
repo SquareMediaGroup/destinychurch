@@ -10,25 +10,16 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { deleteDeliverableStorage } from "@/lib/designTickets.server";
+import { refuseCron } from "@/lib/cronAuth";
 
 export const dynamic = "force-dynamic";
 
 const CONFIRMED_RETENTION_HOURS = 48;
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-
-  // Fail closed. An unset secret makes this an open "delete confirmed
-  // deliverables" endpoint, which is worse than the cron silently not running.
-  if (!secret) {
-    console.error("⚠️ CRON_SECRET is not set — refusing to purge design deliverables.");
-    return NextResponse.json({ error: "Not configured." }, { status: 503 });
-  }
-
-  const auth = request.headers.get("authorization");
-  if (auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // CRON_SECRET bearer only, failing closed when it isn't set (lib/cronAuth.ts).
+  const refused = refuseCron(request, "purge design deliverables");
+  if (refused) return refused;
 
   const supabase = createServiceClient();
   const cutoff = new Date(Date.now() - CONFIRMED_RETENTION_HOURS * 60 * 60 * 1000).toISOString();

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 import {
   verifyPassword,
   signUnlock,
@@ -7,30 +8,20 @@ import {
   UNLOCK_COOKIE_OPTIONS,
 } from "@/lib/trainingAccess";
 
-// Best-effort in-memory throttle: cap password attempts per IP. Resets every
-// window. Survives within a single server instance — enough to slow guessing.
-const WINDOW_MS = 60_000;
-const MAX_ATTEMPTS = 10;
-const attempts = new Map<string, { count: number; reset: number }>();
-
-function rateLimited(ip: string): boolean {
-  const now = Date.now();
-  const entry = attempts.get(ip);
-  if (!entry || now > entry.reset) {
-    attempts.set(ip, { count: 1, reset: now + WINDOW_MS });
-    return false;
-  }
-  entry.count += 1;
-  return entry.count > MAX_ATTEMPTS;
-}
+// Password guesses per IP are capped by the shared limiter (lib/rateLimit.ts),
+// which adds a cooldown that grows with each repeat. This route used to keep
+// its own counter: it reset every minute with no cooldown, so a script could
+// guess 10 a minute indefinitely, and it held one entry per address for the
+// life of the instance.
+//
+// 30 a minute, not the old 10, because a room of volunteers opening the same
+// group on the church Wi-Fi shares one address and now a breach costs minutes.
+const MAX_ATTEMPTS_PER_MINUTE = 30;
 
 export async function POST(request: Request) {
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    "unknown";
-  if (rateLimited(ip)) {
+  if (checkRateLimit(`training-unlock:${clientIp(request)}`, MAX_ATTEMPTS_PER_MINUTE).limited) {
     return NextResponse.json(
-      { error: "Too many attempts. Please wait a minute and try again." },
+      { error: "Too many attempts. Please wait a few minutes and try again." },
       { status: 429 },
     );
   }

@@ -11,6 +11,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { sendEmailCard } from "@/lib/emailCard";
 import { STATUS_COMPONENTS } from "@/lib/statusComponents";
+import { refuseCron } from "@/lib/cronAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -22,14 +23,9 @@ function componentNames(ids: string[]): string {
 }
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) {
-    console.error("⚠️ CRON_SECRET is not set — refusing to run the status outage alerts.");
-    return NextResponse.json({ error: "Not configured." }, { status: 503 });
-  }
-  if (request.headers.get("authorization") !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // CRON_SECRET bearer only, failing closed when it isn't set (lib/cronAuth.ts).
+  const refused = refuseCron(request, "run the status outage alerts");
+  if (refused) return refused;
 
   const supabase = createServiceClient();
   const cutoff = new Date(Date.now() - HOUR_MS).toISOString();

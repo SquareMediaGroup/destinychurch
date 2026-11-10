@@ -29,6 +29,7 @@ interface SourceRow {
   body: string | null;
   content: D1MessageContent | null;
   deleted_at: string | null;
+  created_at: string;
   attachment: { id: string; storage_path: string; mime_type: string; size_bytes: number | null; duration_ms: number | null } | null;
 }
 
@@ -41,14 +42,18 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("d1_messages")
-    .select("id, group_id, body, content, deleted_at, attachment:d1_attachments!d1_messages_attachment_id_fkey(id, storage_path, mime_type, size_bytes, duration_ms)")
+    .select("id, group_id, body, content, deleted_at, created_at, attachment:d1_attachments!d1_messages_attachment_id_fkey(id, storage_path, mime_type, size_bytes, duration_ms)")
     .eq("id", id)
     .maybeSingle();
   if (error) throw fromDbError(error);
   const src = data as unknown as SourceRow | null;
   if (!src || src.deleted_at) throw new OneError("not_found", "That message doesn't exist.");
-  // Seeing it is checked again in SQL; this is for a friendlier error first.
-  await requireGroupMembership(caller, src.group_id);
+  // Seeing it is checked again in SQL (d1_post_message). It is also checked
+  // here, in full, because the file is copied before that SQL runs: a message
+  // from before I joined used to be refused only after its photo or PDF had
+  // already been copied into the target group's folder and left there.
+  const source = await requireGroupMembership(caller, src.group_id);
+  if (Date.parse(src.created_at) < Date.parse(source.joinedAt)) throw new OneError("not_found", "That message doesn't exist.");
   if (src.content?.kind === "poll") throw new OneError("rule_violation", "Polls can't be forwarded.");
 
   const body = openBody(src.body, src.group_id);

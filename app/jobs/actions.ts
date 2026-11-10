@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Resend } from "resend";
-import { checkRateLimit, clientIp } from "@/lib/rateLimit";
+import { clientIp, limitKey, sharedRateLimit } from "@/lib/rateLimit";
 import { escapeHtmlMultiline, isValidEmail } from "@/lib/formEmail";
 import { recordNotification } from "@/lib/notify.server";
 
@@ -13,6 +13,8 @@ const BUCKET = "job-applications";
 // bodies at serverActions.bodySizeLimit (next.config.ts), so a bigger CV
 // never reaches this check.
 const MAX_CV_BYTES = 4 * 1024 * 1024; // 4MB
+const MAX_COVER_LETTER_CHARS = 10_000;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ALLOWED_CV_TYPES = [
   "application/pdf",
   "application/msword",
@@ -97,7 +99,11 @@ function buildApplicationEmailHtml(fields: {
 }
 
 export async function submitApplication(formData: FormData) {
-  const jobId = formData.get("job_id")?.toString() || null;
+  // Only ever a job's uuid: it becomes the CV's folder in storage and a
+  // foreign key, so anything else is a general application rather than a
+  // failed insert after the file has already been uploaded.
+  const rawJobId = formData.get("job_id")?.toString() ?? "";
+  const jobId = UUID_RE.test(rawJobId) ? rawJobId : null;
   const jobTitle = formData.get("job_title")?.toString().trim() ?? "";
   const firstName = formData.get("first_name")?.toString().trim() ?? "";
   const lastName = formData.get("last_name")?.toString().trim() ?? "";
@@ -114,9 +120,22 @@ export async function submitApplication(formData: FormData) {
     return { success: false, error: "Please enter a valid email address." };
   }
 
+  // The form is public and everything here is stored and emailed on, so cap
+  // each field: without this the only ceiling was the 4.5MB request body.
+  if (
+    jobTitle.length > 200 ||
+    firstName.length > 100 ||
+    lastName.length > 100 ||
+    email.length > 254 ||
+    phone.length > 40 ||
+    coverLetter.length > MAX_COVER_LETTER_CHARS
+  ) {
+    return { success: false, error: "That's longer than we can take. Please shorten it and try again." };
+  }
+
   // Per-IP rate limit — applications upload files and send email, so the
   // action must not be scriptable for spam or storage flooding.
-  const { limited } = checkRateLimit(`jobs:${clientIp(await headers())}`);
+  const limited = await sharedRateLimit(await limitKey("jobs", clientIp(await headers())));
   if (limited) {
     return { success: false, error: "Too many submissions. Please wait a few minutes and try again." };
   }

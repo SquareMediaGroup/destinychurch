@@ -13,6 +13,7 @@ import Button from "@/components/ui/Button";
 import VideoPlayer, { type VideoCheckpoint } from "@/components/ui/VideoPlayer";
 import FirstSundayTimeline from "@/components/visit/FirstSundayTimeline";
 import { TONE_SURFACE, TONE_ACCENT } from "@/components/blocks/tokens";
+import { jsonLdHtml } from "@/lib/jsonLd";
 import {
   ADDRESS,
   ADDRESS_ONE_LINE,
@@ -211,7 +212,7 @@ export default function VisitPage() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(faqSchema) }}
       />
 
       <PageHero

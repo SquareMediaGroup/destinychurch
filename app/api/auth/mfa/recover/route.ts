@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { headers } from "next/headers";
 import { createServiceClient } from "@/utils/supabase/service";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
@@ -85,7 +85,10 @@ export async function POST(request: Request) {
     changes: null,
     metadata: { ok: true, ip },
   });
-  void sendBackupCodeUsedEmail(admin.user.email);
+  // after(), not a bare `void`: on Vercel the function can be frozen the moment
+  // the response is sent, and an un-awaited send was then never delivered. This
+  // email is how the account's owner finds out somebody else used a code.
+  after(() => sendBackupCodeUsedEmail(admin.user.email));
 
   return NextResponse.json({ ok: true });
 }

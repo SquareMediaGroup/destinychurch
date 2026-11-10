@@ -52,6 +52,8 @@ export interface MessageMenuActions {
   onForward: (() => void) | null;
   /** "Seen by": my own messages, or any in a group I manage. */
   onInfo: (() => void) | null;
+  /** An open poll, for its author or a leader or admin: stop voting now and post the result. */
+  onClosePoll: (() => void) | null;
   /** Group managers: pin or unpin this message. */
   pin: { pinned: boolean; run: () => void } | null;
   /** My own text, still inside the edit window. */
@@ -79,6 +81,7 @@ function items(m: LocalMessage, a: MessageMenuActions): Item[][] {
   if (a.onEdit) everyday.push({ label: "Edit", icon: "pencil", run: a.onEdit });
   if (a.onForward) everyday.push({ label: "Forward", icon: "forward", run: a.onForward });
   if (a.onShare && m.attachment) everyday.push({ label: "Share", icon: "share", run: a.onShare });
+  if (a.onClosePoll) everyday.push({ label: "Close poll", icon: "lock", run: a.onClosePoll });
   if (a.pin) everyday.push({ label: a.pin.pinned ? "Unpin" : "Pin", icon: "pin", run: a.pin.run });
   if (a.onInfo) everyday.push({ label: "Info", icon: "info", run: a.onInfo });
   const serious: Item[] = [];

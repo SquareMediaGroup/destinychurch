@@ -240,6 +240,8 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
             totalVoters: 0,
             votes: [],
             myOptionIds: [],
+            closesAt: draft.closesAt ?? null,
+            closedAt: null,
           },
         },
         { poll: draft },

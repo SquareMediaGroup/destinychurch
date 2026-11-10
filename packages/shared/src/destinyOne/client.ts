@@ -25,6 +25,7 @@ import type {
   D1MessageHit,
   D1MessagePage,
   D1PollDraft,
+  D1ScheduledMessage,
   D1ReadReceipts,
   D1UploadTicket,
 } from "./types";
@@ -256,6 +257,19 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     /** Cast (or clear, with an empty array) this member's vote(s) on a poll message. */
     vote: (messageId: number, optionIds: string[]) =>
       call<{ ok: true }>("POST", `/messages/${messageId}/vote`, { optionIds }),
+    /** Close a poll now: its author, or a leader or admin. DestinyAI replies under it with the result. */
+    closePoll: (messageId: number) => call<{ ok: true }>("POST", `/messages/${messageId}/close-poll`),
+    /** Leaders and admins: the messages waiting to go out in this group (an empty list for anyone else). */
+    scheduledMessages: (groupId: string) => call<D1ScheduledMessage[]>("GET", `/groups/${groupId}/scheduled`),
+    /** Schedule a message (text, a photo, a poll or an event card) for a minute to 30 days ahead. `runAt` is an ISO time. */
+    scheduleMessage: (groupId: string, input: { runAt: string; body?: string | null; attachmentId?: string | null; poll?: D1PollDraft | null; event?: D1EventRef | null; mentions?: string[] | null }) =>
+      call<D1ScheduledMessage>("POST", `/groups/${groupId}/scheduled`, input),
+    /** Change a scheduled message that hasn't gone out: its time, text or poll. */
+    updateScheduledMessage: (groupId: string, jobId: number, input: { runAt?: string; body?: string | null; poll?: D1PollDraft | null; mentions?: string[] | null }) =>
+      call<D1ScheduledMessage>("PATCH", `/groups/${groupId}/scheduled/${jobId}`, input),
+    deleteScheduledMessage: (groupId: string, jobId: number) => call<{ ok: true }>("DELETE", `/groups/${groupId}/scheduled/${jobId}`),
+    /** Send a scheduled message now rather than at its time. */
+    sendScheduledNow: (groupId: string, jobId: number) => call<{ ok: true }>("POST", `/groups/${groupId}/scheduled/${jobId}/send`),
     /** Fresh links for cached attachments whose signed URLs have expired (links last an hour). */
     attachmentUrls: (groupId: string, attachmentIds: string[]) =>
       call<{ urls: { id: string; url: string | null }[] }>("GET", `/groups/${groupId}/attachments${q({ ids: attachmentIds.join(",") })}`),

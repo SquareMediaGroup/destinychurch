@@ -55,6 +55,8 @@ interface Props {
   loadSendAsOptions?: () => Promise<Account[]>;
   /** The chosen account sends `text`. Resolves once sent, or throws. */
   onSendAs?: (account: Account, text: string) => Promise<void>;
+  /** Holding Send: schedule this text for later (leaders and admins). Omit where scheduling isn't allowed. */
+  onSchedule?: (text: string) => void;
   /** What's in the box when it opens (a saved draft). */
   initialText?: string;
   /** Every change to the text, so it can be kept as a draft. */
@@ -67,7 +69,7 @@ interface Props {
   placeholder?: string;
 }
 
-export const Composer = forwardRef<TextInputInstance, Props>(function Composer({ replying, onCancelReply, editing, onCancelEdit, onSend, onAttach, onAttachPoll, onAttachEvent, onError, loadSendAsOptions, onSendAs, initialText, onTextChange, mentionables, textOnly, placeholder = "Message" }, ref) {
+export const Composer = forwardRef<TextInputInstance, Props>(function Composer({ replying, onCancelReply, editing, onCancelEdit, onSend, onAttach, onAttachPoll, onAttachEvent, onError, loadSendAsOptions, onSendAs, onSchedule, initialText, onTextChange, mentionables, textOnly, placeholder = "Message" }, ref) {
   const t = useTheme();
   const [draft, setDraftState] = useState(initialText ?? "");
   const setDraft = (text: string) => {
@@ -220,12 +222,14 @@ export const Composer = forwardRef<TextInputInstance, Props>(function Composer({
     onAttach({ uri: a.uri, name: a.fileName ?? "Video.mp4", mimeType, size: a.fileSize ?? null, durationMs: Math.round(a.duration) });
   }
 
-  /** Holding Send: offer the other signed-in accounts that can send this message. */
-  async function openSendAs() {
+  /** Holding Send: offer Schedule, and the other signed-in accounts that can send this message. */
+  async function openSendMenu() {
     const text = draft.trim();
-    if (!text || !loadSendAsOptions || !onSendAs) return;
+    const canSendAs = !!loadSendAsOptions && !!onSendAs;
+    if (!text || (!canSendAs && !onSchedule)) return;
     haptic.press();
-    setSendAsMenu({ text, options: [], checking: true });
+    setSendAsMenu({ text, options: [], checking: canSendAs });
+    if (!canSendAs) return;
     const options = await loadSendAsOptions().catch(() => []);
     setSendAsMenu((menu) => (menu && menu.text === text ? { text, options, checking: false } : menu));
   }
@@ -377,7 +381,7 @@ export const Composer = forwardRef<TextInputInstance, Props>(function Composer({
               </Appear>
             ) : hasText ? (
               <Appear key="send" from={{ scale: 0.3 }}>
-                <PressableScale onPress={send} onLongPress={loadSendAsOptions && onSendAs ? () => void openSendAs() : undefined} delayLongPress={350} hitSlop={6} scaleTo={0.82} accessibilityRole="button" accessibilityLabel="Send" accessibilityHint={loadSendAsOptions ? "Hold to send as another account" : undefined} style={{ width: 33, height: 33, borderRadius: 17, backgroundColor: t.send, alignItems: "center", justifyContent: "center" }}>
+                <PressableScale onPress={send} onLongPress={(loadSendAsOptions && onSendAs) || onSchedule ? () => void openSendMenu() : undefined} delayLongPress={350} hitSlop={6} scaleTo={0.82} accessibilityRole="button" accessibilityLabel="Send" accessibilityHint={onSchedule && loadSendAsOptions ? "Hold to schedule, or send as another account" : onSchedule ? "Hold to schedule" : loadSendAsOptions ? "Hold to send as another account" : undefined} style={{ width: 33, height: 33, borderRadius: 17, backgroundColor: t.send, alignItems: "center", justifyContent: "center" }}>
                   <Icon name="send" size={17} color={t.onSend} strokeWidth={2.8} />
                 </PressableScale>
               </Appear>
@@ -415,7 +419,24 @@ export const Composer = forwardRef<TextInputInstance, Props>(function Composer({
         </View>
       </View>
 
-      {sendAsMenu ? <SendAsMenu options={sendAsMenu.options} checking={sendAsMenu.checking} onPick={(a) => void pickSendAs(a)} onClose={() => setSendAsMenu(null)} /> : null}
+      {sendAsMenu ? (
+        <SendAsMenu
+          options={sendAsMenu.options}
+          checking={sendAsMenu.checking}
+          showAccounts={!!loadSendAsOptions && !!onSendAs}
+          onPick={(a) => void pickSendAs(a)}
+          onSchedule={
+            onSchedule
+              ? () => {
+                  const text = sendAsMenu.text;
+                  setSendAsMenu(null);
+                  onSchedule(text);
+                }
+              : undefined
+          }
+          onClose={() => setSendAsMenu(null)}
+        />
+      ) : null}
 
       <AttachSheet
         visible={sheetOpen}

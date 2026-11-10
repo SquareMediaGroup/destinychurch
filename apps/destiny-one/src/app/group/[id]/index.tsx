@@ -6,6 +6,7 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Pressable, Text, View, type TextInputInstance } from "react-native";
 import { GroupPeek } from "@/components/GroupPeek";
 import { router, useFocusEffect, useIsPreview, useLocalSearchParams } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
 import * as WebBrowser from "expo-web-browser";
 import { LinearGradient } from "expo-linear-gradient";
@@ -27,7 +28,7 @@ import { messageSummary, plural } from "@/lib/format";
 import { api } from "@/lib/api";
 import { downloadAttachment, isPhoto, shareFile } from "@/lib/media";
 import { haptic } from "@/lib/haptics";
-import { hideSender, setOpenGroup } from "@/lib/queries";
+import { hideSender, keys, setOpenGroup } from "@/lib/queries";
 import { uploadAttachment } from "@/lib/upload";
 import { useConversation, type LocalMessage } from "@/lib/useConversation";
 import { useKeyboardShown } from "@/lib/useKeyboardShown";
@@ -36,6 +37,7 @@ import { useAssistantStream } from "@/state/assistantStream";
 import { eventPick, useEventPick } from "@/state/eventPick";
 import { jumpTo, useJumpTarget } from "@/state/jump";
 import { typingLabel, typingPing, useTyping } from "@/state/typing";
+import { scheduleDraft, useScheduleDone } from "@/state/scheduleDraft";
 import { markGroupOpened } from "@/state/welcomeChecklist";
 import { pollDraft, usePollDraft } from "@/state/pollDraft";
 import { errorMessage, useGroupSummary, useSession } from "@/state/session";
@@ -61,7 +63,7 @@ function GroupChatScreen() {
   // The home-indicator padding under the message box is only needed while the keyboard is down.
   const keyboard = useKeyboardShown();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { me, setMe, accounts, activeSlot } = useSession();
+  const { me, setMe, accounts, activeSlot, isLeader } = useSession();
   // Only when there's another account on this phone, and never from a child account (then a slow tap must still just send).
   const sendAsEnabled = accounts.length > 1 && canSendAs(accounts.find((a) => a.slot === activeSlot));
   const summary = useGroupSummary(id);
@@ -219,6 +221,13 @@ function GroupChatScreen() {
   const [pinIndex, setPinIndex] = useState(0);
   const shownPin = pinned.length ? pinned[pinIndex % pinned.length] : null;
 
+  // Scheduled messages (leaders and group admins): the row at the top shows how many are waiting.
+  const canScheduleHere = !!group?.canPost && !frozen && !archived && !isAssistant && (group.myRole === "admin" || isLeader);
+  const waiting = useQuery({ queryKey: keys.scheduled(id), queryFn: () => api.scheduledMessages(id), enabled: canScheduleHere && !preview, staleTime: 15_000 });
+  const scheduledCount = canScheduleHere && !preview ? waiting.data?.length ?? 0 : 0;
+  // Scheduling clears the message box (its text is scheduled now, not sent): a new key remounts it.
+  const scheduledDone = useScheduleDone(id);
+
   async function togglePin(m: LocalMessage, on: boolean) {
     try {
       await (on ? api.pin(m.id) : api.unpin(m.id));
@@ -263,6 +272,12 @@ function GroupChatScreen() {
     await convo.send({ body: text, replyTo: reply?.id, mentions: findMentions(text, mentionables) }).catch((err) => setToast(errorMessage(err)));
   }
 
+  /** Holding Send, then Schedule: the Schedule screen takes it from here. */
+  function scheduleText(text: string) {
+    scheduleDraft.set({ groupId: id, body: text, mentions: findMentions(text, mentionables), poll: null });
+    router.push(`/group/${id}/schedule`);
+  }
+
   /** Holding Send: the other signed-in account sends this text (replies included). */
   async function sendTextAs(account: Account, text: string) {
     const reply = replyTo;
@@ -302,6 +317,11 @@ function GroupChatScreen() {
       remove: (m) => setDeleting(m),
       react: (m, emoji) => void convo.toggleReaction(m.id, emoji).catch((err) => setToast(errorMessage(err))),
       vote: (m, optionIds) => void convo.vote(m.id, optionIds).catch((err) => setToast(errorMessage(err))),
+      closePoll: (m) =>
+        Alert.alert("Close this poll?", "Voting stops now and the result is posted in the chat.", [
+          { text: "Cancel", style: "cancel" },
+          { text: "Close poll", onPress: () => void api.closePoll(m.id).catch((err) => setToast(errorMessage(err, "Couldn't close the poll. Try again."))) },
+        ]),
       retry: (m) =>
         Alert.alert("Message not sent", undefined, [
           { text: "Try again", onPress: () => void convo.retry(m.id) },
@@ -357,7 +377,7 @@ function GroupChatScreen() {
   ) : (
     <Composer
       // Editing swaps the box's text for the message's; leaving it brings the draft back.
-      key={editing ? `edit-${editing.id}` : "compose"}
+      key={editing ? `edit-${editing.id}` : `compose-${scheduledDone}`}
       ref={input}
       editing={editing?.body ? { text: editing.body } : null}
       onCancelEdit={() => setEditing(null)}
@@ -366,6 +386,7 @@ function GroupChatScreen() {
       onSend={sendText}
       loadSendAsOptions={sendAsEnabled ? convo.sendAsOptions : undefined}
       onSendAs={sendAsEnabled ? sendTextAs : undefined}
+      onSchedule={canScheduleHere && !editing ? scheduleText : undefined}
       onAttach={sendFile}
       onAttachPoll={() => router.push(`/group/${id}/poll`)}
       onAttachEvent={() => router.push(`/group/${id}/event-picker`)}
@@ -418,7 +439,7 @@ function GroupChatScreen() {
             list.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false });
             setTimeout(() => list.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0.5 }), 120);
           }}
-          contentContainerStyle={{ paddingTop: 24, paddingBottom: insets.top + 70 + (shownPin ? 58 : 0) }}
+          contentContainerStyle={{ paddingTop: 24, paddingBottom: insets.top + 70 + (shownPin ? 58 : 0) + (scheduledCount > 0 ? 54 : 0) }}
           keyboardDismissMode="interactive"
           keyboardShouldPersistTaps="handled"
           onEndReached={() => void convo.loadOlder()}
@@ -520,6 +541,20 @@ function GroupChatScreen() {
         </View>
       ) : null}
 
+      {/* Scheduled: how many messages are waiting to go out; tapping opens the list. */}
+      {scheduledCount > 0 ? (
+        <View style={{ position: "absolute", top: insets.top + 62 + (shownPin ? 58 : 0), left: insets.left + 16, right: insets.right + 16 }}>
+          <PressableScale accessibilityRole="button" accessibilityLabel={`Scheduled, ${scheduledCount} waiting`} scaleTo={0.98} onPress={() => router.push(`/group/${id}/scheduled`)}>
+            <GlassSurface interactive style={[{ minHeight: 44, borderRadius: 18, flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 6, paddingHorizontal: 14 }, t.shadow]}>
+              <Icon name="clock" size={16} color={t.tint} strokeWidth={2.2} />
+              <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: t.text }}>Scheduled</Text>
+              <Text style={{ fontSize: 15, color: t.muted }}>{scheduledCount}</Text>
+              <Icon name="chevronRight" size={13} color={t.subtle} strokeWidth={2.4} />
+            </GlassSurface>
+          </PressableScale>
+        </View>
+      ) : null}
+
       {/* Footer */}
       <View style={{ paddingHorizontal: 12, paddingTop: 6, paddingBottom: keyboard ? 12 : Math.max(insets.bottom, 12) }}>
         {toast ? (
@@ -604,6 +639,7 @@ type RowActions = {
   remove: (m: LocalMessage) => void;
   react: (m: LocalMessage, emoji: string) => void;
   vote: (m: LocalMessage, optionIds: string[]) => void;
+  closePoll: (m: LocalMessage) => void;
   retry: (m: LocalMessage) => void;
   openAttachment: (m: LocalMessage, url: string) => void;
 };
@@ -650,6 +686,11 @@ const ChatRow = memo(function ChatRow({ row, groupId, group, highlighted, replyT
     onShare: m.attachment ? () => run().share(m) : null,
     onForward: m.content?.kind === "poll" ? null : () => router.push({ pathname: "/forward", params: { groupId, messageId: String(m.id) } }),
     onInfo: m.mine || group?.canManage ? () => router.push({ pathname: "/message-info", params: { groupId, messageId: String(m.id) } }) : null,
+    // An open poll (not one still sending): its author, or a leader or admin, can close it now.
+    onClosePoll:
+      m.content?.kind === "poll" && m.id > 0 && !m.content.poll.closedAt && canPost && (m.mine || group?.myRole === "admin" || !!group?.canManage)
+        ? () => run().closePoll(m)
+        : null,
     pin: group?.canManage && !frozen && !archived ? { pinned: isPinned, run: () => run().togglePin(m, !isPinned) } : null,
     onReport: () => router.push({ pathname: "/report", params: { messageId: String(m.id), name: m.sender?.displayName ?? "Former member", at: m.createdAt, body: messageSummary(m) } }),
     onBlock: () => {

@@ -2199,6 +2199,7 @@ department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_o
 | `d1_message_edits` | Part 11: the text an edit replaced (sealed), one row per edit, for the safeguarding transcript. Deny-all RLS; removed with its message by the purge |
 | `d1_pins` | Part 13: pinned messages per group (who pinned, when). At most 3; deny-all RLS |
 | `d1_poll_votes` | One row per (poll message, member, option). Written only by `d1_vote()`, which enforces single choice and current membership and broadcasts `poll_vote` (with `groupId`) |
+| `d1_messages` poll and schedule columns | `poll_closes_at` (deadline), `poll_closed_at` (when voting actually stopped), `scheduled_job_id` (the job that sent it; unique, so a repeated run never sends twice). Migration `20261110_03_destiny_one_poll_deadlines.sql`, which also replaces `d1_vote` (refuses a vote once a poll is closed or past its deadline: enforced in the database, not just hidden in the app), adds `d1_start_poll_deadline` (stamps the deadline and queues the `close_poll` job, one open job per poll), `d1_close_poll` (idempotent; returns who won; cancels a waiting deadline job; broadcasts `poll_closed`), `d1_post_scheduled_message` (`d1_post_message` tagged with its job; a repeat returns the same message with `created: false`) and `d1_cancel_job` (cancelled with a reason, never retried). **Apply before deploying**: message reads select the new columns |
 | `d1_scheduled_jobs` | The scheduled jobs queue (1.2 foundation): things that happen at a set time, one row each (`kind`, `run_at`, `payload`, `status` pending/running/done/failed/cancelled, `attempts`). Deny-all RLS. `d1_claim_due_jobs()` hands out what is due once each (`FOR UPDATE SKIP LOCKED`; a job left running over 5 minutes is handed out again, up to 3 attempts), `d1_finish_job()` records done, a retry a minute or two later, or failed. Payloads that hold message text are sealed by the handler, never stored plain |
 | `d1_reactions`, `d1_attachments` | Reactions; files in the private `d1-chat-media` bucket (images/PDF, 20 MB) |
 | `d1_reports`, `d1_safeguarding_events` | The safeguarding queue |
@@ -4943,6 +4944,29 @@ and filters/reveals it entirely client-side, no further network calls.
 // is logged only, since an email a minute during an outage would be worse than the outage.
 ```
 
+#### Scheduled messages and poll deadlines (1.2)
+Two job kinds run by the every-minute cron above, handlers in `lib/destinyOne/scheduledSends.server.ts`
+(`SCHEDULED_HANDLERS`):
+- **`send_message`**: a leader's scheduled message. At send time it is checked as if typed then: still an
+  active member, still in the group, group not paused (`canSchedule` in `packages/shared`), no posting
+  restriction (the insert triggers). If it can't be sent the job is **cancelled, not retried**
+  (`JobCancelled` -> `d1_cancel_job`) and the leader gets a push (`pushNotice`, with the reason and no
+  message text). Sent through `d1_post_scheduled_message`, so at most once per job. Text, poll wording
+  and the poll's question are sealed in the payload (`sealBody`), opened only for the leaders' list. An
+  event card is snapshotted when it goes out, not when it was scheduled. `@DestinyAI` in a scheduled
+  message does not trigger an answer.
+- **`close_poll`**: a poll's deadline (`closePollAndAnnounce`). Closes it (`d1_close_poll`), then DestinyAI
+  posts the result as a **reply to the poll** (the only way DestinyAI may post in a group), worded by the
+  pure `lib/destinyOne/polls.ts` `pollResultText` ("Poll closed: Saturday 10am won with 8 votes (11 people
+  voted)."; a tie names every winner; no votes says so). Optionally pinned (needs a poll author who can
+  pin). The result is only posted if DestinyAI hasn't already replied, so a re-run doesn't repeat it; a
+  paused group still closes the poll but can't take the result message.
+Shared rules (`packages/shared/src/destinyOne/policy.ts`): `canSchedule` (leaders and group admins who can
+post), `validateScheduleTime` (1 minute to 30 days), `validatePollDeadline` (after the poll goes out,
+within 60 days), `MAX_SCHEDULED_PER_GROUP` 25. `lib/destinyOne/pollContent.ts` builds poll content for both
+sending now and a scheduled send. Tests: `tests/sql/destiny-one-scheduled-sends.sql`,
+`tests/unit/destiny-one-polls.spec.ts`, the scheduling block in `destiny-one-policy.spec.ts`.
+
 #### Destiny One API (`/api/app/v1/one/*`)
 The backend for the Expo app. Every route: `Authorization: Bearer <Supabase access token>` (no
 cookies, so `middleware.ts` doesn't see these), resolved by `lib/destinyOne/auth.server.ts`, which
@@ -4987,9 +5011,13 @@ lives in Supabase too, so during an outage set `D1_MAINTENANCE_MESSAGE` in Verce
 | `groups/[id]` | GET, PATCH | PATCH: rename/describe/archive (managers). A rename or new description sends `group_updated` on `d1-group:<id>` (`announceGroupUpdated`), so every member's chat list updates straight away |
 | `groups/[id]/members` | POST, DELETE | Leaving never blocked |
 | `groups/[id]/icon` | POST, DELETE | Group icon (multipart `file`, 5 MB). Any current member can change it, not just admins; not for Announcements or paused groups. Stored in `d1-avatars` as `d1_groups.icon_path`; `iconUrl` on group summaries is a signed link. Sends `group_updated` like a rename. The app asks people to avoid the church logo |
-| `groups/[id]/messages` | GET, POST | Only messages since you joined; POST takes `body`, an attachment, a `poll` draft, or an `event` ref (the event is re-fetched and snapshotted server-side) and pushes a notification via `after()` (group name, "Sender: first line", or "Poll: …" / "Event: …"). A message in the DestinyAI chat, or with "@DestinyAI" in it, is then answered by DestinyAI (part 18) |
+| `groups/[id]/messages` | GET, POST | Only messages since you joined; POST takes `body`, an attachment, a `poll` draft (optionally with `closesAt`, when voting stops, and `pinResult`), or an `event` ref (the event is re-fetched and snapshotted server-side) and pushes a notification via `after()` (group name, "Sender: first line", or "Poll: …" / "Event: …"). A message in the DestinyAI chat, or with "@DestinyAI" in it, is then answered by DestinyAI (part 18) |
 | `messages/[id]/vote` | POST | `{ optionIds }` — your full vote set on a poll (empty clears it). 60 a minute |
 | `messages/[id]` | PATCH | `{ body }` — edit my own message's text (15 minutes, 10 times; `d1_edit_message`). Sealed with new search terms; `message_edited` goes to the group over the REST broadcast (it carries text). 20 a minute, no push |
+| `groups/[id]/scheduled` | GET, POST | Scheduled messages (leaders, and admins of the group or Announcements; others get an empty list). POST `{ runAt, body?, attachmentId?, poll?, event?, mentions? }`: a minute to 30 days ahead, text, a photo, a poll or an event card (no voice notes or videos), 25 waiting per group. Nothing is sent now; `d1_scheduled_jobs` holds it with its text sealed. GET returns them opened, soonest first |
+| `groups/[id]/scheduled/[jobId]` | PATCH, DELETE | Change the time, text or poll of one that hasn't gone out, or cancel it. "Already sent or removed" once it has |
+| `groups/[id]/scheduled/[jobId]/send` | POST | Send now: makes it due and runs the due jobs at once. Checked as if typed now |
+| `messages/[id]/close-poll` | POST | Close a poll now: its author, or a leader or admin of the group (not while the group is paused). Voting stops, DestinyAI replies under it with the result, closing twice is fine |
 | `messages/[id]/pin` | POST, DELETE | Pin or unpin (group managers; at most 3, a fourth unpins the oldest). 30 a minute |
 | `messages/[id]/receipts` | GET | "Seen by": `{ read, notYet, hidden }` for the sender or a group manager, while their own read receipts are on (`d1_read_receipts`). 60 a minute |
 | `messages/[id]/forward` | POST | `{ groupIds }` (1–5): a copy into other chats I can post in, marked Forwarded, file copied per group, re-sealed per group. Not polls. 20 a minute |
@@ -8267,6 +8295,20 @@ same database as the data rather than in a separate Synapse module.
   the website's `/admin/reset-password`.
 - **State:** `src/state/session.tsx` (auth session, `me`, the communities list, the Realtime hub,
   catch-up, `routeFor`, `errorMessage`); `src/state/picker.ts` (Add people selection for New group).
+- **Scheduled messages and poll deadlines (app).** Holding Send in the composer offers **Schedule**
+  (leaders and group admins; with other accounts signed in it sits above "Send as"). That opens
+  `app/group/[id]/schedule.tsx`, fed by `state/scheduleDraft.ts` (what the composer or the Poll screen
+  had), with a day-and-time `components/WhenPicker.tsx` built on `@react-native-community/datetimepicker`
+  (two compact pickers on iPhone, the platform dialogs on Android, which has no combined one; a native
+  module, so a dev build is needed). The time is shown in UK time (`formatUkTime`) whatever the phone's zone
+  is. When it succeeds the chat's message box empties (`scheduleDraft.done` clears the draft and ticks
+  `useScheduleDone`, which remounts the Composer). A **Scheduled** row at the top of the chat shows how
+  many are waiting and opens `app/group/[id]/scheduled.tsx` (tap to change the time, Send now, Delete).
+  The **Poll** screen gained **Closes** (no deadline, in 1 hour, end of today, tomorrow, or a chosen time),
+  **Pin the result** (leaders and admins) and **Schedule for later**. A poll shows "Closes Sat 14 Nov,
+  18:00" and then "Closed" (it flips by itself at the deadline, and on the `poll_closed` realtime event),
+  and its options stop taking taps; the message menu has **Close poll** for its author, leaders and admins.
+  Photos and event cards can be scheduled through the API but the app only schedules text and polls so far.
   Small external stores hand things between screens: `pollDraft.ts` and `eventPick.ts` (a poll or
   event composed on its own screen, sent by the chat that opened it), `jump.ts` (a search result
   asking its chat to show one message) and `notificationTap.ts` (a tapped notification waiting for

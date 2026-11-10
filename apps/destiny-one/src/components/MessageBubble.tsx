@@ -21,7 +21,7 @@ import { SermonPlayer, sermonWatchUrl, useSermonCardWidth } from "@/components/S
 import { SwipeToReply } from "@/components/Swipe";
 import { VoiceNote } from "@/components/VoiceNote";
 import { Avatar, MemberTag, withAlpha } from "@/components/ui";
-import { clock, dayLabel, eventWhen, expiresIn, fileMeta, formatBytes, messageSummary, plural, sameDay, videoLength } from "@/lib/format";
+import { clock, dayLabel, eventWhen, expiresIn, fileMeta, formatBytes, formatUkTime, messageSummary, plural, sameDay, videoLength } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
 import { noteLoaded, useAutoDownload } from "@/state/dataSettings";
 import type { Rect } from "@/lib/menuLayout";
@@ -612,9 +612,10 @@ function PollCard({ content, mine, sending, onVote }: { content: D1PollContent; 
   const k = tones(t, mine);
   const { poll } = content;
   const total = poll.totalVoters;
+  const closed = usePollClosed(poll.closesAt ?? null, poll.closedAt ?? null);
 
   function tap(optionId: string) {
-    if (sending) return;
+    if (sending || closed) return;
     haptic.selection();
     const selected = poll.myOptionIds.includes(optionId);
     if (poll.allowMultiple) {
@@ -628,7 +629,7 @@ function PollCard({ content, mine, sending, onVote }: { content: D1PollContent; 
     <View style={{ marginTop: 2, marginHorizontal: -6, borderRadius: 14, backgroundColor: k.panel, padding: 10, gap: 8, minWidth: 220 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
         <Icon name="poll" size={13} color={k.name} strokeWidth={2.2} />
-        <Text style={{ fontSize: 12, fontWeight: "600", color: k.name }}>{poll.allowMultiple ? "Poll · choose any" : "Poll"}</Text>
+        <Text style={{ fontSize: 12, fontWeight: "600", color: k.name }}>{`${poll.allowMultiple ? "Poll · choose any" : "Poll"}${closed ? " · closed" : ""}`}</Text>
       </View>
       <Text style={{ fontSize: 15, fontWeight: "600", color: k.text }}>{poll.question}</Text>
       <View style={{ gap: 6 }}>
@@ -640,9 +641,9 @@ function PollCard({ content, mine, sending, onVote }: { content: D1PollContent; 
             <PressableScale
               key={o.id}
               onPress={() => tap(o.id)}
-              disabled={sending}
+              disabled={sending || closed}
               accessibilityRole="button"
-              accessibilityState={{ disabled: sending, selected: mineVote }}
+              accessibilityState={{ disabled: sending || closed, selected: mineVote }}
               accessibilityLabel={`${o.label}, ${pct}%${mineVote ? ", your choice" : ""}`}
               scaleTo={0.97}
               style={{ borderRadius: 10, overflow: "hidden", backgroundColor: k.track }}
@@ -658,9 +659,25 @@ function PollCard({ content, mine, sending, onVote }: { content: D1PollContent; 
           );
         })}
       </View>
-      <Text style={{ fontSize: 11, color: k.soft }}>{total === 0 ? "No votes yet" : plural(total, "vote")}</Text>
+      <Text style={{ fontSize: 11, color: k.soft }}>
+        {[total === 0 ? (closed ? "No votes" : "No votes yet") : plural(total, "vote"), closed ? "Closed" : poll.closesAt ? `Closes ${formatUkTime(poll.closesAt)}` : null].filter(Boolean).join(" · ")}
+      </Text>
     </View>
   );
+}
+
+/** Whether a poll has stopped taking votes: closed by hand, or its deadline passed (flips by itself at the deadline). */
+function usePollClosed(closesAt: string | null, closedAt: string | null): boolean {
+  const [passed, setPassed] = useState(() => !!closesAt && Date.parse(closesAt) <= Date.now());
+  useEffect(() => {
+    if (!closesAt || closedAt) return;
+    const wait = Date.parse(closesAt) - Date.now();
+    if (wait <= 0) return;
+    // setTimeout can't wait longer than about 24 days; a deadline further off is picked up when the chat next draws.
+    const timer = setTimeout(() => setPassed(true), Math.min(wait, 2_000_000_000));
+    return () => clearTimeout(timer);
+  }, [closesAt, closedAt]);
+  return !!closedAt || passed;
 }
 
 /** A poll option's fill, springing to its new share when the votes change. */

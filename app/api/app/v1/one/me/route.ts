@@ -12,7 +12,8 @@ import { deleteAccountSchema, updateNameSchema } from "@/lib/destinyOne/schemas"
 // Deletion takes the person out of every group straight away (which freezes
 // any group that then breaks the 2-adult rule, as it should), removes their
 // push tokens, consents, reactions, blocks and profile picture, anonymises their member record to
-// "Former member", and deletes their sign-in. Their messages are kept, under
+// "Former member", and deletes their sign-in (unless the same sign-in is a
+// website admin's or staff member's, which is kept). Their messages are kept, under
 // that anonymised name, until the retention purge: safeguarding review is the
 // lawful basis for holding them (docs/destiny-one-gdpr.md). The app must say
 // this plainly on the delete screen.
@@ -65,10 +66,37 @@ export const DELETE = oneRoute(async (request) => {
   await readBody(request, deleteAccountSchema);
 
   const supabase = createServiceClient();
+
+  // The sign-in is shared with the website: the same auth user can hold admin
+  // roles (admin_roles cascades when it is deleted) or be a staff member's
+  // portal login. Deleting it here took those away without a word, and for the
+  // last Super Admin the database refused, after the member data had already
+  // gone. So for those accounts only the Destiny One data is erased and the
+  // website sign-in is left alone. Looked up before anything is erased: if it
+  // can't be read, nothing is deleted.
+  const [admin, staff] = await Promise.all([
+    supabase.from("admin_roles").select("auth_user_id").eq("auth_user_id", user.id).maybeSingle(),
+    supabase.from("hr_staff").select("id").eq("auth_user_id", user.id).maybeSingle(),
+  ]);
+  if (admin.error || staff.error) throw new OneError("unavailable", "Something went wrong. Please try again.");
+  const keepSignIn = Boolean(admin.data || staff.data);
+
   const member = await loadMemberByAuthUser(user.id);
   if (member) {
     const error = await eraseMember(member.id);
     if (error) throw fromDbError(error);
+  }
+
+  if (keepSignIn) {
+    // Deleting the auth user is what normally detaches the erased record
+    // (ON DELETE SET NULL); with the sign-in kept, detach it here so signing
+    // in to Destiny One again starts afresh instead of finding "deleted".
+    if (member) {
+      const { error: unlinkError } = await supabase.from("d1_members").update({ auth_user_id: null }).eq("id", member.id);
+      if (unlinkError) console.error("⚠️ Destiny One: erased member could not be detached from its sign-in:", unlinkError.message);
+    }
+    console.log(`🗑️ Destiny One data deleted (member ${member?.id ?? "none"}); website sign-in kept`);
+    return oneJson({ deleted: true as const });
   }
 
   const { error: authError } = await supabase.auth.admin.deleteUser(user.id);

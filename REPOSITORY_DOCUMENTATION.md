@@ -2199,6 +2199,7 @@ department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_o
 | `d1_message_edits` | Part 11: the text an edit replaced (sealed), one row per edit, for the safeguarding transcript. Deny-all RLS; removed with its message by the purge |
 | `d1_pins` | Part 13: pinned messages per group (who pinned, when). At most 3; deny-all RLS |
 | `d1_poll_votes` | One row per (poll message, member, option). Written only by `d1_vote()`, which enforces single choice and current membership and broadcasts `poll_vote` (with `groupId`) |
+| `d1_scheduled_jobs` | The scheduled jobs queue (1.2 foundation): things that happen at a set time, one row each (`kind`, `run_at`, `payload`, `status` pending/running/done/failed/cancelled, `attempts`). Deny-all RLS. `d1_claim_due_jobs()` hands out what is due once each (`FOR UPDATE SKIP LOCKED`; a job left running over 5 minutes is handed out again, up to 3 attempts), `d1_finish_job()` records done, a retry a minute or two later, or failed. Payloads that hold message text are sealed by the handler, never stored plain |
 | `d1_reactions`, `d1_attachments` | Reactions; files in the private `d1-chat-media` bucket (images/PDF, 20 MB) |
 | `d1_reports`, `d1_safeguarding_events` | The safeguarding queue |
 | `d1_push_tokens` | Expo push tokens |
@@ -4926,6 +4927,20 @@ and filters/reveals it entirely client-side, no further network calls.
 // returns their storage paths (skipping held videos and ones under an open report); the route then
 // deletes the objects. The message and attachment row stay. A failed run, or files it couldn't
 // delete, emails D1_OPS_ALERT_RECIPIENT (sendOpsAlert).
+```
+
+#### `GET /api/cron/destiny-one-scheduled-jobs`
+```typescript
+// Every minute. Bearer CRON_SECRET. Called by Supabase's pg_cron through pg_net
+// (supabase/migrations/20261110_02_destiny_one_scheduled_jobs_cron.sql), not by Vercel, because the
+// Hobby plan only allows daily crons. The cron reads CRON_SECRET from Supabase Vault ('d1_cron_secret',
+// stored by hand once) so it is never in the migration. Claims what is due in d1_scheduled_jobs and
+// runs each job's handler (lib/destinyOne/scheduledJobs.server.ts HANDLERS: kind -> function; empty
+// until Scheduled announcements and Poll deadlines add theirs). A handler must be safe to repeat: use
+// job.id as the idempotency key. Pure runner: lib/destinyOne/scheduledJobs.ts (runJobs, tested in
+// tests/unit/destiny-one-scheduled-jobs.spec.ts; the SQL in tests/sql/destiny-one-scheduled-jobs.sql).
+// A job that fails 3 times is given up on and emails D1_OPS_ALERT_RECIPIENT; an infrastructure error
+// is logged only, since an email a minute during an outage would be worse than the outage.
 ```
 
 #### Destiny One API (`/api/app/v1/one/*`)

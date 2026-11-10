@@ -25,11 +25,25 @@ export type JobHandler = (job: ScheduledJob) => Promise<void>;
 
 export type JobHandlers = Record<string, JobHandler>;
 
+/**
+ * Thrown by a handler when a job can never succeed and must not be retried: the
+ * group was paused, the leader left. The job is cancelled with `reason`. The
+ * handler tells whoever needs to know before it throws.
+ */
+export class JobCancelled extends Error {
+  constructor(reason: string) {
+    super(reason);
+    this.name = "JobCancelled";
+  }
+}
+
 export interface RunSummary {
   claimed: number;
   done: number;
   retried: number;
   failed: number;
+  /** Jobs a handler gave up on for good (JobCancelled). */
+  cancelled: number;
   /** Jobs whose kind has no handler (retried like any other failure, then failed). */
   unknownKind: number;
 }
@@ -49,11 +63,13 @@ export async function runJobs(
   jobs: ScheduledJob[],
   handlers: JobHandlers,
   finish: (id: number, error: string | null) => Promise<string>,
+  cancel: (id: number, reason: string) => Promise<string> = async () => "cancelled",
 ): Promise<RunSummary> {
-  const summary: RunSummary = { claimed: jobs.length, done: 0, retried: 0, failed: 0, unknownKind: 0 };
+  const summary: RunSummary = { claimed: jobs.length, done: 0, retried: 0, failed: 0, cancelled: 0, unknownKind: 0 };
   for (const job of jobs) {
     const handler = Object.hasOwn(handlers, job.kind) ? handlers[job.kind] : undefined;
     let error: string | null = null;
+    let cancelReason: string | null = null;
     if (!handler) {
       summary.unknownKind += 1;
       error = `No handler for job kind "${job.kind}".`;
@@ -61,8 +77,14 @@ export async function runJobs(
       try {
         await handler(job);
       } catch (e) {
-        error = describeError(e);
+        if (e instanceof JobCancelled) cancelReason = describeError(e);
+        else error = describeError(e);
       }
+    }
+    if (cancelReason !== null) {
+      const outcome = await cancel(job.id, cancelReason).catch(() => "unrecorded");
+      if (outcome === "cancelled") summary.cancelled += 1;
+      continue;
     }
     // An unknown kind goes through the same retries, which also covers a deploy that
     // is part-way through adding its handler.

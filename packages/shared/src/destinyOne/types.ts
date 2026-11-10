@@ -263,6 +263,10 @@ export interface D1PollContent {
     votes: D1PollTally[];
     /** This member's current choice(s). Empty if they haven't voted. */
     myOptionIds: string[];
+    /** When voting stops, if the poll has a deadline. Filled in by the server from the message row. */
+    closesAt?: string | null;
+    /** When voting actually stopped (at the deadline, or closed by hand). Voting is refused from then on. */
+    closedAt?: string | null;
   };
 }
 
@@ -297,6 +301,29 @@ export interface D1PollDraft {
   question: string;
   options: string[];
   allowMultiple: boolean;
+  /** ISO time voting stops. Omitted for no deadline. */
+  closesAt?: string | null;
+  /** Pin DestinyAI's result message when the poll closes (group admins only). */
+  pinResult?: boolean;
+}
+
+/**
+ * A message a leader has scheduled and that hasn't gone out yet. The text is
+ * opened for the leaders and admins of the group, who can edit, send now or
+ * delete it; members never see this.
+ */
+export interface D1ScheduledMessage {
+  id: number;
+  groupId: string;
+  /** When it will be sent (ISO). */
+  runAt: string;
+  createdBy: { id: string; displayName: string } | null;
+  body: string | null;
+  attachmentId: string | null;
+  poll: D1PollDraft | null;
+  event: D1EventRef | null;
+  /** Always "pending" in a list; "running" only for a moment at send time. */
+  status: "pending" | "running";
 }
 
 /** What the app sends to attach an event — the server re-fetches and snapshots it. */
@@ -388,6 +415,8 @@ export type D1RealtimeEvent =
   | { event: "message_edited"; payload: { id: number; groupId: string; body: string; editedAt: string; mentions: string[] } }
   | { event: "reaction"; payload: { messageId: number; groupId: string; memberId: string; emoji: string; added: boolean } }
   | { event: "poll_vote"; payload: { messageId: number; groupId: string; votes: D1PollTally[]; totalVoters: number } }
+  /** A poll stopped taking votes (its deadline passed, or it was closed by hand). */
+  | { event: "poll_closed"; payload: { messageId: number; groupId: string; closedAt: string } }
   | { event: "members_changed"; payload: { groupId: string } }
   /** A message's link preview is ready (or was removed by an edit). */
   | { event: "link_preview"; payload: { id: number; groupId: string; preview: D1LinkPreview | null } }

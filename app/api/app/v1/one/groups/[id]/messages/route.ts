@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import { after } from "next/server";
-import { canPost, contentPreview, type D1MessageContent, type D1PollDraft } from "@destiny/shared";
+import { canPost, contentPreview, isLeaderRole, validatePollDeadline, type D1MessageContent } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
 import { requireMember } from "@/lib/destinyOne/auth.server";
 import { broadcastNewMessage, getMessage, listMessages, requireGroupMembership } from "@/lib/destinyOne/chat.server";
@@ -11,26 +10,13 @@ import { attachLinkPreview } from "@/lib/destinyOne/linkPreview.server";
 import { answer } from "@/lib/destinyOne/assistant.server";
 import { OneError, fromDbError, limit, oneJson, oneRoute, readBody, requireUuid, type IdParams } from "@/lib/destinyOne/http";
 import { sendMessageSchema } from "@/lib/destinyOne/schemas";
-
-function buildPollContent(draft: D1PollDraft): D1MessageContent {
-  return {
-    kind: "poll",
-    poll: {
-      id: randomUUID(),
-      question: draft.question.trim(),
-      options: draft.options.map((label, i) => ({ id: `o${i + 1}`, label: label.trim() })),
-      allowMultiple: draft.allowMultiple,
-      totalVoters: 0,
-      votes: [],
-      myOptionIds: [],
-    },
-  };
-}
+import { buildPollContent } from "@/lib/destinyOne/pollContent";
 
 // GET  /api/app/v1/one/groups/[id]/messages?before=<id>&limit=<n>
 //        Newest page first, returned oldest→newest. Only messages from after
 //        you joined. Deleted messages come back without their content.
 // POST /api/app/v1/one/groups/[id]/messages  { body?, replyTo?, attachmentId?, poll?, event?, mentions? }
+//        A poll can carry `closesAt` (voting stops then; DestinyAI posts the result) and `pinResult`.
 //        Send. The database refuses frozen groups, non-members, and
 //        non-admins in Announcements. The text is stored sealed (encrypted at
 //        rest). Everyone in the group receives it on the d1-group:<id>
@@ -68,6 +54,11 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
   }
 
   const input = await readBody(request, sendMessageSchema);
+  // A poll's deadline is checked before anything is sent, so a bad one never leaves a poll with no end.
+  if (input.poll?.closesAt) {
+    const deadline = validatePollDeadline(new Date(input.poll.closesAt), new Date());
+    if (!deadline.ok) throw new OneError("rule_violation", deadline.reason);
+  }
   const content: D1MessageContent | null = input.poll
     ? buildPollContent(input.poll)
     : input.event
@@ -89,6 +80,17 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
     p_mentions: body ? input.mentions ?? null : null,
   });
   if (error) throw fromDbError(error);
+
+  if (input.poll?.closesAt) {
+    // Stamps the deadline and queues the job that closes the poll (migration 20261110_03).
+    const { error: deadlineError } = await createServiceClient().rpc("d1_start_poll_deadline", {
+      p_message: data as number,
+      p_closes_at: input.poll.closesAt,
+      // Only admins and leaders can pin; a request from anyone else just doesn't pin.
+      p_pin_result: input.poll.pinResult === true && (membership.role === "admin" || isLeaderRole(caller.policy.roles)),
+    });
+    if (deadlineError) throw fromDbError(deadlineError);
+  }
 
   const message = await getMessage(caller, data as number);
   after(() =>

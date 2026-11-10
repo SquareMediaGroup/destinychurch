@@ -199,6 +199,57 @@ export function canPost(input: {
   return true;
 }
 
+// ── Scheduled messages and poll deadlines (1.2) ─────────────────────────────
+
+/** A message can be scheduled up to this far ahead (UK time, picked in the composer). */
+export const MAX_SCHEDULE_DAYS = 30;
+/** And no sooner than this: a "schedule" for the next few seconds is just sending. */
+export const MIN_SCHEDULE_LEAD_MS = 60_000;
+/** Scheduled messages waiting in one group at a time. */
+export const MAX_SCHEDULED_PER_GROUP = 25;
+/** A poll's deadline can be at most this far ahead (a scheduled poll counts from when it is sent). */
+export const MAX_POLL_DEADLINE_DAYS = 60;
+
+const DAY_MS = 86_400_000;
+
+/**
+ * Who can schedule a message: leaders, and admins of the group or Announcements
+ * channel (all of whom can post there). Members can't, even where they can post.
+ */
+export function canSchedule(input: {
+  member: PolicyMember;
+  groupKind: D1GroupKind;
+  groupState: D1GroupState;
+  myRole: D1MembershipRole | null;
+}): boolean {
+  return canPost(input) && (input.myRole === "admin" || isLeaderRole(input.member.roles));
+}
+
+/** Is `runAt` a time a message can be scheduled for? */
+export function validateScheduleTime(runAt: Date, now: Date = new Date()): RuleCheck {
+  const t = runAt.getTime();
+  if (Number.isNaN(t)) return { ok: false, reason: "Pick a day and time." };
+  if (t < now.getTime() + MIN_SCHEDULE_LEAD_MS) return { ok: false, reason: "Pick a time in the future." };
+  if (t > now.getTime() + MAX_SCHEDULE_DAYS * DAY_MS) {
+    return { ok: false, reason: `Messages can be scheduled up to ${MAX_SCHEDULE_DAYS} days ahead.` };
+  }
+  return { ok: true };
+}
+
+/**
+ * Is `closesAt` a good deadline for a poll? It must come after the poll is
+ * seen: `opensAt` is when it goes out (now, or the scheduled time).
+ */
+export function validatePollDeadline(closesAt: Date, opensAt: Date, now: Date = new Date()): RuleCheck {
+  const t = closesAt.getTime();
+  if (Number.isNaN(t)) return { ok: false, reason: "Pick when the poll closes." };
+  if (t < opensAt.getTime() + MIN_SCHEDULE_LEAD_MS) return { ok: false, reason: "A poll has to stay open for at least a minute." };
+  if (t > now.getTime() + MAX_POLL_DEADLINE_DAYS * DAY_MS) {
+    return { ok: false, reason: `A poll can close up to ${MAX_POLL_DEADLINE_DAYS} days ahead.` };
+  }
+  return { ok: true };
+}
+
 // ── DestinyAI ────────────────────────────────────────────────────────────────
 // The church's Smart Search as a chat member. It has its own one-to-one chat
 // (the only one in Destiny One), and answers in a group when someone writes

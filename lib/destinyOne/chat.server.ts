@@ -359,12 +359,14 @@ interface MessageRow {
   mentions: string[] | null;
   link_preview: string | null;
   forwarded_from: number | null;
+  poll_closes_at: string | null;
+  poll_closed_at: string | null;
   sender: { id: string; display_name: string } | null;
   attachment: { id: string; storage_path: string; mime_type: string; size_bytes: number | null; duration_ms: number | null; expires_at: string | null; expired_at: string | null } | null;
 }
 
 const MESSAGE_SELECT =
-  "id, group_id, sender_id, body, reply_to, attachment_id, content, created_at, edited_at, deleted_at, mentions, link_preview, forwarded_from, " +
+  "id, group_id, sender_id, body, reply_to, attachment_id, content, created_at, edited_at, deleted_at, mentions, link_preview, forwarded_from, poll_closes_at, poll_closed_at, " +
   "sender:d1_members!d1_messages_sender_id_fkey(id, display_name), " +
   "attachment:d1_attachments!d1_messages_attachment_id_fkey(id, storage_path, mime_type, size_bytes, duration_ms, expires_at, expired_at)";
 
@@ -380,7 +382,13 @@ function openLinkPreview(sealed: string | null, groupId: string): D1LinkPreview 
 }
 
 /** Overlays live tallies (and the caller's own choice) onto a poll's static definition. */
-function livePollContent(content: D1MessageContent, messageId: number, callerId: string, votes: { message_id: number; member_id: string; option_id: string }[]): D1MessageContent {
+function livePollContent(
+  content: D1MessageContent,
+  messageId: number,
+  callerId: string,
+  votes: { message_id: number; member_id: string; option_id: string }[],
+  deadline: { closesAt: string | null; closedAt: string | null },
+): D1MessageContent {
   if (content.kind !== "poll") return content;
   const rows = votes.filter((v) => v.message_id === messageId);
   const counts = new Map<string, number>();
@@ -392,6 +400,8 @@ function livePollContent(content: D1MessageContent, messageId: number, callerId:
       totalVoters: new Set(rows.map((v) => v.member_id)).size,
       votes: content.poll.options.map((o) => ({ optionId: o.id, count: counts.get(o.id) ?? 0 })),
       myOptionIds: rows.filter((v) => v.member_id === callerId).map((v) => v.option_id),
+      closesAt: deadline.closesAt,
+      closedAt: deadline.closedAt,
     },
   };
 }
@@ -446,7 +456,7 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
               url: urlFor.get(r.attachment.storage_path) ?? null,
             }
           : null,
-      content: !deleted && r.content ? livePollContent(openContent(r.content, r.group_id)!, r.id, callerId, votes ?? []) : null,
+      content: !deleted && r.content ? livePollContent(openContent(r.content, r.group_id)!, r.id, callerId, votes ?? [], { closesAt: r.poll_closes_at, closedAt: r.poll_closed_at }) : null,
       reactions: deleted ? [] : [...byEmoji].map(([emoji, v]) => ({ emoji, ...v })),
       createdAt: r.created_at,
       editedAt: deleted ? null : r.edited_at,
@@ -520,6 +530,11 @@ export async function blockedIds(memberId: string): Promise<string[]> {
 }
 
 export async function getMessage(caller: Caller, messageId: number): Promise<D1Message> {
+  return getMessageFor(caller.member.id, messageId);
+}
+
+/** A message as `memberId` sees it (their own votes and reactions). Used by jobs, which have no request. */
+export async function getMessageFor(memberId: string, messageId: number): Promise<D1Message> {
   const { data, error } = await createServiceClient()
     .from("d1_messages")
     .select(MESSAGE_SELECT)
@@ -527,6 +542,6 @@ export async function getMessage(caller: Caller, messageId: number): Promise<D1M
     .maybeSingle();
   if (error) throw fromDbError(error);
   if (!data) throw new OneError("not_found", "That message doesn't exist.");
-  const [message] = await shape([data as unknown as MessageRow], caller.member.id);
+  const [message] = await shape([data as unknown as MessageRow], memberId);
   return message;
 }

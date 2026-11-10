@@ -105,6 +105,10 @@ export const pollDraftSchema = z.object({
     .min(MIN_POLL_OPTIONS, `Add at least ${MIN_POLL_OPTIONS} options.`)
     .max(MAX_POLL_OPTIONS, `Polls can have up to ${MAX_POLL_OPTIONS} options.`),
   allowMultiple: z.boolean(),
+  /** When voting stops (ISO, with a time zone). Omitted for no deadline. */
+  closesAt: z.string().datetime({ offset: true }).optional().nullable(),
+  /** Pin DestinyAI's result when the poll closes. */
+  pinResult: z.boolean().optional(),
 });
 
 export const eventRefSchema = z.object({
@@ -125,6 +129,31 @@ export const sendMessageSchema = z
     (v) => Boolean(v.body?.trim()) || Boolean(v.attachmentId) || Boolean(v.poll) || Boolean(v.event),
     "A message can't be empty.",
   );
+
+/** A message to send later. Same content as sendMessageSchema, plus when. Voice notes and videos can't be scheduled. */
+export const scheduleMessageSchema = z
+  .object({
+    runAt: z.string().datetime({ offset: true }),
+    body: z.string().max(MAX_MESSAGE_LENGTH, `Messages can be up to ${MAX_MESSAGE_LENGTH} characters.`).optional().nullable(),
+    attachmentId: uuid.optional().nullable(),
+    poll: pollDraftSchema.optional().nullable(),
+    event: eventRefSchema.optional().nullable(),
+    mentions: z.array(uuid).max(50).optional().nullable(),
+  })
+  .refine(
+    (v) => Boolean(v.body?.trim()) || Boolean(v.attachmentId) || Boolean(v.poll) || Boolean(v.event),
+    "A message can't be empty.",
+  );
+
+/** What can change on a scheduled message that hasn't gone out: when, the text, or the poll. */
+export const updateScheduledSchema = z
+  .object({
+    runAt: z.string().datetime({ offset: true }).optional(),
+    body: z.string().max(MAX_MESSAGE_LENGTH, `Messages can be up to ${MAX_MESSAGE_LENGTH} characters.`).optional().nullable(),
+    poll: pollDraftSchema.optional().nullable(),
+    mentions: z.array(uuid).max(50).optional().nullable(),
+  })
+  .refine((v) => Object.keys(v).length > 0, "Nothing to change.");
 
 export const editMessageSchema = z.object({
   body: z

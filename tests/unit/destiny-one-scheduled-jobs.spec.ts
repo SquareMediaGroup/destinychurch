@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { describeError, runJobs, type JobHandlers, type ScheduledJob } from "../../lib/destinyOne/scheduledJobs";
+import { JobCancelled, describeError, runJobs, type JobHandlers, type ScheduledJob } from "../../lib/destinyOne/scheduledJobs";
 
 /**
  * The scheduled jobs runner decides what to do with a claimed batch: run each
@@ -37,7 +37,7 @@ test.describe("scheduled jobs runner", () => {
     const summary = await runJobs(jobs, handlers, finish);
     expect(ran).toEqual([1, 2, 3]);
     expect(calls.map((c) => c.error)).toEqual([null, null, null]);
-    expect(summary).toEqual({ claimed: 3, done: 3, retried: 0, failed: 0, unknownKind: 0 });
+    expect(summary).toEqual({ claimed: 3, done: 3, retried: 0, failed: 0, cancelled: 0, unknownKind: 0 });
   });
 
   test("a job that throws is recorded with its error and the rest still run", async () => {
@@ -80,6 +80,28 @@ test.describe("scheduled jobs runner", () => {
     expect(summary.unknownKind).toBe(2);
   });
 
+  test("a handler that cancels is not retried: the job is cancelled with its reason", async () => {
+    const jobs = [job(1), job(2)];
+    const cancelled: { id: number; reason: string }[] = [];
+    const { calls, finish } = finisher(jobs);
+    const summary = await runJobs(
+      jobs,
+      {
+        test: async (j) => {
+          if (j.id === 1) throw new JobCancelled("The group is paused.");
+        },
+      },
+      finish,
+      async (id, reason) => {
+        cancelled.push({ id, reason });
+        return "cancelled";
+      },
+    );
+    expect(cancelled).toEqual([{ id: 1, reason: "The group is paused." }]);
+    expect(calls).toEqual([{ id: 2, error: null }]);
+    expect(summary).toMatchObject({ claimed: 2, done: 1, retried: 0, failed: 0, cancelled: 1 });
+  });
+
   test("failing to record an outcome does not stop the batch", async () => {
     const jobs = [job(1), job(2)];
     const ran: number[] = [];
@@ -92,7 +114,7 @@ test.describe("scheduled jobs runner", () => {
 
   test("an empty batch does nothing", async () => {
     const summary = await runJobs([], {}, async () => "done");
-    expect(summary).toEqual({ claimed: 0, done: 0, retried: 0, failed: 0, unknownKind: 0 });
+    expect(summary).toEqual({ claimed: 0, done: 0, retried: 0, failed: 0, cancelled: 0, unknownKind: 0 });
   });
 
   test("error text is flattened and kept short", () => {

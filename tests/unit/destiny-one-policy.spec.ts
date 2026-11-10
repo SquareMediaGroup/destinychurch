@@ -15,6 +15,10 @@ import {
   D1_ROLE_LABELS,
   canCreateGroup,
   canPost,
+  canSchedule,
+  validateScheduleTime,
+  validatePollDeadline,
+  MAX_SCHEDULE_DAYS,
   checkComposition,
   isAdult,
   nameChangeAllowance,
@@ -344,5 +348,46 @@ test.describe("videos", () => {
     expect(uploadSchema.safeParse({ mimeType: "video/mp4", sizeBytes: 10 * MB }).success).toBe(false);
     expect(uploadSchema.safeParse({ mimeType: "image/jpeg", sizeBytes: 21 * MB }).success).toBe(false);
     expect(uploadSchema.safeParse({ mimeType: "image/jpeg", sizeBytes: 5 * MB }).success).toBe(true);
+  });
+});
+
+test.describe("scheduling", () => {
+  const leader: PolicyMember = { status: "active", roles: ["senior_leader"], isAdult: true };
+  const member: PolicyMember = { status: "active", roles: [], isAdult: true };
+  const open = { groupKind: "group" as const, groupState: "active" as const };
+
+  test("leaders and group admins can schedule, plain members can't", () => {
+    expect(canSchedule({ member: leader, ...open, myRole: "member" })).toBe(true);
+    expect(canSchedule({ member, ...open, myRole: "admin" })).toBe(true);
+    expect(canSchedule({ member, ...open, myRole: "member" })).toBe(false);
+  });
+
+  test("nobody can schedule where they couldn't post", () => {
+    expect(canSchedule({ member: leader, groupKind: "group", groupState: "frozen", myRole: "admin" })).toBe(false);
+    expect(canSchedule({ member: leader, groupKind: "announcements", groupState: "active", myRole: "member" })).toBe(false);
+    expect(canSchedule({ member: leader, groupKind: "announcements", groupState: "active", myRole: "admin" })).toBe(true);
+    expect(canSchedule({ member: leader, ...open, myRole: null })).toBe(false);
+    expect(canSchedule({ member: { ...leader, status: "suspended" }, ...open, myRole: "admin" })).toBe(false);
+  });
+
+  const now = new Date("2026-11-10T09:00:00Z");
+  const at = (ms: number) => new Date(now.getTime() + ms);
+
+  test("a message can be scheduled from a minute to 30 days ahead", () => {
+    expect(validateScheduleTime(at(30_000), now).ok).toBe(false);
+    expect(validateScheduleTime(at(-1000), now).ok).toBe(false);
+    expect(validateScheduleTime(at(60_000), now).ok).toBe(true);
+    expect(validateScheduleTime(at(MAX_SCHEDULE_DAYS * 86_400_000), now).ok).toBe(true);
+    expect(validateScheduleTime(at(MAX_SCHEDULE_DAYS * 86_400_000 + 1000), now).ok).toBe(false);
+    expect(validateScheduleTime(new Date("nope"), now).ok).toBe(false);
+  });
+
+  test("a poll deadline has to come after the poll goes out", () => {
+    const sendsAt = at(3 * 86_400_000);
+    expect(validatePollDeadline(at(86_400_000), sendsAt, now).ok).toBe(false);
+    expect(validatePollDeadline(new Date(sendsAt.getTime() + 30_000), sendsAt, now).ok).toBe(false);
+    expect(validatePollDeadline(new Date(sendsAt.getTime() + 3_600_000), sendsAt, now).ok).toBe(true);
+    expect(validatePollDeadline(at(61 * 86_400_000), now, now).ok).toBe(false);
+    expect(validatePollDeadline(new Date("nope"), now, now).ok).toBe(false);
   });
 });

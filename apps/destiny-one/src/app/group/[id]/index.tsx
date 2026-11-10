@@ -36,6 +36,7 @@ import { useAssistantStream } from "@/state/assistantStream";
 import { eventPick, useEventPick } from "@/state/eventPick";
 import { jumpTo, useJumpTarget } from "@/state/jump";
 import { typingLabel, typingPing, useTyping } from "@/state/typing";
+import { markGroupOpened } from "@/state/welcomeChecklist";
 import { pollDraft, usePollDraft } from "@/state/pollDraft";
 import { errorMessage, useGroupSummary, useSession } from "@/state/session";
 import { PHOTO_CHIP_ALPHA } from "@/theme/appearance";
@@ -64,6 +65,8 @@ function GroupChatScreen() {
   // Only when there's another account on this phone, and never from a child account (then a slow tap must still just send).
   const sendAsEnabled = accounts.length > 1 && canSendAs(accounts.find((a) => a.slot === activeSlot));
   const summary = useGroupSummary(id);
+  // Ticks the Welcome checklist step (a peek from the chat list never gets here).
+  useEffect(() => markGroupOpened(), []);
   // Read before the chat marks itself read, for the "New messages" divider.
   const [unreadAtOpen] = useState(() => summary?.group.unreadCount ?? 0);
   const convo = useConversation(id, me, unreadAtOpen);

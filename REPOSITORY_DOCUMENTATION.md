@@ -8263,6 +8263,17 @@ same database as the data rather than in a separate Synapse module.
   on every keystroke silently; the list hears about it once, when the chat closes.
   `src/lib/useConversation.ts` owns a chat: paging, optimistic sends with "Not sent. Tap to retry.",
   uploads, reactions, deletes, read receipts.
+- **Welcome checklist** (`src/state/welcomeChecklist.ts`, `src/components/WelcomeChecklist.tsx`): a
+  card under the Chats title with four first steps that tick themselves: add a profile picture,
+  turn on notifications, open a first group chat, read "How your chats are kept safe". The picture
+  (`me.avatarUrl`) and notifications (`Notifications.getPermissionsAsync`, re-checked on focus and
+  when the app returns) are read live; only "opened a group" and "read the safety screen" are stored,
+  with the time the card was first shown and whether it was swiped away. That record is on the phone
+  only (AsyncStorage `d1.welcome.v1.<member id>`), so there is no server or database work, and it is
+  forgotten on sign-out. The card shows for 14 days from the first time a member opens the version
+  that has it (members have no sign-up date, so existing members see it once too), goes when all four
+  are done, and a swipe hides it for good. Under-18s see the same steps. Unreadable storage hides the
+  card. A peek from the chat list does not count as opening a group.
 - **Data cache — instant screens, database-driven updates.** All app data lives in one TanStack
   Query cache (`src/lib/queryClient.ts`), saved to AsyncStorage (one file per account,
   `d1.cache.v2:<member id>`; see Accounts below) and restored at

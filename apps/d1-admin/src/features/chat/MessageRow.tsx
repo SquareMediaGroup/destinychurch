@@ -34,6 +34,7 @@ function contentLine(m: D1Message): string | null {
   if (!c) return null;
   if (c.kind === "event") return `Event: ${c.event.name}`;
   if (c.kind === "sermon") return `Sermon: ${c.sermon.title}`;
+  if (c.kind === "prayer") return `Prayer request${c.prayer.answeredAt ? " (answered)" : ""}: ${c.prayer.text}`;
   if (c.kind === "card") return `Info: ${c.cards.people?.[0]?.name ?? c.cards.info?.[0]?.title ?? "church info"}`;
   return null;
 }

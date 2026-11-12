@@ -16,6 +16,7 @@ import { buildPollContent } from "@/lib/destinyOne/pollContent";
 //        Newest page first, returned oldest→newest. Only messages from after
 //        you joined. Deleted messages come back without their content.
 // POST /api/app/v1/one/groups/[id]/messages  { body?, replyTo?, attachmentId?, poll?, event?, mentions? }
+//        `prayer: { text }` posts a prayer request (on its own, no body or attachment).
 //        A poll can carry `closesAt` (voting stops then; DestinyAI posts the result) and `pinResult`.
 //        Send. The database refuses frozen groups, non-members, and
 //        non-admins in Announcements. The text is stored sealed (encrypted at
@@ -63,7 +64,9 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
     ? buildPollContent(input.poll)
     : input.event
       ? await buildEventSnapshot(input.event)
-      : null;
+      : input.prayer
+        ? { kind: "prayer", prayer: { text: input.prayer.text, prayedCount: 0, iPrayed: false, answeredAt: null, answerUpdate: null } }
+        : null;
 
   // Text is sealed here, before it reaches the database (crypto.server.ts),
   // with the search terms for it stored alongside in the same transaction.

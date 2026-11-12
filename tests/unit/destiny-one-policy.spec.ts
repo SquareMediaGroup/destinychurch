@@ -391,3 +391,9 @@ test.describe("scheduling", () => {
     expect(validatePollDeadline(new Date("nope"), now, now).ok).toBe(false);
   });
 });
+
+test("a prayer request is summarised in one line like a poll", () => {
+  expect(contentPreview({ kind: "prayer", prayer: { text: "My interview on Friday", prayedCount: 3, iPrayed: false, answeredAt: null, answerUpdate: null } })).toBe(
+    "Prayer request: My interview on Friday",
+  );
+});

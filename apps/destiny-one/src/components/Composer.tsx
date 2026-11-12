@@ -50,6 +50,7 @@ interface Props {
   onAttach: (file: PickedFile) => void;
   onAttachPoll: () => void;
   onAttachEvent: () => void;
+  onAttachPrayer?: () => void;
   onError: (message: string) => void;
   /** Holding Send: which other signed-in accounts could send this instead. Omit to turn the hold off. */
   loadSendAsOptions?: () => Promise<Account[]>;
@@ -69,7 +70,7 @@ interface Props {
   placeholder?: string;
 }
 
-export const Composer = forwardRef<TextInputInstance, Props>(function Composer({ replying, onCancelReply, editing, onCancelEdit, onSend, onAttach, onAttachPoll, onAttachEvent, onError, loadSendAsOptions, onSendAs, onSchedule, initialText, onTextChange, mentionables, textOnly, placeholder = "Message" }, ref) {
+export const Composer = forwardRef<TextInputInstance, Props>(function Composer({ replying, onCancelReply, editing, onCancelEdit, onSend, onAttach, onAttachPoll, onAttachEvent, onAttachPrayer, onError, loadSendAsOptions, onSendAs, onSchedule, initialText, onTextChange, mentionables, textOnly, placeholder = "Message" }, ref) {
   const t = useTheme();
   const [draft, setDraftState] = useState(initialText ?? "");
   const setDraft = (text: string) => {
@@ -475,6 +476,14 @@ export const Composer = forwardRef<TextInputInstance, Props>(function Composer({
           setSheetOpen(false);
           onAttachEvent();
         }}
+        onPrayer={
+          onAttachPrayer
+            ? () => {
+                setSheetOpen(false);
+                onAttachPrayer();
+              }
+            : undefined
+        }
       />
     </View>
   );

@@ -5,7 +5,7 @@
 // the database reports in its own words).
 
 import { z } from "zod";
-import { MAX_ATTACHMENT_BYTES, MAX_FEEDBACK_LENGTH, MAX_MESSAGE_LENGTH, MAX_POLL_OPTIONS, MAX_POLL_OPTION_LENGTH, MAX_POLL_QUESTION_LENGTH, MIN_POLL_OPTIONS, UPLOAD_MIME_TYPES, VOICE_MIME_TYPE, MAX_VOICE_MS, MAX_VIDEO_BYTES, MAX_VIDEO_MS, isVideoMime } from "@destiny/shared";
+import { MAX_ATTACHMENT_BYTES, MAX_FEEDBACK_LENGTH, MAX_MESSAGE_LENGTH, MAX_POLL_OPTIONS, MAX_POLL_OPTION_LENGTH, MAX_POLL_QUESTION_LENGTH, MAX_PRAYER_LENGTH, MAX_PRAYER_UPDATE_LENGTH, MIN_POLL_OPTIONS, UPLOAD_MIME_TYPES, VOICE_MIME_TYPE, MAX_VOICE_MS, MAX_VIDEO_BYTES, MAX_VIDEO_MS, isVideoMime } from "@destiny/shared";
 
 const uuid = z.string().uuid("That id isn't valid.").transform((s) => s.toLowerCase());
 const name = z.string().trim().min(1, "A name is required.").max(80, "Names can be up to 80 characters.");
@@ -30,6 +30,7 @@ export const updateNameSchema = z.object({
 
 export const settingsSchema = z.object({
   readReceipts: z.boolean().optional(),
+  prayerSummary: z.boolean().optional(),
 });
 
 export const accessRequestSchema = z.object({
@@ -116,6 +117,15 @@ export const eventRefSchema = z.object({
   slug: z.string().trim().min(1).max(200),
 });
 
+/** A prayer request: short text. It is sent as its own message, with nothing else attached. */
+export const prayerDraftSchema = z.object({
+  text: z.string().trim().min(1, "Write what you'd like prayer for.").max(MAX_PRAYER_LENGTH, `Prayer requests can be up to ${MAX_PRAYER_LENGTH} characters.`),
+});
+
+export const answerPrayerSchema = z.object({
+  update: z.string().trim().max(MAX_PRAYER_UPDATE_LENGTH, `Updates can be up to ${MAX_PRAYER_UPDATE_LENGTH} characters.`).optional().nullable(),
+});
+
 export const sendMessageSchema = z
   .object({
     body: z.string().max(MAX_MESSAGE_LENGTH, `Messages can be up to ${MAX_MESSAGE_LENGTH} characters.`).optional(),
@@ -123,12 +133,14 @@ export const sendMessageSchema = z
     attachmentId: uuid.optional(),
     poll: pollDraftSchema.optional(),
     event: eventRefSchema.optional(),
+    prayer: prayerDraftSchema.optional(),
     mentions: z.array(uuid).max(50).optional(),
   })
   .refine(
-    (v) => Boolean(v.body?.trim()) || Boolean(v.attachmentId) || Boolean(v.poll) || Boolean(v.event),
+    (v) => Boolean(v.body?.trim()) || Boolean(v.attachmentId) || Boolean(v.poll) || Boolean(v.event) || Boolean(v.prayer),
     "A message can't be empty.",
-  );
+  )
+  .refine((v) => !v.prayer || (!v.body?.trim() && !v.attachmentId && !v.poll && !v.event), "A prayer request is sent on its own.");
 
 /** A message to send later. Same content as sendMessageSchema, plus when. Voice notes and videos can't be scheduled. */
 export const scheduleMessageSchema = z

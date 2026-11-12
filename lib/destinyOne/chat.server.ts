@@ -406,6 +406,44 @@ function livePollContent(
   };
 }
 
+interface PrayerState {
+  answeredAt: string | null;
+  answerUpdate: string | null;
+  count: number;
+  mine: boolean;
+}
+
+/** Each prayer request's live state: answered or not, how many prayed, and whether the caller did. */
+async function prayerStates(ids: number[], callerId: string): Promise<Map<number, PrayerState>> {
+  const out = new Map<number, PrayerState>();
+  if (ids.length === 0) return out;
+  const supabase = createServiceClient();
+  const [{ data: requests }, { data: taps }] = await Promise.all([
+    supabase.from("d1_prayer_requests").select("message_id, group_id, answered_at, answer_update").in("message_id", ids),
+    supabase.from("d1_prayer_taps").select("message_id, member_id").in("message_id", ids),
+  ]);
+  for (const r of requests ?? []) {
+    const update = openBody(r.answer_update as string | null, r.group_id as string);
+    out.set(r.message_id as number, { answeredAt: (r.answered_at as string | null) ?? null, answerUpdate: update === UNREADABLE ? null : update, count: 0, mine: false });
+  }
+  for (const t of taps ?? []) {
+    const state = out.get(t.message_id as number);
+    if (!state) continue;
+    state.count += 1;
+    if (t.member_id === callerId) state.mine = true;
+  }
+  return out;
+}
+
+/** Overlays a prayer request's live state onto its stored text. */
+function livePrayerContent(content: D1MessageContent, state: PrayerState | undefined): D1MessageContent {
+  if (content.kind !== "prayer") return content;
+  return {
+    kind: "prayer",
+    prayer: { text: content.prayer.text, prayedCount: state?.count ?? 0, iPrayed: state?.mine ?? false, answeredAt: state?.answeredAt ?? null, answerUpdate: state?.answerUpdate ?? null },
+  };
+}
+
 async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]> {
   if (rows.length === 0) return [];
   const supabase = createServiceClient();
@@ -413,7 +451,8 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
 
   const live = rows.filter((r) => !r.deleted_at && r.attachment && !r.attachment.expired_at);
   const pollIds = rows.filter((r) => !r.deleted_at && r.content?.kind === "poll").map((r) => r.id);
-  const [{ data: reactions }, signed, { data: votes }] = await Promise.all([
+  const prayerIds = rows.filter((r) => !r.deleted_at && r.content?.kind === "prayer").map((r) => r.id);
+  const [{ data: reactions }, signed, { data: votes }, prayers] = await Promise.all([
     supabase.from("d1_reactions").select("message_id, member_id, emoji").in("message_id", ids),
     live.length
       ? supabase.storage.from(MEDIA_BUCKET).createSignedUrls(
@@ -424,6 +463,7 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
     pollIds.length
       ? supabase.from("d1_poll_votes").select("message_id, member_id, option_id").in("message_id", pollIds)
       : Promise.resolve({ data: [] as { message_id: number; member_id: string; option_id: string }[] }),
+    prayerStates(prayerIds, callerId),
   ]);
 
   const urlFor = new Map((signed.data ?? []).map((s) => [s.path, s.signedUrl]));
@@ -456,7 +496,10 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
               url: urlFor.get(r.attachment.storage_path) ?? null,
             }
           : null,
-      content: !deleted && r.content ? livePollContent(openContent(r.content, r.group_id)!, r.id, callerId, votes ?? [], { closesAt: r.poll_closes_at, closedAt: r.poll_closed_at }) : null,
+      content:
+        !deleted && r.content
+          ? livePrayerContent(livePollContent(openContent(r.content, r.group_id)!, r.id, callerId, votes ?? [], { closesAt: r.poll_closes_at, closedAt: r.poll_closed_at }), prayers.get(r.id))
+          : null,
       reactions: deleted ? [] : [...byEmoji].map(([emoji, v]) => ({ emoji, ...v })),
       createdAt: r.created_at,
       editedAt: deleted ? null : r.edited_at,
@@ -500,6 +543,29 @@ export async function listMessages(
     messages: (await shape(page, caller.member.id)).reverse(),
     nextBefore: hasMore ? page[page.length - 1].id : null,
   };
+}
+
+/**
+ * The group's prayer requests the caller can see (sent since they joined, not
+ * deleted, not from someone they've blocked), newest first. Open and answered.
+ */
+export async function listPrayerRequests(caller: Caller, groupId: string): Promise<D1Message[]> {
+  const [membership, blocked] = await Promise.all([requireGroupMembership(caller, groupId), blockedIds(caller.member.id)]);
+  const supabase = createServiceClient();
+  const { data: requests, error } = await supabase
+    .from("d1_prayer_requests")
+    .select("message_id")
+    .eq("group_id", groupId)
+    .gte("created_at", membership.joinedAt)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw fromDbError(error);
+  const ids = (requests ?? []).map((r) => r.message_id as number);
+  if (!ids.length) return [];
+  const { data, error: msgError } = await supabase.from("d1_messages").select(MESSAGE_SELECT).in("id", ids).is("deleted_at", null).order("id", { ascending: false });
+  if (msgError) throw fromDbError(msgError);
+  const rows = ((data ?? []) as unknown as MessageRow[]).filter((r) => !r.sender_id || !blocked.includes(r.sender_id));
+  return shape(rows, caller.member.id);
 }
 
 /**

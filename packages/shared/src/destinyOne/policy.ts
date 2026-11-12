@@ -199,6 +199,12 @@ export function canPost(input: {
   return true;
 }
 
+// ── Prayer requests (1.2) ────────────────────────────────────────────────────
+
+export const MAX_PRAYER_LENGTH = 500;
+/** The short update someone can add when they mark their request answered. */
+export const MAX_PRAYER_UPDATE_LENGTH = 200;
+
 // ── Scheduled messages and poll deadlines (1.2) ─────────────────────────────
 
 /** A message can be scheduled up to this far ahead (UK time, picked in the composer). */
@@ -408,6 +414,7 @@ export function contentPreview(content: D1MessageContent | null | undefined): st
   if (content?.kind === "poll") return `Poll: ${content.poll.question}`;
   if (content?.kind === "event") return `Event: ${content.event.name}`;
   if (content?.kind === "sermon") return `Sermon: ${content.sermon.title}`;
+  if (content?.kind === "prayer") return `Prayer request: ${content.prayer.text}`;
   if (content?.kind === "card") {
     const first = content.cards.people?.[0]?.name ?? content.cards.info?.[0]?.title;
     return first ? `Info: ${first}` : null;

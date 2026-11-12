@@ -50,6 +50,8 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
   // Seeing it is checked again in SQL; this is for a friendlier error first.
   await requireGroupMembership(caller, src.group_id);
   if (src.content?.kind === "poll") throw new OneError("rule_violation", "Polls can't be forwarded.");
+  // A prayer request was shared with one group, and can hold personal details: it stays there.
+  if (src.content?.kind === "prayer") throw new OneError("rule_violation", "Prayer requests can't be forwarded.");
 
   const body = openBody(src.body, src.group_id);
   const content = openContent(src.content, src.group_id);

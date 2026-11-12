@@ -22,7 +22,7 @@ export type { LocalMessage };
 
 let localIds = -1;
 
-type SendInput = { body?: string; replyTo?: number; attachmentId?: string; poll?: D1PollDraft; event?: D1EventRef; mentions?: string[] };
+type SendInput = { body?: string; replyTo?: number; attachmentId?: string; poll?: D1PollDraft; event?: D1EventRef; prayer?: { text: string }; mentions?: string[] };
 type Pending = { input: SendInput; upload?: () => Promise<string> };
 /** Unsent messages, kept outside the screen so "tap to retry" still works after leaving and coming back. */
 const pending = new Map<number, Pending>();
@@ -200,7 +200,7 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
 
   /** A poll or event: no upload step, and the bubble shows the real content straight away. */
   const sendContent = useCallback(
-    async (content: D1MessageContent, input: { poll?: D1PollDraft; event?: D1EventRef }) => {
+    async (content: D1MessageContent, input: { poll?: D1PollDraft; event?: D1EventRef; prayer?: { text: string } }) => {
       const local: LocalMessage = {
         id: localIds--,
         groupId,
@@ -267,6 +267,30 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
         { event: { seriesKey: summary.seriesKey, slug: summary.slug } },
       ),
     [sendContent],
+  );
+
+  const sendPrayer = useCallback(
+    (text: string) => sendContent({ kind: "prayer", prayer: { text: text.trim(), prayedCount: 0, iPrayed: false, answeredAt: null, answerUpdate: null } }, { prayer: { text: text.trim() } }),
+    [sendContent],
+  );
+
+  /** "I prayed" (or taking it back): shown at once, undone if the server says no. */
+  const pray = useCallback(
+    async (messageId: number, on: boolean) => {
+      const msg = messages?.find((m) => m.id === messageId);
+      if (!msg || messageId < 0 || msg.content?.kind !== "prayer" || msg.content.prayer.iPrayed === on) return;
+      const before = msg.content.prayer;
+      const apply = (prayer: typeof before) => updateMessages(groupId, (list) => list.map((m) => (m.id === messageId ? { ...m, content: { kind: "prayer", prayer } } : m)));
+      apply({ ...before, iPrayed: on, prayedCount: Math.max(0, before.prayedCount + (on ? 1 : -1)) });
+      try {
+        const { count } = on ? await api.pray(messageId) : await api.unpray(messageId);
+        apply({ ...before, iPrayed: on, prayedCount: count });
+      } catch (err) {
+        apply(before);
+        throw err;
+      }
+    },
+    [groupId, messages],
   );
 
   const vote = useCallback(
@@ -419,6 +443,8 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
     sendAsOptions,
     sendPoll,
     sendEvent,
+    sendPrayer,
+    pray,
     vote,
     retry,
     discard,

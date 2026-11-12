@@ -40,6 +40,7 @@ import { typingLabel, typingPing, useTyping } from "@/state/typing";
 import { scheduleDraft, useScheduleDone } from "@/state/scheduleDraft";
 import { markGroupOpened } from "@/state/welcomeChecklist";
 import { pollDraft, usePollDraft } from "@/state/pollDraft";
+import { prayerDraft, usePrayerDraft } from "@/state/prayerDraft";
 import { errorMessage, useGroupSummary, useSession } from "@/state/session";
 import { PHOTO_CHIP_ALPHA } from "@/theme/appearance";
 import { ORANGE, useTheme } from "@/theme/tokens";
@@ -201,6 +202,14 @@ function GroupChatScreen() {
     void sendPoll(draft).catch((err) => setToast(errorMessage(err, "Couldn't send the poll. Try again.")));
   }, [draft, sendPoll]);
 
+  const { sendPrayer } = convo;
+  const prayerText = usePrayerDraft(id);
+  useEffect(() => {
+    if (!prayerText) return;
+    prayerDraft.clear();
+    void sendPrayer(prayerText).catch((err) => setToast(errorMessage(err, "Couldn't share your prayer request. Try again.")));
+  }, [prayerText, sendPrayer]);
+
   const chosenEvent = useEventPick(id);
   useEffect(() => {
     if (!chosenEvent) return;
@@ -317,6 +326,7 @@ function GroupChatScreen() {
       remove: (m) => setDeleting(m),
       react: (m, emoji) => void convo.toggleReaction(m.id, emoji).catch((err) => setToast(errorMessage(err))),
       vote: (m, optionIds) => void convo.vote(m.id, optionIds).catch((err) => setToast(errorMessage(err))),
+      pray: (m, on) => void convo.pray(m.id, on).catch((err) => setToast(errorMessage(err))),
       closePoll: (m) =>
         Alert.alert("Close this poll?", "Voting stops now and the result is posted in the chat.", [
           { text: "Cancel", style: "cancel" },
@@ -390,6 +400,7 @@ function GroupChatScreen() {
       onAttach={sendFile}
       onAttachPoll={() => router.push(`/group/${id}/poll`)}
       onAttachEvent={() => router.push(`/group/${id}/event-picker`)}
+      onAttachPrayer={isAssistant ? undefined : () => router.push(`/group/${id}/prayer`)}
       onError={setToast}
       initialText={editing?.body ?? chatDrafts.get(id)}
       onTextChange={
@@ -640,6 +651,7 @@ type RowActions = {
   react: (m: LocalMessage, emoji: string) => void;
   vote: (m: LocalMessage, optionIds: string[]) => void;
   closePoll: (m: LocalMessage) => void;
+  pray: (m: LocalMessage, on: boolean) => void;
   retry: (m: LocalMessage) => void;
   openAttachment: (m: LocalMessage, url: string) => void;
 };
@@ -684,7 +696,7 @@ const ChatRow = memo(function ChatRow({ row, groupId, group, highlighted, replyT
     },
     onEdit: canPost && canEditMessage(m) ? () => run().edit(m) : null,
     onShare: m.attachment ? () => run().share(m) : null,
-    onForward: m.content?.kind === "poll" ? null : () => router.push({ pathname: "/forward", params: { groupId, messageId: String(m.id) } }),
+    onForward: m.content?.kind === "poll" || m.content?.kind === "prayer" ? null : () => router.push({ pathname: "/forward", params: { groupId, messageId: String(m.id) } }),
     onInfo: m.mine || group?.canManage ? () => router.push({ pathname: "/message-info", params: { groupId, messageId: String(m.id) } }) : null,
     // An open poll (not one still sending): its author, or a leader or admin, can close it now.
     onClosePoll:
@@ -715,6 +727,9 @@ const ChatRow = memo(function ChatRow({ row, groupId, group, highlighted, replyT
         meId={meId}
         onToggleReaction={(emoji) => run().react(m, emoji)}
         onVotePoll={(optionIds) => run().vote(m, optionIds)}
+        onPray={(on) => run().pray(m, on)}
+        onShowPrayed={() => router.push({ pathname: "/group/[id]/prayed", params: { id: groupId, messageId: String(m.id) } })}
+        onAnswerPrayer={() => router.push({ pathname: "/group/[id]/prayer-answer", params: { id: groupId, messageId: String(m.id) } })}
         onRetry={() => run().retry(m)}
       />
     </View>

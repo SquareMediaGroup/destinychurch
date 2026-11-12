@@ -8,7 +8,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { checkComposition, type D1GroupMember } from "@destiny/shared";
 import { Icon, type IconName } from "@/components/Icon";
-import { MemberTag, Avatar, Bone, Card, CardButton, ConfirmDialog, ErrorState, FloatingBack, SectionLabel, SettingsRow, SkeletonGroup, SkeletonRows } from "@/components/ui";
+import { MemberTag, Avatar, Bone, Card, CardButton, ConfirmDialog, ErrorState, FloatingBack, SectionLabel, Separator, SettingsRow, SkeletonGroup, SkeletonRows } from "@/components/ui";
 import { api } from "@/lib/api";
 import { cleanImage } from "@/lib/cleanImage";
 import { plural } from "@/lib/format";
@@ -196,6 +196,12 @@ export default function GroupInfo() {
 
         <Card>
           <SettingsRow icon="photo" label="Photos and files" onPress={() => router.push(`/group/${group.id}/media`)} />
+          {group.kind === "assistant" ? null : (
+            <>
+              <Separator inset={62} />
+              <SettingsRow icon="heart" label="Prayer" onPress={() => router.push(`/group/${group.id}/prayers`)} />
+            </>
+          )}
         </Card>
 
         {group.canManage && rules ? (

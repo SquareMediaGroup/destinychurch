@@ -2199,6 +2199,7 @@ department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_o
 | `d1_message_edits` | Part 11: the text an edit replaced (sealed), one row per edit, for the safeguarding transcript. Deny-all RLS; removed with its message by the purge |
 | `d1_pins` | Part 13: pinned messages per group (who pinned, when). At most 3; deny-all RLS |
 | `d1_poll_votes` | One row per (poll message, member, option). Written only by `d1_vote()`, which enforces single choice and current membership and broadcasts `poll_vote` (with `groupId`) |
+| `d1_prayer_requests`, `d1_prayer_taps` | Prayer requests (1.2, migration `20261112_01_destiny_one_prayer_requests.sql`). A request is a **message** with content `{"kind":"prayer","prayer":{"text": <sealed>}}` (constraint `d1_messages_prayer_sealed`), so it is sealed, reported, deleted and purged like any message. An insert trigger gives it a `d1_prayer_requests` row (`answered_at`, sealed `answer_update`); `d1_prayer_taps` is who tapped "I prayed". Both deny-all RLS, both cascade with the message. `d1_pray` (not your own request, current members, broadcasts `prayer_tap` with the **count only**), `d1_answer_prayer` (author only, once), `d1_prayer_summary_due` (opted-in authors and how many people prayed in 24 hours). `d1_members.prayer_summary` is the opt-in, off by default |
 | `d1_messages` poll and schedule columns | `poll_closes_at` (deadline), `poll_closed_at` (when voting actually stopped), `scheduled_job_id` (the job that sent it; unique, so a repeated run never sends twice). Migration `20261110_03_destiny_one_poll_deadlines.sql`, which also replaces `d1_vote` (refuses a vote once a poll is closed or past its deadline: enforced in the database, not just hidden in the app), adds `d1_start_poll_deadline` (stamps the deadline and queues the `close_poll` job, one open job per poll), `d1_close_poll` (idempotent; returns who won; cancels a waiting deadline job; broadcasts `poll_closed`), `d1_post_scheduled_message` (`d1_post_message` tagged with its job; a repeat returns the same message with `created: false`) and `d1_cancel_job` (cancelled with a reason, never retried). **Apply before deploying**: message reads select the new columns |
 | `d1_scheduled_jobs` | The scheduled jobs queue (1.2 foundation): things that happen at a set time, one row each (`kind`, `run_at`, `payload`, `status` pending/running/done/failed/cancelled, `attempts`). Deny-all RLS. `d1_claim_due_jobs()` hands out what is due once each (`FOR UPDATE SKIP LOCKED`; a job left running over 5 minutes is handed out again, up to 3 attempts), `d1_finish_job()` records done, a retry a minute or two later, or failed. Payloads that hold message text are sealed by the handler, never stored plain |
 | `d1_reactions`, `d1_attachments` | Reactions; files in the private `d1-chat-media` bucket (images/PDF, 20 MB) |
@@ -4944,6 +4945,23 @@ and filters/reveals it entirely client-side, no further network calls.
 // is logged only, since an email a minute during an outage would be worse than the outage.
 ```
 
+#### `GET /api/cron/destiny-one-prayer-summary`
+```typescript
+// Daily at 18:30 (vercel.json). Bearer CRON_SECRET. For each member who opted in
+// (PATCH /me/settings { prayerSummary }, off by default) and had taps in the last 24 hours:
+// one push, "5 people prayed for you today." No names, nothing from the request.
+```
+
+#### Prayer requests (1.2)
+`D1PrayerContent` in `packages/shared` (`text`, `prayedCount`, `iPrayed`, `answeredAt`, `answerUpdate`); the
+stored content holds only the sealed text, and `shape()` in `chat.server.ts` overlays the live state from
+`d1_prayer_requests` / `d1_prayer_taps` (as it does poll tallies). `crypto.server.ts` seals and opens the
+text with poll wording. `contentPreview` gives "Prayer request: ...", so chat lists, replies, reports and
+push previews work unchanged. Prayer requests can't be forwarded (they were shared with one group) and
+aren't offered in the DestinyAI chat. The safeguarding transcript and the D1 Admin app show them as text.
+The scope doc's "optional verse" waits for the Bible connection. DPIA: the text can reveal health or
+other special category data; it has the same sealing, reporting and retention as messages.
+
 #### Scheduled messages and poll deadlines (1.2)
 Two job kinds run by the every-minute cron above, handlers in `lib/destinyOne/scheduledSends.server.ts`
 (`SCHEDULED_HANDLERS`):
@@ -5011,12 +5029,15 @@ lives in Supabase too, so during an outage set `D1_MAINTENANCE_MESSAGE` in Verce
 | `groups/[id]` | GET, PATCH | PATCH: rename/describe/archive (managers). A rename or new description sends `group_updated` on `d1-group:<id>` (`announceGroupUpdated`), so every member's chat list updates straight away |
 | `groups/[id]/members` | POST, DELETE | Leaving never blocked |
 | `groups/[id]/icon` | POST, DELETE | Group icon (multipart `file`, 5 MB). Any current member can change it, not just admins; not for Announcements or paused groups. Stored in `d1-avatars` as `d1_groups.icon_path`; `iconUrl` on group summaries is a signed link. Sends `group_updated` like a rename. The app asks people to avoid the church logo |
-| `groups/[id]/messages` | GET, POST | Only messages since you joined; POST takes `body`, an attachment, a `poll` draft (optionally with `closesAt`, when voting stops, and `pinResult`), or an `event` ref (the event is re-fetched and snapshotted server-side) and pushes a notification via `after()` (group name, "Sender: first line", or "Poll: …" / "Event: …"). A message in the DestinyAI chat, or with "@DestinyAI" in it, is then answered by DestinyAI (part 18) |
+| `groups/[id]/messages` | GET, POST | Only messages since you joined; POST takes `body`, an attachment, `prayer: { text }` (a prayer request, up to 500 characters, sent on its own), a `poll` draft (optionally with `closesAt`, when voting stops, and `pinResult`), or an `event` ref (the event is re-fetched and snapshotted server-side) and pushes a notification via `after()` (group name, "Sender: first line", or "Poll: …" / "Event: …"). A message in the DestinyAI chat, or with "@DestinyAI" in it, is then answered by DestinyAI (part 18) |
 | `messages/[id]/vote` | POST | `{ optionIds }` — your full vote set on a poll (empty clears it). 60 a minute |
 | `messages/[id]` | PATCH | `{ body }` — edit my own message's text (15 minutes, 10 times; `d1_edit_message`). Sealed with new search terms; `message_edited` goes to the group over the REST broadcast (it carries text). 20 a minute, no push |
 | `groups/[id]/scheduled` | GET, POST | Scheduled messages (leaders, and admins of the group or Announcements; others get an empty list). POST `{ runAt, body?, attachmentId?, poll?, event?, mentions? }`: a minute to 30 days ahead, text, a photo, a poll or an event card (no voice notes or videos), 25 waiting per group. Nothing is sent now; `d1_scheduled_jobs` holds it with its text sealed. GET returns them opened, soonest first |
 | `groups/[id]/scheduled/[jobId]` | PATCH, DELETE | Change the time, text or poll of one that hasn't gone out, or cancel it. "Already sent or removed" once it has |
 | `groups/[id]/scheduled/[jobId]/send` | POST | Send now: makes it due and runs the due jobs at once. Checked as if typed now |
+| `messages/[id]/pray` | POST, DELETE, GET | "I prayed" on a prayer request, take it back, or (GET) who prayed, for current members of its group. Taps notify nobody |
+| `messages/[id]/answer` | POST | `{ update? }`: the author marks their request answered (once), with an optional sealed update. Broadcasts `prayer_answered` over the REST path (it carries the opened update) and pushes "Name: Prayer answered" to the group |
+| `groups/[id]/prayers` | GET | The group's prayer requests as messages, newest first (since you joined, not deleted, not from people you blocked) |
 | `messages/[id]/close-poll` | POST | Close a poll now: its author, or a leader or admin of the group (not while the group is paused). Voting stops, DestinyAI replies under it with the result, closing twice is fine |
 | `messages/[id]/pin` | POST, DELETE | Pin or unpin (group managers; at most 3, a fourth unpins the oldest). 30 a minute |
 | `messages/[id]/receipts` | GET | "Seen by": `{ read, notYet, hidden }` for the sender or a group manager, while their own read receipts are on (`d1_read_receipts`). 60 a minute |
@@ -8295,6 +8316,16 @@ same database as the data rather than in a separate Synapse module.
   the website's `/admin/reset-password`.
 - **State:** `src/state/session.tsx` (auth session, `me`, the communities list, the Realtime hub,
   catch-up, `routeFor`, `errorMessage`); `src/state/picker.ts` (Add people selection for New group).
+- **Prayer requests (app).** The composer's + menu has **Prayer request** (`app/group/[id]/prayer.tsx`,
+  500 characters, with a short note on what the group will see; sent from the chat through
+  `state/prayerDraft.ts` and `useConversation.sendPrayer`, so a failure shows "Not sent. Tap to retry.").
+  `PrayerCard` in `MessageBubble.tsx` shows the text, an **I prayed** button for everyone but the author
+  (optimistic, `useConversation.pray`), the count ("12 people prayed"; tap it for names,
+  `app/group/[id]/prayed.tsx`) and, for the author, **Mark as answered**
+  (`app/group/[id]/prayer-answer.tsx`, optional update). Realtime `prayer_tap` and `prayer_answered`
+  keep every phone in step (`lib/queries.ts`). Group info has a **Prayer** row
+  (`app/group/[id]/prayers.tsx`: open, then answered, newest first, "Show in chat"). Notifications has
+  the **Daily prayer summary** switch, off by default.
 - **Scheduled messages and poll deadlines (app).** Holding Send in the composer offers **Schedule**
   (leaders and group admins; with other accounts signed in it sits above "Send as"). That opens
   `app/group/[id]/schedule.tsx`, fed by `state/scheduleDraft.ts` (what the composer or the Poll screen

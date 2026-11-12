@@ -11,7 +11,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Animated, Image, Pressable, Text, View, type ViewInstance } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import Svg, { Path } from "react-native-svg";
-import { DESTINY_AI_ID, mentionSegments, type D1EventContent, type D1LinkPreview, type D1LeaderRole, type D1Message, type D1PollContent, type D1SermonContent, type Mentionable } from "@destiny/shared";
+import { DESTINY_AI_ID, mentionSegments, type D1EventContent, type D1LinkPreview, type D1LeaderRole, type D1Message, type D1PollContent, type D1PrayerContent, type D1SermonContent, type Mentionable } from "@destiny/shared";
 import { ChurchCards } from "@/components/ChurchCards";
 import { Emoji } from "@/components/Emoji";
 import { Icon } from "@/components/Icon";
@@ -115,6 +115,10 @@ interface BubbleProps {
   onOpenAttachment: (url: string) => void;
   onToggleReaction: (emoji: string) => void;
   onVotePoll: (optionIds: string[]) => void;
+  /** Prayer requests: tap "I prayed" (or take it back), see who prayed, or (my own) mark it answered. */
+  onPray?: (on: boolean) => void;
+  onShowPrayed?: () => void;
+  onAnswerPrayer?: () => void;
   onRetry: () => void;
   /** The group's members, to draw "@Name" mentions; mentions of me are highlighted. */
   people?: Mentionable[];
@@ -147,7 +151,7 @@ function tones(t: Theme, mine: boolean) {
     : { text: t.text, soft: t.muted, panel: t.bg, track: t.fill, bar: t.accentSoft, barMine: ORANGE, name: t.tint };
 }
 
-export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, canReply, roomy, arriving, menu, onReply, onOpenAttachment, onToggleReaction, onVotePoll, onRetry, people, meId }: BubbleProps) {
+export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, canReply, roomy, arriving, menu, onReply, onOpenAttachment, onToggleReaction, onVotePoll, onPray, onShowPrayed, onAnswerPrayer, onRetry, people, meId }: BubbleProps) {
   const t = useTheme();
   const { m } = row;
   const k = tones(t, m.mine);
@@ -215,6 +219,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
         {m.content?.kind === "sermon" ? <SermonCard content={m.content} mine={m.mine} /> : null}
         {m.content?.kind === "card" ? <ChurchCards content={m.content} tone={k} /> : null}
         {m.content?.kind === "poll" ? <PollCard content={m.content} mine={m.mine} sending={m.id < 0} onVote={onVotePoll} /> : null}
+        {m.content?.kind === "prayer" ? <PrayerCard content={m.content} mine={m.mine} sending={m.id < 0} canAct={canReply} onPray={onPray} onShowPrayed={onShowPrayed} onAnswer={onAnswerPrayer} /> : null}
         {m.body ? (
           <Text style={{ fontSize: 17, lineHeight: 22, letterSpacing: -0.2, color: k.text }}>
             <Mentions text={m.body} ids={m.mentions ?? []} people={people ?? []} meId={meId} mine={m.mine} />
@@ -662,6 +667,79 @@ function PollCard({ content, mine, sending, onVote }: { content: D1PollContent; 
       <Text style={{ fontSize: 11, color: k.soft }}>
         {[total === 0 ? (closed ? "No votes" : "No votes yet") : plural(total, "vote"), closed ? "Closed" : poll.closesAt ? `Closes ${formatUkTime(poll.closesAt)}` : null].filter(Boolean).join(" · ")}
       </Text>
+    </View>
+  );
+}
+
+/**
+ * A prayer request: the text, "I prayed" with a count (tap the count for
+ * names), and Answered once the person who asked says so. `canAct` is false
+ * where the group is read-only.
+ */
+export function PrayerCard({
+  content,
+  mine,
+  sending,
+  canAct,
+  onPray,
+  onShowPrayed,
+  onAnswer,
+}: {
+  content: D1PrayerContent;
+  mine: boolean;
+  sending: boolean;
+  canAct: boolean;
+  onPray?: (on: boolean) => void;
+  onShowPrayed?: () => void;
+  onAnswer?: () => void;
+}) {
+  const t = useTheme();
+  const k = tones(t, mine);
+  const { prayer } = content;
+  const answered = !!prayer.answeredAt;
+  const count = prayer.prayedCount;
+  const countText = count === 0 ? (mine ? "No one has tapped yet" : "Be the first to pray") : `${plural(count, "person", "people")} prayed`;
+
+  return (
+    <View style={{ marginTop: 2, marginHorizontal: -6, borderRadius: 14, backgroundColor: k.panel, padding: 10, gap: 8, minWidth: 220 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        <Icon name="heart" size={13} color={k.name} strokeWidth={2.2} />
+        <Text style={{ fontSize: 12, fontWeight: "600", color: k.name }}>{answered ? "Prayer request · answered" : "Prayer request"}</Text>
+      </View>
+      <Text style={{ fontSize: 15, lineHeight: 20, color: k.text }}>{prayer.text}</Text>
+      {answered && prayer.answerUpdate ? (
+        <View style={{ borderRadius: 10, backgroundColor: k.track, paddingVertical: 8, paddingHorizontal: 10, gap: 2 }}>
+          <Text style={{ fontSize: 12, fontWeight: "600", color: k.soft }}>Update</Text>
+          <Text style={{ fontSize: 14, lineHeight: 19, color: k.text }}>{prayer.answerUpdate}</Text>
+        </View>
+      ) : null}
+      <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+        {!mine && onPray && canAct ? (
+          <PressableScale
+            onPress={() => {
+              haptic.selection();
+              onPray(!prayer.iPrayed);
+            }}
+            disabled={sending}
+            accessibilityRole="button"
+            accessibilityState={{ selected: prayer.iPrayed, disabled: sending }}
+            accessibilityLabel={prayer.iPrayed ? "You prayed. Tap to undo." : "I prayed"}
+            scaleTo={0.94}
+            style={{ minHeight: 34, borderRadius: 17, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: prayer.iPrayed ? k.barMine : k.track }}
+          >
+            {prayer.iPrayed ? <Icon name="check" size={13} color={mine ? k.text : "#FFFFFF"} strokeWidth={2.8} /> : null}
+            <Text style={{ fontSize: 14, fontWeight: "600", color: prayer.iPrayed && !mine ? "#FFFFFF" : k.text }}>{prayer.iPrayed ? "Prayed" : "I prayed"}</Text>
+          </PressableScale>
+        ) : null}
+        <Pressable onPress={count > 0 ? onShowPrayed : undefined} disabled={count === 0 || !onShowPrayed} hitSlop={8} accessibilityRole={count > 0 ? "button" : undefined} accessibilityLabel={count > 0 ? `${countText}. Shows who.` : countText}>
+          <Text style={{ fontSize: 12, color: k.soft }}>{countText}</Text>
+        </Pressable>
+      </View>
+      {mine && !answered && onAnswer && canAct && !sending ? (
+        <Pressable onPress={onAnswer} hitSlop={6} accessibilityRole="button">
+          <Text style={{ fontSize: 14, fontWeight: "600", color: k.name }}>Mark as answered</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }

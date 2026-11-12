@@ -95,6 +95,8 @@ export interface D1Me {
   blocked: { id: string; displayName: string }[];
   /** Shares read receipts, and so sees other people's (Profile → Privacy and safety). On by default. */
   readReceipts: boolean;
+  /** Opted in to one notification a day saying how many people prayed for their requests. Off by default. */
+  prayerSummary: boolean;
   status: D1MemberStatus;
   roles: D1LeaderRole[];
   isAdult: boolean;
@@ -294,7 +296,26 @@ export interface D1CardContent {
   cards: ChurchCardSet;
 }
 
-export type D1MessageContent = D1EventContent | D1PollContent | D1SermonContent | D1CardContent;
+/**
+ * A prayer request (1.2). A message like any other (sealed, reportable, kept a
+ * year); others tap "I prayed", and the person who asked can mark it answered.
+ */
+export interface D1PrayerContent {
+  kind: "prayer";
+  prayer: {
+    text: string;
+    /** How many people have tapped "I prayed". Names are fetched on request (api.prayedBy). */
+    prayedCount: number;
+    /** Whether this member has. */
+    iPrayed: boolean;
+    /** When its author marked it answered; null while it is open. */
+    answeredAt: string | null;
+    /** The author's short update when they marked it answered, if they wrote one. */
+    answerUpdate: string | null;
+  };
+}
+
+export type D1MessageContent = D1EventContent | D1PollContent | D1SermonContent | D1CardContent | D1PrayerContent;
 
 /** What the app sends to create a poll — the server mints option ids and tallies. */
 export interface D1PollDraft {
@@ -415,6 +436,10 @@ export type D1RealtimeEvent =
   | { event: "message_edited"; payload: { id: number; groupId: string; body: string; editedAt: string; mentions: string[] } }
   | { event: "reaction"; payload: { messageId: number; groupId: string; memberId: string; emoji: string; added: boolean } }
   | { event: "poll_vote"; payload: { messageId: number; groupId: string; votes: D1PollTally[]; totalVoters: number } }
+  /** Someone tapped (or untapped) "I prayed": the new count. Never who. */
+  | { event: "prayer_tap"; payload: { messageId: number; groupId: string; count: number } }
+  /** A prayer request was marked answered by the person who asked. */
+  | { event: "prayer_answered"; payload: { messageId: number; groupId: string; answeredAt: string; update: string | null } }
   /** A poll stopped taking votes (its deadline passed, or it was closed by hand). */
   | { event: "poll_closed"; payload: { messageId: number; groupId: string; closedAt: string } }
   | { event: "members_changed"; payload: { groupId: string } }

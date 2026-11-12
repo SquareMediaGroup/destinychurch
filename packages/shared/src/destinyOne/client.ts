@@ -162,7 +162,7 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
       call<{ tokenHash: string; type: "magiclink" }>("POST", "/auth/churchsuite/exchange", { code, verifier }),
     me: () => call<D1Me>("GET", "/me"),
     /** Account settings. `readReceipts: false` stops sharing (and seeing) read receipts. */
-    updateSettings: (input: { readReceipts?: boolean }) => call<D1Me>("PATCH", "/me/settings", input),
+    updateSettings: (input: { readReceipts?: boolean; prayerSummary?: boolean }) => call<D1Me>("PATCH", "/me/settings", input),
     /** Change my own name. */
     updateName: (firstName: string, lastName: string) => call<D1Me>("PATCH", "/me", { firstName, lastName }),
     /** For `onboarding: "request_needed"` — ask the church team for access. */
@@ -236,7 +236,7 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     groupMedia: (groupId: string, opts: { before?: number; limit?: number } = {}) =>
       call<D1MessagePage>("GET", `/groups/${groupId}/media${q(opts)}`),
     /** `mentions`: ids of the group members "@named" in `body` (findMentions). */
-    send: (groupId: string, input: { body?: string; replyTo?: number; attachmentId?: string; poll?: D1PollDraft; event?: D1EventRef; mentions?: string[] }) =>
+    send: (groupId: string, input: { body?: string; replyTo?: number; attachmentId?: string; poll?: D1PollDraft; event?: D1EventRef; prayer?: { text: string }; mentions?: string[] }) =>
       call<D1Message>("POST", `/groups/${groupId}/messages`, input),
     deleteMessage: (messageId: number) => call<{ ok: true }>("DELETE", `/messages/${messageId}`),
     /** Send a copy of a message to up to 5 other chats I can post in (not polls). */
@@ -257,6 +257,15 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     /** Cast (or clear, with an empty array) this member's vote(s) on a poll message. */
     vote: (messageId: number, optionIds: string[]) =>
       call<{ ok: true }>("POST", `/messages/${messageId}/vote`, { optionIds }),
+    /** "I prayed" on a prayer request (not my own), or take it back. Returns the new count. */
+    pray: (messageId: number) => call<{ count: number }>("POST", `/messages/${messageId}/pray`),
+    unpray: (messageId: number) => call<{ count: number }>("DELETE", `/messages/${messageId}/pray`),
+    /** Who tapped "I prayed" (current members of the group can ask). */
+    prayedBy: (messageId: number) => call<{ people: { id: string; displayName: string }[] }>("GET", `/messages/${messageId}/pray`),
+    /** Mark my own prayer request answered, with an optional short update. The group is told. */
+    answerPrayer: (messageId: number, update?: string | null) => call<{ ok: true }>("POST", `/messages/${messageId}/answer`, { update: update ?? null }),
+    /** A group's prayer requests, open and answered, newest first. */
+    prayerRequests: (groupId: string) => call<D1Message[]>("GET", `/groups/${groupId}/prayers`),
     /** Close a poll now: its author, or a leader or admin. DestinyAI replies under it with the result. */
     closePoll: (messageId: number) => call<{ ok: true }>("POST", `/messages/${messageId}/close-poll`),
     /** Leaders and admins: the messages waiting to go out in this group (an empty list for anyone else). */

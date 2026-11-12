@@ -8362,7 +8362,10 @@ same database as the data rather than in a separate Synapse module.
   **Pin the result** (leaders and admins) and **Schedule for later**. A poll shows "Closes Sat 14 Nov,
   18:00" and then "Closed" (it flips by itself at the deadline, and on the `poll_closed` realtime event),
   and its options stop taking taps; the message menu has **Close poll** for its author, leaders and admins.
-  Photos and event cards can be scheduled through the API but the app only schedules text and polls so far.
+  The Schedule screen also composes: the message text is editable there, **Add photo** (picked, cleaned
+  by `cleanImage` and uploaded when it is scheduled) or **Add event** (the event picker with `?for=schedule`
+  hands its choice to `scheduleEventTarget(id)`, not the chat underneath), and the Scheduled list has
+  **Schedule a message** to start one from scratch. A waiting message's time and text can be changed.
   Small external stores hand things between screens: `pollDraft.ts` and `eventPick.ts` (a poll or
   event composed on its own screen, sent by the chat that opened it), `jump.ts` (a search result
   asking its chat to show one message) and `notificationTap.ts` (a tapped notification waiting for

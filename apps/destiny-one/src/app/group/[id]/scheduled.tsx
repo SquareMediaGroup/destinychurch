@@ -7,11 +7,12 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import type { D1ScheduledMessage } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
-import { Card, EmptyState, ErrorState, FloatingBack, LargeTitle, Separator, TextButton } from "@/components/ui";
+import { Card, EmptyState, ErrorState, FloatingBack, LargeTitle, PrimaryButton, Separator, TextButton } from "@/components/ui";
 import { api } from "@/lib/api";
 import { formatUkTime } from "@/lib/format";
 import { keys } from "@/lib/queries";
 import { queryClient } from "@/lib/queryClient";
+import { scheduleDraft } from "@/state/scheduleDraft";
 import { errorMessage } from "@/state/session";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/theme/tokens";
@@ -73,10 +74,17 @@ export default function Scheduled() {
         <View style={{ paddingHorizontal: 4 }}>
           <LargeTitle>Scheduled</LargeTitle>
         </View>
+        <PrimaryButton
+          label="Schedule a message"
+          onPress={() => {
+            scheduleDraft.clear();
+            router.push(`/group/${id}/schedule`);
+          }}
+        />
         {list.isError && !list.data ? (
           <ErrorState message={errorMessage(list.error)} onRetry={() => void list.refetch()} />
         ) : items.length === 0 && !list.isPending ? (
-          <EmptyState title="Nothing scheduled" body="Write a message, then hold Send and choose Schedule." />
+          <EmptyState title="Nothing scheduled" body="In the chat, write a message, then hold Send and choose Schedule." />
         ) : (
           <Card>
             {items.map((m, i) => (

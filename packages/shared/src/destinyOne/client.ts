@@ -26,6 +26,8 @@ import type {
   D1MessagePage,
   D1PollDraft,
   D1ScheduledMessage,
+  D1DiscoverGroup,
+  D1JoinRequest,
   D1ReadReceipts,
   D1UploadTicket,
 } from "./types";
@@ -257,6 +259,19 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     /** Cast (or clear, with an empty array) this member's vote(s) on a poll message. */
     vote: (messageId: number, optionIds: string[]) =>
       call<{ ok: true }>("POST", `/messages/${messageId}/vote`, { optionIds }),
+    /** Groups open to join in my communities (and that I'm not in): for under-18s, only ones marked suitable. */
+    discoverGroups: () => call<D1DiscoverGroup[]>("GET", "/discover"),
+    /** Ask to join a group in Discover, with an optional note. */
+    requestJoin: (groupId: string, note?: string | null) => call<{ id: number }>("POST", `/groups/${groupId}/join-request`, { note: note ?? null }),
+    /** Take back my waiting request. */
+    withdrawJoin: (groupId: string) => call<{ ok: true }>("DELETE", `/groups/${groupId}/join-request`),
+    /** Leaders: the requests waiting for this group. */
+    joinRequests: (groupId: string) => call<D1JoinRequest[]>("GET", `/groups/${groupId}/join-requests`),
+    /** Leaders: approve (adds them) or decline a request. */
+    decideJoin: (requestId: number, approve: boolean) => call<{ ok: true }>("POST", `/join-requests/${requestId}`, { approve }),
+    /** Leaders: show or hide the group in Discover, with its one-line description, meeting day and area. */
+    setDiscover: (groupId: string, input: { on: boolean; blurb?: string | null; meetingDay?: number | null; meetingArea?: string | null }) =>
+      call<{ ok: true }>("PATCH", `/groups/${groupId}/discover`, input),
     /** "I prayed" on a prayer request (not my own), or take it back. Returns the new count. */
     pray: (messageId: number) => call<{ count: number }>("POST", `/messages/${messageId}/pray`),
     unpray: (messageId: number) => call<{ count: number }>("DELETE", `/messages/${messageId}/pray`),

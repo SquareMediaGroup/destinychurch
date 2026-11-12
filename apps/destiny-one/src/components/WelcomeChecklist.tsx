@@ -40,7 +40,7 @@ export function WelcomeChecklist() {
   const steps = [
     { key: "picture", label: "Add a profile picture", done: !!me.avatarUrl },
     { key: "notifications", label: "Turn on notifications", done: notificationsOn },
-    { key: "group", label: "Open your first group chat", done: progress.openedGroup },
+    { key: "group", label: "Open your first group chat, or find one in Discover", done: progress.openedGroup },
     { key: "safety", label: "Read \"How your chats are kept safe\"", done: progress.readSafety },
   ];
   const doneCount = steps.filter((s) => s.done).length;

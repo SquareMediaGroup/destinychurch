@@ -219,6 +219,20 @@ export async function getGroupSummary(caller: Caller, groupId: string): Promise<
   return toSummary(row);
 }
 
+/** A group's Discover setup and how many requests are waiting, for its leaders. Read on its own so an API ahead of the migration still serves the group (20261112_02). */
+async function discoverFor(groupId: string): Promise<Pick<D1GroupDetail, "discover" | "pendingJoinRequests">> {
+  const supabase = createServiceClient();
+  const [{ data: g, error }, { count }] = await Promise.all([
+    supabase.from("d1_groups").select("discoverable, discover_blurb, meeting_day, meeting_area, u18_suitable").eq("id", groupId).maybeSingle(),
+    supabase.from("d1_join_requests").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("status", "pending"),
+  ]);
+  if (error || !g) return {};
+  return {
+    discover: { on: g.discoverable as boolean, blurb: (g.discover_blurb as string | null) ?? null, meetingDay: (g.meeting_day as number | null) ?? null, meetingArea: (g.meeting_area as string | null) ?? null, u18Suitable: g.u18_suitable as boolean },
+    pendingJoinRequests: count ?? 0,
+  };
+}
+
 export async function getGroup(caller: Caller, groupId: string): Promise<D1GroupDetail> {
   const [row] = await overview(caller.member.id, groupId);
   if (!row) throw new OneError("not_found", "That group doesn't exist, or you're not in it.");
@@ -251,6 +265,7 @@ export async function getGroup(caller: Caller, groupId: string): Promise<D1Group
     canManage,
     canPost: canPost({ member: caller.policy, groupKind: row.kind, groupState: row.state, myRole: row.my_role }),
     pinned,
+    ...(canManage ? await discoverFor(groupId) : {}),
     members: people.map((p) => ({
       id: p.id,
       displayName: p.display_name,

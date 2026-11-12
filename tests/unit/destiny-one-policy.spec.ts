@@ -16,6 +16,7 @@ import {
   canCreateGroup,
   canPost,
   canSchedule,
+  meetingDayLabel,
   validateScheduleTime,
   validatePollDeadline,
   MAX_SCHEDULE_DAYS,
@@ -396,4 +397,12 @@ test("a prayer request is summarised in one line like a poll", () => {
   expect(contentPreview({ kind: "prayer", prayer: { text: "My interview on Friday", prayedCount: 3, iPrayed: false, answeredAt: null, answerUpdate: null } })).toBe(
     "Prayer request: My interview on Friday",
   );
+});
+
+test("a group's meeting day reads as a plural weekday, or nothing when it varies", () => {
+  expect(meetingDayLabel(1)).toBe("Mondays");
+  expect(meetingDayLabel(7)).toBe("Sundays");
+  expect(meetingDayLabel(null)).toBeNull();
+  expect(meetingDayLabel(0)).toBeNull();
+  expect(meetingDayLabel(8)).toBeNull();
 });

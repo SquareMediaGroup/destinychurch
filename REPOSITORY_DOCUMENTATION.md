@@ -2199,6 +2199,7 @@ department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_o
 | `d1_message_edits` | Part 11: the text an edit replaced (sealed), one row per edit, for the safeguarding transcript. Deny-all RLS; removed with its message by the purge |
 | `d1_pins` | Part 13: pinned messages per group (who pinned, when). At most 3; deny-all RLS |
 | `d1_poll_votes` | One row per (poll message, member, option). Written only by `d1_vote()`, which enforces single choice and current membership and broadcasts `poll_vote` (with `groupId`) |
+| `d1_join_requests`, Discover columns on `d1_groups` | Discover groups (1.3, migration `20261112_02_destiny_one_discover_groups.sql`). `d1_groups` gains `discoverable`, `discover_blurb` (140), `meeting_day` (1 = Monday), `meeting_area`, and **`u18_suitable`** (+ `u18_marked_by/at`), which only a safeguarding admin sets (`d1_set_u18_suitable`, service role; no leader-facing function can). `d1_join_requests` (deny-all RLS): one pending per member per group, sealed note, status pending/approved/declined/withdrawn. **`d1_can_discover(member, group)` is the one test**: active member, in the group's community, an ordinary active discoverable group, and an adult unless `u18_suitable`. It gates the list (`d1_discover_groups`), asking (`d1_request_join`: 3 pending at a time, 30 days after a decline, "isn't open to join" for anything they shouldn't know about) and **approval again** (`d1_decide_join_request`, which adds them through `d1__join_group` so the 2-adult rule and auto-pause still apply). Taking the u18 mark away withdraws under-18s' waiting requests |
 | `d1_prayer_requests`, `d1_prayer_taps` | Prayer requests (1.2, migration `20261112_01_destiny_one_prayer_requests.sql`). A request is a **message** with content `{"kind":"prayer","prayer":{"text": <sealed>}}` (constraint `d1_messages_prayer_sealed`), so it is sealed, reported, deleted and purged like any message. An insert trigger gives it a `d1_prayer_requests` row (`answered_at`, sealed `answer_update`); `d1_prayer_taps` is who tapped "I prayed". Both deny-all RLS, both cascade with the message. `d1_pray` (not your own request, current members, broadcasts `prayer_tap` with the **count only**), `d1_answer_prayer` (author only, once), `d1_prayer_summary_due` (opted-in authors and how many people prayed in 24 hours). `d1_members.prayer_summary` is the opt-in, off by default |
 | `d1_messages` poll and schedule columns | `poll_closes_at` (deadline), `poll_closed_at` (when voting actually stopped), `scheduled_job_id` (the job that sent it; unique, so a repeated run never sends twice). Migration `20261110_03_destiny_one_poll_deadlines.sql`, which also replaces `d1_vote` (refuses a vote once a poll is closed or past its deadline: enforced in the database, not just hidden in the app), adds `d1_start_poll_deadline` (stamps the deadline and queues the `close_poll` job, one open job per poll), `d1_close_poll` (idempotent; returns who won; cancels a waiting deadline job; broadcasts `poll_closed`), `d1_post_scheduled_message` (`d1_post_message` tagged with its job; a repeat returns the same message with `created: false`) and `d1_cancel_job` (cancelled with a reason, never retried). **Apply before deploying**: message reads select the new columns |
 | `d1_scheduled_jobs` | The scheduled jobs queue (1.2 foundation): things that happen at a set time, one row each (`kind`, `run_at`, `payload`, `status` pending/running/done/failed/cancelled, `attempts`). Deny-all RLS. `d1_claim_due_jobs()` hands out what is due once each (`FOR UPDATE SKIP LOCKED`; a job left running over 5 minutes is handed out again, up to 3 attempts), `d1_finish_job()` records done, a retry a minute or two later, or failed. Payloads that hold message text are sealed by the handler, never stored plain |
@@ -4945,6 +4946,15 @@ and filters/reveals it entirely client-side, no further network calls.
 // is logged only, since an email a minute during an outage would be worse than the outage.
 ```
 
+#### Discover groups (1.3)
+Shared constants and `meetingDayLabel` in `packages/shared` policy. `getGroup` adds `discover` (setup, incl.
+`u18Suitable`) and `pendingJoinRequests` for managers, read on its own so an API ahead of the migration still
+serves the group. **Safeguarding admin**: `POST /api/admin/destiny-one/safeguarding/groups/[id]/u18
+{ suitable }` (Safeguarding Admin role only, audit-logged) and the All groups tab of `/admin/destiny-one/
+safeguarding` shows the mark with a "Mark suitable for under-18s" button. Tests:
+`tests/sql/destiny-one-discover.sql` (under-18 can't see, ask or be approved without the mark; removing the
+mark withdraws their requests; limits; closed groups).
+
 #### `GET /api/cron/destiny-one-prayer-summary`
 ```typescript
 // Daily at 18:30 (vercel.json). Bearer CRON_SECRET. For each member who opted in
@@ -5032,6 +5042,11 @@ lives in Supabase too, so during an outage set `D1_MAINTENANCE_MESSAGE` in Verce
 | `groups/[id]/messages` | GET, POST | Only messages since you joined; POST takes `body`, an attachment, `prayer: { text }` (a prayer request, up to 500 characters, sent on its own), a `poll` draft (optionally with `closesAt`, when voting stops, and `pinResult`), or an `event` ref (the event is re-fetched and snapshotted server-side) and pushes a notification via `after()` (group name, "Sender: first line", or "Poll: …" / "Event: …"). A message in the DestinyAI chat, or with "@DestinyAI" in it, is then answered by DestinyAI (part 18) |
 | `messages/[id]/vote` | POST | `{ optionIds }` — your full vote set on a poll (empty clears it). 60 a minute |
 | `messages/[id]` | PATCH | `{ body }` — edit my own message's text (15 minutes, 10 times; `d1_edit_message`). Sealed with new search terms; `message_edited` goes to the group over the REST broadcast (it carries text). 20 a minute, no push |
+| `discover` | GET | Discover groups for the caller (see `d1_can_discover`). Each carries their own waiting request id, or when a decline lets them ask again |
+| `groups/[id]/join-request` | POST, DELETE | Ask to join `{ note? }` (sealed; the group's admins get a push naming the person, never the note) or take the request back |
+| `groups/[id]/join-requests` | GET | Leaders: the waiting requests with names and opened notes |
+| `join-requests/[id]` | POST | Leaders: `{ approve }`. Approving adds the person (and pushes "You're in"); a decline is not announced |
+| `groups/[id]/discover` | PATCH | Leaders: `{ on, blurb?, meetingDay?, meetingArea? }`. Cannot make a group visible to under-18s |
 | `groups/[id]/scheduled` | GET, POST | Scheduled messages (leaders, and admins of the group or Announcements; others get an empty list). POST `{ runAt, body?, attachmentId?, poll?, event?, mentions? }`: a minute to 30 days ahead, text, a photo, a poll or an event card (no voice notes or videos), 25 waiting per group. Nothing is sent now; `d1_scheduled_jobs` holds it with its text sealed. GET returns them opened, soonest first |
 | `groups/[id]/scheduled/[jobId]` | PATCH, DELETE | Change the time, text or poll of one that hasn't gone out, or cancel it. "Already sent or removed" once it has |
 | `groups/[id]/scheduled/[jobId]/send` | POST | Send now: makes it due and runs the due jobs at once. Checked as if typed now |
@@ -8316,6 +8331,14 @@ same database as the data rather than in a separate Synapse module.
   the website's `/admin/reset-password`.
 - **State:** `src/state/session.tsx` (auth session, `me`, the communities list, the Realtime hub,
   catch-up, `routeFor`, `errorMessage`); `src/state/picker.ts` (Add people selection for New group).
+- **Discover groups (app).** The Search tab has a **Discover groups** row above the results
+  (`app/discover.tsx`: cards with the blurb, day, area and size; filter chips by day and, with several
+  communities, by community; **Ask to join** opens `app/join-request.tsx` with an optional note; a waiting
+  request shows Requested with Cancel, a declined one when they can ask again). Leaders get, on Group info,
+  **Discover groups** (`group/[id]/discover-settings.tsx`: on/off, one-line description, meeting day, area;
+  it says whether a safeguarding admin has marked the group suitable for under-18s) and **Requests to
+  join** with a count (`group/[id]/join-requests.tsx`: name, note, Add to group or Decline). The Welcome
+  checklist's group step now mentions Discover.
 - **Prayer requests (app).** The composer's + menu has **Prayer request** (`app/group/[id]/prayer.tsx`,
   500 characters, with a short note on what the group will see; sent from the chat through
   `state/prayerDraft.ts` and `useConversation.sendPrayer`, so a failure shows "Not sent. Tap to retry.").

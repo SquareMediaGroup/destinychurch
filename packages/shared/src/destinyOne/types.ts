@@ -183,6 +183,46 @@ export interface D1GroupMember {
   isAdult?: boolean;
 }
 
+/** A group offered in Discover groups, with the asking member's own request (if any). */
+export interface D1DiscoverGroup {
+  groupId: string;
+  communityId: string;
+  communityName: string;
+  name: string;
+  /** The leaders' one-line description. */
+  blurb: string | null;
+  /** 1 = Monday ... 7 = Sunday; null when it varies. */
+  meetingDay: number | null;
+  meetingArea: string | null;
+  /** A safeguarding admin has marked it suitable for under-18s. */
+  u18Suitable: boolean;
+  memberCount: number;
+  /** This member's waiting request, if they've asked. */
+  requestId: number | null;
+  /** When a declined member can ask again, if they were declined in the last 30 days. */
+  declinedUntil: string | null;
+}
+
+/** A request to join a group, as its leaders see it. */
+export interface D1JoinRequest {
+  id: number;
+  groupId: string;
+  member: { id: string; displayName: string };
+  /** The note they wrote, if any. */
+  note: string | null;
+  createdAt: string;
+}
+
+/** How a group is set up in Discover (leaders only). */
+export interface D1DiscoverSettings {
+  on: boolean;
+  blurb: string | null;
+  meetingDay: number | null;
+  meetingArea: string | null;
+  /** Set by a safeguarding admin, never by leaders. */
+  u18Suitable: boolean;
+}
+
 export interface D1GroupDetail extends D1GroupSummary {
   description: string | null;
   members: D1GroupMember[];
@@ -190,6 +230,10 @@ export interface D1GroupDetail extends D1GroupSummary {
   canPost: boolean;
   /** Pinned messages, newest pin first (at most 3). Only ones the caller can see. */
   pinned: D1Message[];
+  /** How it appears in Discover groups; leaders only. */
+  discover?: D1DiscoverSettings;
+  /** Requests to join waiting for a leader; leaders only. */
+  pendingJoinRequests?: number;
   /** Current counts against the rules, for leaders. */
   rules?: { members: number; adults: number; minMembers: number; minAdults: number };
 }
@@ -436,6 +480,8 @@ export type D1RealtimeEvent =
   | { event: "message_edited"; payload: { id: number; groupId: string; body: string; editedAt: string; mentions: string[] } }
   | { event: "reaction"; payload: { messageId: number; groupId: string; memberId: string; emoji: string; added: boolean } }
   | { event: "poll_vote"; payload: { messageId: number; groupId: string; votes: D1PollTally[]; totalVoters: number } }
+  /** Someone asked to join a group (or a request was answered or withdrawn): leaders re-fetch the list. */
+  | { event: "join_requests_changed"; payload: { groupId: string } }
   /** Someone tapped (or untapped) "I prayed": the new count. Never who. */
   | { event: "prayer_tap"; payload: { messageId: number; groupId: string; count: number } }
   /** A prayer request was marked answered by the person who asked. */

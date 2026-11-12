@@ -204,6 +204,18 @@ export default function GroupInfo() {
           )}
         </Card>
 
+        {group.canManage && group.kind === "group" && group.discover ? (
+          <Card>
+            <SettingsRow icon="people" label="Discover groups" value={group.discover.on ? "On" : "Off"} onPress={() => router.push(`/group/${group.id}/discover-settings`)} />
+            {group.discover.on || (group.pendingJoinRequests ?? 0) > 0 ? (
+              <>
+                <Separator inset={62} />
+                <SettingsRow icon="addPerson" label="Requests to join" value={group.pendingJoinRequests ? String(group.pendingJoinRequests) : undefined} onPress={() => router.push(`/group/${group.id}/join-requests`)} />
+              </>
+            ) : null}
+          </Card>
+        ) : null}
+
         {group.canManage && rules ? (
           <Card style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14, paddingHorizontal: 16 }}>
             <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: ruleOk ? t.fill : ORANGE, alignItems: "center", justifyContent: "center" }}>

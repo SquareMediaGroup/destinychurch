@@ -5,7 +5,7 @@
 // the database reports in its own words).
 
 import { z } from "zod";
-import { MAX_ATTACHMENT_BYTES, MAX_FEEDBACK_LENGTH, MAX_MESSAGE_LENGTH, MAX_POLL_OPTIONS, MAX_POLL_OPTION_LENGTH, MAX_POLL_QUESTION_LENGTH, MAX_PRAYER_LENGTH, MAX_PRAYER_UPDATE_LENGTH, MIN_POLL_OPTIONS, UPLOAD_MIME_TYPES, VOICE_MIME_TYPE, MAX_VOICE_MS, MAX_VIDEO_BYTES, MAX_VIDEO_MS, isVideoMime } from "@destiny/shared";
+import { MAX_ATTACHMENT_BYTES, MAX_FEEDBACK_LENGTH, MAX_MESSAGE_LENGTH, MAX_POLL_OPTIONS, MAX_POLL_OPTION_LENGTH, MAX_POLL_QUESTION_LENGTH, MAX_DISCOVER_AREA, MAX_DISCOVER_BLURB, MAX_JOIN_NOTE_LENGTH, MAX_PRAYER_LENGTH, MAX_PRAYER_UPDATE_LENGTH, MIN_POLL_OPTIONS, UPLOAD_MIME_TYPES, VOICE_MIME_TYPE, MAX_VOICE_MS, MAX_VIDEO_BYTES, MAX_VIDEO_MS, isVideoMime } from "@destiny/shared";
 
 const uuid = z.string().uuid("That id isn't valid.").transform((s) => s.toLowerCase());
 const name = z.string().trim().min(1, "A name is required.").max(80, "Names can be up to 80 characters.");
@@ -121,6 +121,21 @@ export const eventRefSchema = z.object({
 export const prayerDraftSchema = z.object({
   text: z.string().trim().min(1, "Write what you'd like prayer for.").max(MAX_PRAYER_LENGTH, `Prayer requests can be up to ${MAX_PRAYER_LENGTH} characters.`),
 });
+
+export const joinRequestSchema = z.object({
+  note: z.string().trim().max(MAX_JOIN_NOTE_LENGTH, `Notes can be up to ${MAX_JOIN_NOTE_LENGTH} characters.`).optional().nullable(),
+});
+
+export const decideJoinSchema = z.object({ approve: z.boolean() });
+
+export const discoverSettingsSchema = z.object({
+  on: z.boolean(),
+  blurb: z.string().trim().max(MAX_DISCOVER_BLURB, `The description can be up to ${MAX_DISCOVER_BLURB} characters.`).optional().nullable(),
+  meetingDay: z.number().int().min(1).max(7).optional().nullable(),
+  meetingArea: z.string().trim().max(MAX_DISCOVER_AREA, `The area can be up to ${MAX_DISCOVER_AREA} characters.`).optional().nullable(),
+});
+
+export const adminU18Schema = z.object({ suitable: z.boolean() });
 
 export const answerPrayerSchema = z.object({
   update: z.string().trim().max(MAX_PRAYER_UPDATE_LENGTH, `Updates can be up to ${MAX_PRAYER_UPDATE_LENGTH} characters.`).optional().nullable(),

@@ -199,6 +199,22 @@ export function canPost(input: {
   return true;
 }
 
+// ── Discover groups (1.3) ────────────────────────────────────────────────────
+
+export const MAX_DISCOVER_BLURB = 140;
+export const MAX_DISCOVER_AREA = 60;
+export const MAX_JOIN_NOTE_LENGTH = 300;
+/** Requests one member can have waiting at a time. */
+export const MAX_PENDING_JOIN_REQUESTS = 3;
+/** After a decline, how long before they can ask the same group again. */
+export const JOIN_REQUEST_COOLDOWN_DAYS = 30;
+export const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const;
+
+/** "Tuesdays", from meeting_day (1 = Monday). Null when it varies. */
+export function meetingDayLabel(day: number | null | undefined): string | null {
+  return day && day >= 1 && day <= 7 ? `${WEEKDAYS[day - 1]}s` : null;
+}
+
 // ── Prayer requests (1.2) ────────────────────────────────────────────────────
 
 export const MAX_PRAYER_LENGTH = 500;

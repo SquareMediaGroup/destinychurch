@@ -7,6 +7,7 @@ import { messageTerms, sealBody, sealContent } from "@/lib/destinyOne/crypto.ser
 import { buildEventSnapshot } from "@/lib/destinyOne/events.server";
 import { pushNewMessage } from "@/lib/destinyOne/push.server";
 import { attachLinkPreview } from "@/lib/destinyOne/linkPreview.server";
+import { attachVerseCard } from "@/lib/destinyOne/bible.server";
 import { answer } from "@/lib/destinyOne/assistant.server";
 import { OneError, fromDbError, limit, oneJson, oneRoute, readBody, requireUuid, type IdParams } from "@/lib/destinyOne/http";
 import { sendMessageSchema } from "@/lib/destinyOne/schemas";
@@ -112,6 +113,8 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
       ),
       // A link's preview follows a moment later, so sending never waits on another website.
       attachLinkPreview(message.id, id, body),
+      // The first Bible reference gets a verse card the same way (lib/destinyOne/bible.server.ts).
+      attachVerseCard(message.id, id, body),
       answer(caller, membership.kind, membership.joinedAt, message),
     ]),
   );

@@ -325,6 +325,7 @@ export const adminSettingsSchema = z
       .nullable()
       .optional(),
     latestVersionNotes: z.string().trim().max(1000).transform((v) => v || null).nullable().optional(),
+    bibleId: z.number().int().min(1).max(100000).optional(),
   })
   .refine((v) => Object.keys(v).length > 0, "Nothing to change.");
 

@@ -114,6 +114,8 @@ export interface AdminSettings {
   latestVersionNotes: string | null;
   retentionDays: number;
   churchSuiteConfigured: boolean;
+  /** The church's default Bible version (YouVersion Platform id; 113 = NIV UK). */
+  bibleId: number;
 }
 
 export const LEADER_ROLE_LABELS: Record<LeaderRole, string> = {

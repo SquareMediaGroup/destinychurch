@@ -18,6 +18,8 @@ export interface D1Settings {
   latestVersion: string | null;
   /** What's in it, one feature per line, shown on that prompt. */
   latestVersionNotes: string | null;
+  /** The church's default Bible version (YouVersion Platform id; 113 = NIV UK). */
+  bibleId: number;
 }
 
 const DEFAULTS: D1Settings = {
@@ -29,12 +31,13 @@ const DEFAULTS: D1Settings = {
   maintenanceMessage: null,
   latestVersion: null,
   latestVersionNotes: null,
+  bibleId: 113,
 };
 
 export async function getSettings(): Promise<D1Settings> {
   const { data } = await createServiceClient()
     .from("d1_settings")
-    .select("allow_access_requests, invite_expiry_days, min_build_ios, min_build_android, force_update_message, maintenance_message, latest_version, latest_version_notes")
+    .select("*")
     .eq("id", true)
     .maybeSingle();
   if (!data) return DEFAULTS;
@@ -47,6 +50,8 @@ export async function getSettings(): Promise<D1Settings> {
     maintenanceMessage: data.maintenance_message,
     latestVersion: data.latest_version,
     latestVersionNotes: data.latest_version_notes,
+    // Read with select("*") so the settings still load before migration 20261113_01 adds it.
+    bibleId: Number((data as { bible_id?: number }).bible_id) || 113,
   };
 }
 

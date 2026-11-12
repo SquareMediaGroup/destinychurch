@@ -220,6 +220,10 @@ function Profile() {
         ) : null}
       </Section>
 
+      <Section title="Notes">
+        <SettingsRow icon="docLines" label="Sermon notes" onPress={() => router.push("/notes")} />
+      </Section>
+
       <Section title="Preferences">
         <SettingsRow icon="bell" iconBg={ORANGE} iconColor={INK} label="Notifications" onPress={() => router.push("/notifications")} />
         <Separator inset={62} />

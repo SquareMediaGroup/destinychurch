@@ -15,6 +15,7 @@ export default function DestinyOneSettingsPage() {
   const [maintenance, setMaintenance] = useState("");
   const [latest, setLatest] = useState("");
   const [latestNotes, setLatestNotes] = useState("");
+  const [bibleId, setBibleId] = useState("");
   const [saved, setSaved] = useState("");
 
   const load = useCallback(async () => {
@@ -27,10 +28,11 @@ export default function DestinyOneSettingsPage() {
     setMaintenance(s.maintenanceMessage ?? "");
     setLatest(s.latestVersion ?? "");
     setLatestNotes(s.latestVersionNotes ?? "");
+    setBibleId(String(s.bibleId ?? 113));
   }, []);
   const { error, setError } = useAdminLoader(load);
 
-  type Editable = "allowAccessRequests" | "inviteExpiryDays" | "minBuildIos" | "minBuildAndroid" | "forceUpdateMessage" | "maintenanceMessage" | "latestVersion" | "latestVersionNotes";
+  type Editable = "allowAccessRequests" | "inviteExpiryDays" | "minBuildIos" | "minBuildAndroid" | "forceUpdateMessage" | "maintenanceMessage" | "latestVersion" | "latestVersionNotes" | "bibleId";
 
   async function save(body: Partial<Pick<AdminSettings, Editable>>) {
     setSaved("");
@@ -144,6 +146,20 @@ export default function DestinyOneSettingsPage() {
               onChange={(e) => setLatestNotes(e.target.value)}
             />
             <button className={`${primaryBtn} mt-3`} onClick={() => save({ latestVersion: latest.trim(), latestVersionNotes: latestNotes })}>
+              Save
+            </button>
+          </section>
+
+          <section className={`${cardClass} p-6`}>
+            <h2 className="font-bold">Bible version</h2>
+            <p className="mt-1 mb-4 text-sm text-destiny-grey/60 dark:text-white/60">
+              The version used for verse cards, the verse of the day and sermon notes, from YouVersion. Use the number in the
+              version&apos;s bible.com address (bible.com/bible/<strong>113</strong>/JHN.3.16.NIVUK is the NIV UK). The church needs that
+              publisher&apos;s licence on the YouVersion Platform. Messages already sent keep the version they were sent with.
+            </p>
+            <label className={labelClass} htmlFor="s-bible">YouVersion Bible id</label>
+            <input id="s-bible" className={inputClass} inputMode="numeric" maxLength={6} value={bibleId} onChange={(e) => setBibleId(e.target.value.replace(/\D/g, ""))} />
+            <button className={`${primaryBtn} mt-3`} onClick={() => save({ bibleId: Number(bibleId) || 113 })}>
               Save
             </button>
           </section>

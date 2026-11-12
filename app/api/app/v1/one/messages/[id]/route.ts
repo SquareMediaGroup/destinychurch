@@ -4,6 +4,8 @@ import { requireMember } from "@/lib/destinyOne/auth.server";
 import { broadcastMessageEdited, getMessage } from "@/lib/destinyOne/chat.server";
 import { firstUrl } from "@/lib/destinyOne/linkPreview";
 import { attachLinkPreview } from "@/lib/destinyOne/linkPreview.server";
+import { attachVerseCard } from "@/lib/destinyOne/bible.server";
+import { findReference } from "@destiny/shared";
 import { messageTerms, sealBody } from "@/lib/destinyOne/crypto.server";
 import { OneError, fromDbError, limit, oneJson, oneRoute, readBody, requireMessageId, type IdParams } from "@/lib/destinyOne/http";
 import { editMessageSchema } from "@/lib/destinyOne/schemas";
@@ -53,6 +55,8 @@ export const PATCH = oneRoute<IdParams>(async (request, { params }) => {
     await broadcastMessageEdited(message);
     // The link changed (or went): the preview follows the new text.
     if (firstUrl(body) !== message.linkPreview?.url) await attachLinkPreview(id, groupId, body, { clearIfNone: true });
+    // And the verse card follows the first reference in the new text.
+    if (findReference(body)?.passageId !== message.verse?.passageId) await attachVerseCard(id, groupId, body, { clearIfNone: true });
   });
   return oneJson(message);
 });

@@ -21,6 +21,7 @@ export * from "./churchCards";
 // Destiny One is TypeScript and imports these directly.
 export * from "./destinyOne/types";
 export * from "./destinyOne/policy";
+export * from "./destinyOne/bible";
 export * from "./destinyOne/accountRules";
 export * from "./destinyOne/outage";
 export * from "./destinyOne/client";

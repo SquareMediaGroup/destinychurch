@@ -39,6 +39,9 @@ function auditSummary(before: D1Settings, after: D1Settings): string {
   if (before.minBuildIos !== after.minBuildIos || before.minBuildAndroid !== after.minBuildAndroid) {
     return `Set the minimum Destiny One app build to iOS ${after.minBuildIos}, Android ${after.minBuildAndroid}`;
   }
+  if (before.bibleId !== after.bibleId) {
+    return `Changed the Destiny One Bible version to YouVersion id ${after.bibleId}`;
+  }
   if (before.latestVersion !== after.latestVersion) {
     return after.latestVersion ? `Offered the Destiny One ${after.latestVersion} update to older apps` : "Turned off the Destiny One update prompt";
   }
@@ -69,6 +72,7 @@ export async function PATCH(request: Request) {
       ...(body.data.maintenanceMessage !== undefined ? { maintenance_message: body.data.maintenanceMessage } : {}),
       ...(body.data.latestVersion !== undefined ? { latest_version: body.data.latestVersion } : {}),
       ...(body.data.latestVersionNotes !== undefined ? { latest_version_notes: body.data.latestVersionNotes } : {}),
+      ...(body.data.bibleId !== undefined ? { bible_id: body.data.bibleId } : {}),
       updated_at: new Date().toISOString(),
       updated_by: admin.userId,
     })

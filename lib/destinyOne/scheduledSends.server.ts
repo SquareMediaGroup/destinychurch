@@ -43,6 +43,7 @@ import { messageTerms, openBody, openContent, sealBody, sealContent } from "@/li
 import { buildEventSnapshot } from "@/lib/destinyOne/events.server";
 import { OneError, fromDbError } from "@/lib/destinyOne/http";
 import { attachLinkPreview } from "@/lib/destinyOne/linkPreview.server";
+import { attachVerseCard } from "@/lib/destinyOne/bible.server";
 import { buildPollContent } from "@/lib/destinyOne/pollContent";
 import { pollResultText } from "@/lib/destinyOne/polls";
 import { pushNewMessage, pushNotice } from "@/lib/destinyOne/push.server";
@@ -396,6 +397,7 @@ async function sendMessageJob(job: ScheduledJob): Promise<void> {
       broadcastNewMessage(message),
       pushNewMessage(groupId, caller.member.id, { senderName: caller.member.display_name, body: body ?? contentPreview(content), attachmentMime: message.attachment?.mimeType ?? null }, message.mentions, message.id),
       attachLinkPreview(message.id, groupId, body),
+      attachVerseCard(message.id, groupId, body),
     ]);
   }
 }

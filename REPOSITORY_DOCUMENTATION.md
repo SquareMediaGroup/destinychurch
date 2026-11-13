@@ -2199,6 +2199,7 @@ department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_o
 | `d1_message_edits` | Part 11: the text an edit replaced (sealed), one row per edit, for the safeguarding transcript. Deny-all RLS; removed with its message by the purge |
 | `d1_pins` | Part 13: pinned messages per group (who pinned, when). At most 3; deny-all RLS |
 | `d1_poll_votes` | One row per (poll message, member, option). Written only by `d1_vote()`, which enforces single choice and current membership and broadcasts `poll_vote` (with `groupId`) |
+| Bible: `d1_bible_passages`, `d1_bible_versions`, `d1_bible_votd`, `d1_messages.verse_ref`, `d1_settings.bible_id` | The Bible connection (1.1, migration `20261113_01_destiny_one_bible.sql`). `bible_id` is the church's default version (YouVersion Platform id, **113 = NIV UK**, changed at Admin → Destiny One → Settings). `verse_ref` is a message's verse card: sealed `{"passageId","bibleId"}` of its first reference (constraint `d1_messages_verse_ref_sealed`); only the reference is stored with the message, never the words. The three `d1_bible_*` tables are caches (deny-all RLS, service role only): passage words for everyone (kept `D1_BIBLE_CACHE_HOURS`, 24 by default, **to be set from the publisher's licence**), each version's name and copyright line (a week), and which passage is the verse of the day per UK date. Bible text is reference material, not member data, so it isn't sealed. **Apply before deploying**: message reads select `verse_ref` |
 | `d1_join_requests`, Discover columns on `d1_groups` | Discover groups (1.3, migration `20261112_02_destiny_one_discover_groups.sql`). `d1_groups` gains `discoverable`, `discover_blurb` (140), `meeting_day` (1 = Monday), `meeting_area`, and **`u18_suitable`** (+ `u18_marked_by/at`), which only a safeguarding admin sets (`d1_set_u18_suitable`, service role; no leader-facing function can). `d1_join_requests` (deny-all RLS): one pending per member per group, sealed note, status pending/approved/declined/withdrawn. **`d1_can_discover(member, group)` is the one test**: active member, in the group's community, an ordinary active discoverable group, and an adult unless `u18_suitable`. It gates the list (`d1_discover_groups`), asking (`d1_request_join`: 3 pending at a time, 30 days after a decline, "isn't open to join" for anything they shouldn't know about) and **approval again** (`d1_decide_join_request`, which adds them through `d1__join_group` so the 2-adult rule and auto-pause still apply). Taking the u18 mark away withdraws under-18s' waiting requests |
 | `d1_prayer_requests`, `d1_prayer_taps` | Prayer requests (1.2, migration `20261112_01_destiny_one_prayer_requests.sql`). A request is a **message** with content `{"kind":"prayer","prayer":{"text": <sealed>}}` (constraint `d1_messages_prayer_sealed`), so it is sealed, reported, deleted and purged like any message. An insert trigger gives it a `d1_prayer_requests` row (`answered_at`, sealed `answer_update`); `d1_prayer_taps` is who tapped "I prayed". Both deny-all RLS, both cascade with the message. `d1_pray` (not your own request, current members, broadcasts `prayer_tap` with the **count only**), `d1_answer_prayer` (author only, once), `d1_prayer_summary_due` (opted-in authors and how many people prayed in 24 hours). `d1_members.prayer_summary` is the opt-in, off by default |
 | `d1_messages` poll and schedule columns | `poll_closes_at` (deadline), `poll_closed_at` (when voting actually stopped), `scheduled_job_id` (the job that sent it; unique, so a repeated run never sends twice). Migration `20261110_03_destiny_one_poll_deadlines.sql`, which also replaces `d1_vote` (refuses a vote once a poll is closed or past its deadline: enforced in the database, not just hidden in the app), adds `d1_start_poll_deadline` (stamps the deadline and queues the `close_poll` job, one open job per poll), `d1_close_poll` (idempotent; returns who won; cancels a waiting deadline job; broadcasts `poll_closed`), `d1_post_scheduled_message` (`d1_post_message` tagged with its job; a repeat returns the same message with `created: false`) and `d1_cancel_job` (cancelled with a reason, never retried). **Apply before deploying**: message reads select the new columns |
@@ -4955,6 +4956,27 @@ safeguarding` shows the mark with a "Mark suitable for under-18s" button. Tests:
 `tests/sql/destiny-one-discover.sql` (under-18 can't see, ask or be approved without the mark; removing the
 mark withdraws their requests; limits; closed groups).
 
+#### The Bible connection (1.1)
+`lib/destinyOne/bible.server.ts` is the only code that talks to YouVersion (`https://api.youversion.com/v1`,
+env **`YOUVERSION_APP_KEY`** in the `X-YVP-App-Key` header; `YOUVERSION_API_URL` overrides the base). The app
+never does, so the key stays secret and YouVersion only ever learns which passage of which Bible.
+`getPassage` (cache, then `GET /bibles/{id}/passages/{passageId}?format=text`; 404 means it doesn't exist),
+`getVersion` (`GET /bibles/{id}`, for the abbreviation and copyright), `verseOfTheDay` (`GET
+/verse-of-the-days/{dayOfYear}` in UK time, then the passage). Without the key everything answers
+`unavailable`. **Verse cards**: `attachVerseCard` runs from `after()` like link previews, on send, on edit
+(follows the new text) and on a scheduled send: the first reference in the body (the shared finder,
+below) gets a card unless YouVersion says the passage doesn't exist; a reference it couldn't check keeps
+its card. Broadcast `verse_card`. `lib/destinyOne/verseRef.ts` opens a stored card for `shape()`.
+**References** (`packages/shared/src/destinyOne/bible.ts`, tested in `tests/unit/destiny-one-bible.spec.ts`):
+`findReference(s)`, `passageLabel`, `isPassageId`, `bibleWebUrl`, `BIBLE_BOOKS` (66 books, USFM ids, chapter
+counts). Careful about false alarms: abbreviations need a capital and chapter:verse, books that are also
+names or words (Mark, Job, James, Numbers, Judges, Ruth) need chapter:verse, a bare chapter needs a capital,
+no abbreviation is a common word, and chapters must exist. Cross-chapter ranges are cut to where they start
+(the API can't return one). **Not yet**: the scope doc's verse on a prayer request, and Scripture cards in
+DestinyAI (V2). **Setup**: register on the YouVersion Platform, accept the NIV UK licence, set
+`YOUVERSION_APP_KEY` on Vercel, read the licence for caching (then set `D1_BIBLE_CACHE_HOURS`), and ask
+YouVersion to mark the app live before release so the hourly limit goes up.
+
 #### `GET /api/cron/destiny-one-prayer-summary`
 ```typescript
 // Daily at 18:30 (vercel.json). Bearer CRON_SECRET. For each member who opted in
@@ -5042,6 +5064,9 @@ lives in Supabase too, so during an outage set `D1_MAINTENANCE_MESSAGE` in Verce
 | `groups/[id]/messages` | GET, POST | Only messages since you joined; POST takes `body`, an attachment, `prayer: { text }` (a prayer request, up to 500 characters, sent on its own), a `poll` draft (optionally with `closesAt`, when voting stops, and `pinResult`), or an `event` ref (the event is re-fetched and snapshotted server-side) and pushes a notification via `after()` (group name, "Sender: first line", or "Poll: …" / "Event: …"). A message in the DestinyAI chat, or with "@DestinyAI" in it, is then answered by DestinyAI (part 18) |
 | `messages/[id]/vote` | POST | `{ optionIds }` — your full vote set on a poll (empty clears it). 60 a minute |
 | `messages/[id]` | PATCH | `{ body }` — edit my own message's text (15 minutes, 10 times; `d1_edit_message`). Sealed with new search terms; `message_edited` goes to the group over the REST broadcast (it carries text). 20 a minute, no push |
+| `bible/passage` | GET | `?id=JHN.3.16[&bible=113]`: a passage's words, reference, version name, abbreviation, copyright line and bible.com link, from the cache or YouVersion. `unavailable` when YouVersion is down or not set up; the app then says "Couldn't load this verse". 120 a minute |
+| `bible/votd` | GET | YouVersion's verse of the day (their pick) in the church's Bible, with `date`. One YouVersion call a day for everyone |
+| `messages/[id]/verse` | DELETE | The sender takes the verse card off their own message |
 | `discover` | GET | Discover groups for the caller (see `d1_can_discover`). Each carries their own waiting request id, or when a decline lets them ask again |
 | `groups/[id]/join-request` | POST, DELETE | Ask to join `{ note? }` (sealed; the group's admins get a push naming the person, never the note) or take the request back |
 | `groups/[id]/join-requests` | GET | Leaders: the waiting requests with names and opened notes |
@@ -8331,6 +8356,21 @@ same database as the data rather than in a separate Synapse module.
   the website's `/admin/reset-password`.
 - **State:** `src/state/session.tsx` (auth session, `me`, the communities list, the Realtime hub,
   catch-up, `routeFor`, `errorMessage`); `src/state/picker.ts` (Add people selection for New group).
+- **Bible (app).** `components/VerseCard.tsx` under a message (and in sermon notes and the Verse
+  screen): the reference, about six verses (longer cut with Read more, opening `app/passage.tsx`), the
+  version and copyright line, and **Read in Bible App** (`lib/bible.ts` `openInBibleApp`: the bible.com
+  link, a universal link the YouVersion app claims, so it opens the app when installed and the browser
+  otherwise). Words come from `api.passage` via `usePassage` (cached an hour on the phone). "Couldn't load
+  this verse" when unavailable. The + menu has **Verse** (`app/verse.tsx`: type a reference, see it, send it
+  as a message, which gets a card); the message menu has **Remove verse card** on your own. Chats shows
+  **Verse of the day** (`components/VerseOfTheDay.tsx`) under the Welcome checklist, hidden from
+  Appearance (`state/verseOfDay.ts`) and silently when it can't load; tapping it opens the passage, with
+  **Share to a chat** (`app/share-verse.tsx`). **Sermon notes** (Profile → Sermon notes, `app/notes/`,
+  `state/notes.ts`): on the phone only, per member, wiped on sign-out; plain text with "# " headings and
+  "- " bullets; every reference typed shows as a verse card under the note; **Add verse**; **Share to a
+  group** (sent as one message; its first reference gets the card); searchable list, newest first. A sermon
+  card in chat has **Take notes**, which starts a note titled with the sermon and date. The Church tab's
+  "Take notes" waits for the Church tab (V1).
 - **Discover groups (app).** The Search tab has a **Discover groups** row above the results
   (`app/discover.tsx`: cards with the blurb, day, area and size; filter chips by day and, with several
   communities, by community; **Ask to join** opens `app/join-request.tsx` with an optional note; a waiting

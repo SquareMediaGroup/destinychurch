@@ -17,6 +17,7 @@ import { Icon } from "@/components/Icon";
 import { Appear, PressableScale, animateLayout } from "@/components/Motion";
 import { SeasonalGreeting } from "@/components/EasterEggs";
 import { WelcomeChecklist } from "@/components/WelcomeChecklist";
+import { VerseOfTheDay } from "@/components/VerseOfTheDay";
 import { Bone, Card, EmptyState, ErrorState, LargeTitle, Separator, SkeletonGroup } from "@/components/ui";
 import { api } from "@/lib/api";
 import { haptic } from "@/lib/haptics";
@@ -143,6 +144,7 @@ function Chats() {
       <LargeTitle style={{ paddingHorizontal: 20, paddingTop: 2, paddingBottom: 8 }}>Chats</LargeTitle>
       <SeasonalGreeting />
       <WelcomeChecklist />
+      <VerseOfTheDay />
       {communitiesError && communities ? <OfflineBanner outage={outage} /> : null}
       {assistant && !assistant.archived && filter !== "announcements" && (filter !== "unread" || assistant.unreadCount > 0) ? (
         // DestinyAI: the only one-to-one chat, pinned above the communities.

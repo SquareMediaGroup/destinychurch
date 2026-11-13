@@ -183,6 +183,31 @@ export interface D1GroupMember {
   isAdult?: boolean;
 }
 
+/** A message's verse card: which passage, in which Bible. */
+export interface D1VerseRef {
+  passageId: string;
+  bibleId: number;
+  /** "John 3:16" */
+  label: string;
+}
+
+/** A passage's words, from YouVersion through our cache. */
+export interface D1Passage {
+  passageId: string;
+  bibleId: number;
+  /** As YouVersion writes it: "John 3:16". */
+  reference: string;
+  text: string;
+  /** "NIVUK" */
+  abbreviation: string | null;
+  /** "New International Version (Anglicised)" */
+  versionTitle: string | null;
+  /** The publisher's copyright line, shown under every passage. */
+  copyright: string | null;
+  /** On bible.com, which opens the Bible App when it is installed. */
+  webUrl: string;
+}
+
 /** A group offered in Discover groups, with the asking member's own request (if any). */
 export interface D1DiscoverGroup {
   groupId: string;
@@ -429,6 +454,8 @@ export interface D1Message {
   forwarded: boolean;
   /** The first link's preview. Arrives a moment after the message (a `link_preview` event). */
   linkPreview: D1LinkPreview | null;
+  /** The verse card for the first Bible reference in the text (found by the server after sending). The words are fetched separately (api.passage). */
+  verse?: D1VerseRef | null;
   deleted: boolean;
   mine: boolean;
 }
@@ -480,6 +507,8 @@ export type D1RealtimeEvent =
   | { event: "message_edited"; payload: { id: number; groupId: string; body: string; editedAt: string; mentions: string[] } }
   | { event: "reaction"; payload: { messageId: number; groupId: string; memberId: string; emoji: string; added: boolean } }
   | { event: "poll_vote"; payload: { messageId: number; groupId: string; votes: D1PollTally[]; totalVoters: number } }
+  /** A message's verse card was found, changed or removed. */
+  | { event: "verse_card"; payload: { id: number; groupId: string; verse: D1VerseRef | null } }
   /** Someone asked to join a group (or a request was answered or withdrawn): leaders re-fetch the list. */
   | { event: "join_requests_changed"; payload: { groupId: string } }
   /** Someone tapped (or untapped) "I prayed": the new count. Never who. */

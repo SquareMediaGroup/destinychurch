@@ -26,6 +26,7 @@ import type {
   D1MessagePage,
   D1PollDraft,
   D1ScheduledMessage,
+  D1Passage,
   D1DiscoverGroup,
   D1JoinRequest,
   D1ReadReceipts,
@@ -259,6 +260,12 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     /** Cast (or clear, with an empty array) this member's vote(s) on a poll message. */
     vote: (messageId: number, optionIds: string[]) =>
       call<{ ok: true }>("POST", `/messages/${messageId}/vote`, { optionIds }),
+    /** A passage's words in the church's Bible (or `bibleId`), with its copyright line. "unavailable" when YouVersion can't be reached. */
+    passage: (passageId: string, bibleId?: number) => call<D1Passage>("GET", `/bible/passage${q({ id: passageId, bible: bibleId ? String(bibleId) : undefined })}`),
+    /** YouVersion's verse of the day, in the church's Bible. */
+    verseOfTheDay: () => call<D1Passage & { date: string }>("GET", "/bible/votd"),
+    /** Take the verse card off my own message. */
+    removeVerseCard: (messageId: number) => call<{ ok: true }>("DELETE", `/messages/${messageId}/verse`),
     /** Groups open to join in my communities (and that I'm not in): for under-18s, only ones marked suitable. */
     discoverGroups: () => call<D1DiscoverGroup[]>("GET", "/discover"),
     /** Ask to join a group in Discover, with an optional note. */

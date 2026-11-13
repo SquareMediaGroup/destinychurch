@@ -28,7 +28,7 @@ import { messageSummary, plural } from "@/lib/format";
 import { api } from "@/lib/api";
 import { downloadAttachment, isPhoto, shareFile } from "@/lib/media";
 import { haptic } from "@/lib/haptics";
-import { hideSender, keys, setOpenGroup } from "@/lib/queries";
+import { hideSender, keys, setOpenGroup, updateMessages } from "@/lib/queries";
 import { uploadAttachment } from "@/lib/upload";
 import { useConversation, type LocalMessage } from "@/lib/useConversation";
 import { useKeyboardShown } from "@/lib/useKeyboardShown";
@@ -41,6 +41,7 @@ import { scheduleDraft, useScheduleDone } from "@/state/scheduleDraft";
 import { markGroupOpened } from "@/state/welcomeChecklist";
 import { pollDraft, usePollDraft } from "@/state/pollDraft";
 import { prayerDraft, usePrayerDraft } from "@/state/prayerDraft";
+import { useVerseDraft, verseDraft } from "@/state/verseDraft";
 import { errorMessage, useGroupSummary, useSession } from "@/state/session";
 import { PHOTO_CHIP_ALPHA } from "@/theme/appearance";
 import { ORANGE, useTheme } from "@/theme/tokens";
@@ -210,6 +211,15 @@ function GroupChatScreen() {
     void sendPrayer(prayerText).catch((err) => setToast(errorMessage(err, "Couldn't share your prayer request. Try again.")));
   }, [prayerText, sendPrayer]);
 
+  // A passage found on the Verse screen goes out as a message ("John 3:16"), which gets a verse card.
+  const { send: sendBody } = convo;
+  const verseLabel = useVerseDraft(`chat:${id}`);
+  useEffect(() => {
+    if (!verseLabel) return;
+    verseDraft.clear();
+    void sendBody({ body: verseLabel }).catch((err) => setToast(errorMessage(err, "Couldn't send the verse. Try again.")));
+  }, [verseLabel, sendBody]);
+
   const chosenEvent = useEventPick(id);
   useEffect(() => {
     if (!chosenEvent) return;
@@ -327,6 +337,10 @@ function GroupChatScreen() {
       react: (m, emoji) => void convo.toggleReaction(m.id, emoji).catch((err) => setToast(errorMessage(err))),
       vote: (m, optionIds) => void convo.vote(m.id, optionIds).catch((err) => setToast(errorMessage(err))),
       pray: (m, on) => void convo.pray(m.id, on).catch((err) => setToast(errorMessage(err))),
+      removeVerse: (m) => {
+        updateMessages(id, (list) => list.map((x) => (x.id === m.id ? { ...x, verse: null } : x)));
+        void api.removeVerseCard(m.id).catch((err) => setToast(errorMessage(err, "Couldn't remove the verse card.")));
+      },
       closePoll: (m) =>
         Alert.alert("Close this poll?", "Voting stops now and the result is posted in the chat.", [
           { text: "Cancel", style: "cancel" },
@@ -401,6 +415,7 @@ function GroupChatScreen() {
       onAttachPoll={() => router.push(`/group/${id}/poll`)}
       onAttachEvent={() => router.push(`/group/${id}/event-picker`)}
       onAttachPrayer={isAssistant ? undefined : () => router.push(`/group/${id}/prayer`)}
+      onAttachVerse={isAssistant ? undefined : () => router.push({ pathname: "/verse", params: { groupId: id } })}
       onError={setToast}
       initialText={editing?.body ?? chatDrafts.get(id)}
       onTextChange={
@@ -652,6 +667,7 @@ type RowActions = {
   vote: (m: LocalMessage, optionIds: string[]) => void;
   closePoll: (m: LocalMessage) => void;
   pray: (m: LocalMessage, on: boolean) => void;
+  removeVerse: (m: LocalMessage) => void;
   retry: (m: LocalMessage) => void;
   openAttachment: (m: LocalMessage, url: string) => void;
 };
@@ -698,6 +714,7 @@ const ChatRow = memo(function ChatRow({ row, groupId, group, highlighted, replyT
     onShare: m.attachment ? () => run().share(m) : null,
     onForward: m.content?.kind === "poll" || m.content?.kind === "prayer" ? null : () => router.push({ pathname: "/forward", params: { groupId, messageId: String(m.id) } }),
     onInfo: m.mine || group?.canManage ? () => router.push({ pathname: "/message-info", params: { groupId, messageId: String(m.id) } }) : null,
+    onRemoveVerse: m.mine && m.verse && m.id > 0 ? () => run().removeVerse(m) : null,
     // An open poll (not one still sending): its author, or a leader or admin, can close it now.
     onClosePoll:
       m.content?.kind === "poll" && m.id > 0 && !m.content.poll.closedAt && canPost && (m.mine || group?.myRole === "admin" || !!group?.canManage)

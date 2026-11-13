@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Animated, Image, Pressable, Text, View, type ViewInstance } from "react-native";
 import * as WebBrowser from "expo-web-browser";
+import { router } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { DESTINY_AI_ID, mentionSegments, type D1EventContent, type D1LinkPreview, type D1LeaderRole, type D1Message, type D1PollContent, type D1PrayerContent, type D1SermonContent, type Mentionable } from "@destiny/shared";
 import { ChurchCards } from "@/components/ChurchCards";
@@ -18,6 +19,8 @@ import { Icon } from "@/components/Icon";
 import { MessageMenu, type MessageMenuActions } from "@/components/MessageMenu";
 import { Appear, Pop, PressableScale, reduceMotion, springs } from "@/components/Motion";
 import { SermonPlayer, sermonWatchUrl, useSermonCardWidth } from "@/components/SermonPlayer";
+import { VerseCard } from "@/components/VerseCard";
+import { createNote } from "@/state/notes";
 import { SwipeToReply } from "@/components/Swipe";
 import { VoiceNote } from "@/components/VoiceNote";
 import { Avatar, MemberTag, withAlpha } from "@/components/ui";
@@ -226,6 +229,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
           </Text>
         ) : null}
         {m.linkPreview ? <LinkCard preview={m.linkPreview} mine={m.mine} /> : null}
+        {m.verse ? <VerseCard verse={m.verse} tones={tones(t, m.mine)} style={{ marginHorizontal: -6 }} /> : null}
         {/* Edited messages say so, inside the bubble, so it shows whether or not the time does. */}
         {m.editedAt ? (
           <Text accessibilityLabel="Edited" style={{ marginTop: -4, alignSelf: "flex-end", fontSize: 11, color: k.soft, opacity: 0.8 }}>
@@ -574,9 +578,18 @@ function SermonCard({ content, mine }: { content: D1SermonContent; mine: boolean
         <Text style={{ fontSize: 13, color: k.soft }}>
           {[sermon.speaker, when].filter(Boolean).join(" · ")}
         </Text>
-        <Pressable accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(sermonWatchUrl(sermon.videoId))} hitSlop={6}>
-          <Text style={{ fontSize: 13, fontWeight: "600", color: k.name }}>Open on YouTube</Text>
-        </Pressable>
+        <View style={{ flexDirection: "row", gap: 16 }}>
+          <Pressable accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(sermonWatchUrl(sermon.videoId))} hitSlop={6}>
+            <Text style={{ fontSize: 13, fontWeight: "600", color: k.name }}>Open on YouTube</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => void createNote({ videoId: sermon.videoId, title: sermon.title }).then((n) => router.push(`/notes/${n.id}`))}
+            hitSlop={6}
+          >
+            <Text style={{ fontSize: 13, fontWeight: "600", color: k.name }}>Take notes</Text>
+          </Pressable>
+        </View>
       </View>
     </View>
   );

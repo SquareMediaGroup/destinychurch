@@ -8,7 +8,7 @@
 // cross-fades in and settles, a new colour pops your bubbles.
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { ActivityIndicator, Alert, Animated, Image, ScrollView, StyleSheet, Text, View, useWindowDimensions, type ImageSourcePropType } from "react-native";
+import { ActivityIndicator, Alert, Animated, Image, ScrollView, StyleSheet, Switch, Text, View, useWindowDimensions, type ImageSourcePropType } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RING_GAP, SelectRing, ThemeModePicker, Tick } from "@/components/AppearancePicker";
 import { GlassSurface } from "@/components/GlassSurface";
@@ -22,6 +22,7 @@ import { PhotoWallpaper, Wallpaper } from "@/components/Wallpaper";
 import { customWallpaperUri, deleteCustomWallpaper, pickCustomWallpaper } from "@/lib/customWallpaper";
 import { haptic } from "@/lib/haptics";
 import { appearance, useAppearance } from "@/state/appearance";
+import { useVerseOfDayHidden, verseOfDay } from "@/state/verseOfDay";
 import {
   BLUR_PRESETS,
   CUSTOM_WALLPAPER,
@@ -39,7 +40,7 @@ import {
   type WallpaperTone,
 } from "@/theme/appearance";
 import { photoFiles } from "@/theme/photoWallpapers";
-import { useTheme } from "@/theme/tokens";
+import { ORANGE, useTheme } from "@/theme/tokens";
 
 const WALL_TABS = ["Photos", "Patterns"] as const;
 /** Wallpaper tiles are drawn at roughly a phone's shape. */
@@ -48,6 +49,7 @@ const TILE_GAP = 12;
 
 export default function AppearanceScreen() {
   const t = useTheme();
+  const votdHidden = useVerseOfDayHidden();
   const insets = useSafeAreaInsets();
   const current = useAppearance();
   const scheme = lookOf(t.dark, current.mode);
@@ -248,6 +250,11 @@ export default function AppearanceScreen() {
             )}
           </Appear>
         </Section>
+
+        <Card style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, paddingHorizontal: 16 }}>
+          <Text style={{ flex: 1, fontSize: 17, color: t.text }}>Verse of the day in Chats</Text>
+          <Switch value={!votdHidden} onValueChange={(on) => verseOfDay.setHidden(!on)} trackColor={{ true: ORANGE, false: t.fill2 }} accessibilityLabel="Verse of the day in Chats" />
+        </Card>
 
         {!isDefault ? (
           <Appear from={{ y: 8 }} style={{ alignItems: "center" }}>

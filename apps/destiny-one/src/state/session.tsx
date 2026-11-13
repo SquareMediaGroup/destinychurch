@@ -37,6 +37,7 @@ import { typing } from "@/state/typing";
 import { setReportingMember } from "@/lib/sentry";
 import { chatDrafts } from "@/state/drafts";
 import { forgetWelcome } from "@/state/welcomeChecklist";
+import { forgetNotes } from "@/state/notes";
 import { hasSeenSetup } from "@/state/setupSeen";
 
 type Href = "/welcome" | "/request" | "/waiting" | "/notices" | "/chats";
@@ -193,6 +194,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (meRef.current) {
           chatDrafts.forget(meRef.current.id);
           forgetWelcome(meRef.current.id);
+          forgetNotes(meRef.current.id);
         }
         void clearCache().then(() => accounts.removeAccount(activeSlot, { signOut: false }));
       }
@@ -367,6 +369,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (memberId) {
         chatDrafts.forget(memberId);
         forgetWelcome(memberId);
+        forgetNotes(memberId);
       }
       await accounts.removeAccount(slot, { signOut: false });
       const next = accounts.accounts()[0];
@@ -384,6 +387,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (memberId) {
       chatDrafts.forget(memberId);
       forgetWelcome(memberId);
+      forgetNotes(memberId);
     }
   }, []);
 

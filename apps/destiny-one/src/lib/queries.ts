@@ -231,6 +231,11 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
       );
       return;
     }
+    case "verse_card": {
+      const { id, groupId, verse } = e.payload;
+      updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, verse } : m)));
+      return;
+    }
     case "prayer_tap": {
       const { messageId, groupId, count } = e.payload;
       updateMessages(groupId, (list) =>

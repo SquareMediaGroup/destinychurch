@@ -24,6 +24,16 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: "0.14.1",
+    // New features, not a small fix, so it gets the splash.
+    splash: true,
+    features: [
+      { icon: "doc", title: "Verses in chat", body: "Type a reference like John 3:16 and the verse shows under your message, with Read in Bible App. Or tap + and choose Verse." },
+      { icon: "sparkle", title: "Verse of the day", body: "A new verse at the top of Chats every day. Tap it to read more or share it. You can hide it in Appearance." },
+      { icon: "docLines", title: "Sermon notes", body: "Take notes during a sermon from Profile, or tap Take notes on a sermon. Verses you type show under your note. Notes stay on your phone." },
+    ],
+  },
+  {
     version: "0.14",
     features: [
       { icon: "check", title: "Getting started", body: "New to Destiny One? A short checklist at the top of Chats helps you set up: a profile picture, notifications, your first group. It ticks itself as you go." },

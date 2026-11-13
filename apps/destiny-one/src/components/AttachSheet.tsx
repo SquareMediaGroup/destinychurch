@@ -45,6 +45,7 @@ interface Props {
   onEvent: () => void;
   /** Omitted where prayer requests aren't offered (the DestinyAI chat). */
   onPrayer?: () => void;
+  onVerse?: () => void;
 }
 
 const MENU_WIDTH = 260;
@@ -56,7 +57,7 @@ const CLOSE = { stiffness: 520, damping: 40, mass: 1 } as const;
 /** Menu to camera and back: a soft, slightly bouncy morph. */
 const MORPH = { stiffness: 230, damping: 25, mass: 1 } as const;
 
-export function AttachSheet({ visible, anchor, onClose, onPhotos, onVideo, onPhoto, onDocument, onPoll, onEvent, onPrayer }: Props) {
+export function AttachSheet({ visible, anchor, onClose, onPhotos, onVideo, onPhoto, onDocument, onPoll, onEvent, onPrayer, onVerse }: Props) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { width: screenW, height: screenH } = useWindowDimensions();
@@ -116,6 +117,7 @@ export function AttachSheet({ visible, anchor, onClose, onPhotos, onVideo, onPho
     { icon: "doc", label: "Document", onPress: onDocument },
     { icon: "poll", label: "Poll", onPress: onPoll },
     { icon: "calendar", label: "Event", onPress: onEvent },
+    ...(onVerse ? [{ icon: "doc" as IconName, label: "Verse", onPress: onVerse }] : []),
     ...(onPrayer ? [{ icon: "heart" as IconName, label: "Prayer request", onPress: onPrayer }] : []),
   ];
 

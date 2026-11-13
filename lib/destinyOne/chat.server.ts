@@ -219,6 +219,20 @@ export async function getGroupSummary(caller: Caller, groupId: string): Promise<
   return toSummary(row);
 }
 
+/** A group's Discover setup and how many requests are waiting, for its leaders. Read on its own so an API ahead of the migration still serves the group (20261112_02). */
+async function discoverFor(groupId: string): Promise<Pick<D1GroupDetail, "discover" | "pendingJoinRequests">> {
+  const supabase = createServiceClient();
+  const [{ data: g, error }, { count }] = await Promise.all([
+    supabase.from("d1_groups").select("discoverable, discover_blurb, meeting_day, meeting_area, u18_suitable").eq("id", groupId).maybeSingle(),
+    supabase.from("d1_join_requests").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("status", "pending"),
+  ]);
+  if (error || !g) return {};
+  return {
+    discover: { on: g.discoverable as boolean, blurb: (g.discover_blurb as string | null) ?? null, meetingDay: (g.meeting_day as number | null) ?? null, meetingArea: (g.meeting_area as string | null) ?? null, u18Suitable: g.u18_suitable as boolean },
+    pendingJoinRequests: count ?? 0,
+  };
+}
+
 export async function getGroup(caller: Caller, groupId: string): Promise<D1GroupDetail> {
   const [row] = await overview(caller.member.id, groupId);
   if (!row) throw new OneError("not_found", "That group doesn't exist, or you're not in it.");
@@ -251,6 +265,7 @@ export async function getGroup(caller: Caller, groupId: string): Promise<D1Group
     canManage,
     canPost: canPost({ member: caller.policy, groupKind: row.kind, groupState: row.state, myRole: row.my_role }),
     pinned,
+    ...(canManage ? await discoverFor(groupId) : {}),
     members: people.map((p) => ({
       id: p.id,
       displayName: p.display_name,
@@ -359,12 +374,14 @@ interface MessageRow {
   mentions: string[] | null;
   link_preview: string | null;
   forwarded_from: number | null;
+  poll_closes_at: string | null;
+  poll_closed_at: string | null;
   sender: { id: string; display_name: string } | null;
   attachment: { id: string; storage_path: string; mime_type: string; size_bytes: number | null; duration_ms: number | null; expires_at: string | null; expired_at: string | null } | null;
 }
 
 const MESSAGE_SELECT =
-  "id, group_id, sender_id, body, reply_to, attachment_id, content, created_at, edited_at, deleted_at, mentions, link_preview, forwarded_from, " +
+  "id, group_id, sender_id, body, reply_to, attachment_id, content, created_at, edited_at, deleted_at, mentions, link_preview, forwarded_from, poll_closes_at, poll_closed_at, " +
   "sender:d1_members!d1_messages_sender_id_fkey(id, display_name), " +
   "attachment:d1_attachments!d1_messages_attachment_id_fkey(id, storage_path, mime_type, size_bytes, duration_ms, expires_at, expired_at)";
 
@@ -380,7 +397,13 @@ function openLinkPreview(sealed: string | null, groupId: string): D1LinkPreview 
 }
 
 /** Overlays live tallies (and the caller's own choice) onto a poll's static definition. */
-function livePollContent(content: D1MessageContent, messageId: number, callerId: string, votes: { message_id: number; member_id: string; option_id: string }[]): D1MessageContent {
+function livePollContent(
+  content: D1MessageContent,
+  messageId: number,
+  callerId: string,
+  votes: { message_id: number; member_id: string; option_id: string }[],
+  deadline: { closesAt: string | null; closedAt: string | null },
+): D1MessageContent {
   if (content.kind !== "poll") return content;
   const rows = votes.filter((v) => v.message_id === messageId);
   const counts = new Map<string, number>();
@@ -392,7 +415,47 @@ function livePollContent(content: D1MessageContent, messageId: number, callerId:
       totalVoters: new Set(rows.map((v) => v.member_id)).size,
       votes: content.poll.options.map((o) => ({ optionId: o.id, count: counts.get(o.id) ?? 0 })),
       myOptionIds: rows.filter((v) => v.member_id === callerId).map((v) => v.option_id),
+      closesAt: deadline.closesAt,
+      closedAt: deadline.closedAt,
     },
+  };
+}
+
+interface PrayerState {
+  answeredAt: string | null;
+  answerUpdate: string | null;
+  count: number;
+  mine: boolean;
+}
+
+/** Each prayer request's live state: answered or not, how many prayed, and whether the caller did. */
+async function prayerStates(ids: number[], callerId: string): Promise<Map<number, PrayerState>> {
+  const out = new Map<number, PrayerState>();
+  if (ids.length === 0) return out;
+  const supabase = createServiceClient();
+  const [{ data: requests }, { data: taps }] = await Promise.all([
+    supabase.from("d1_prayer_requests").select("message_id, group_id, answered_at, answer_update").in("message_id", ids),
+    supabase.from("d1_prayer_taps").select("message_id, member_id").in("message_id", ids),
+  ]);
+  for (const r of requests ?? []) {
+    const update = openBody(r.answer_update as string | null, r.group_id as string);
+    out.set(r.message_id as number, { answeredAt: (r.answered_at as string | null) ?? null, answerUpdate: update === UNREADABLE ? null : update, count: 0, mine: false });
+  }
+  for (const t of taps ?? []) {
+    const state = out.get(t.message_id as number);
+    if (!state) continue;
+    state.count += 1;
+    if (t.member_id === callerId) state.mine = true;
+  }
+  return out;
+}
+
+/** Overlays a prayer request's live state onto its stored text. */
+function livePrayerContent(content: D1MessageContent, state: PrayerState | undefined): D1MessageContent {
+  if (content.kind !== "prayer") return content;
+  return {
+    kind: "prayer",
+    prayer: { text: content.prayer.text, prayedCount: state?.count ?? 0, iPrayed: state?.mine ?? false, answeredAt: state?.answeredAt ?? null, answerUpdate: state?.answerUpdate ?? null },
   };
 }
 
@@ -403,7 +466,8 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
 
   const live = rows.filter((r) => !r.deleted_at && r.attachment && !r.attachment.expired_at);
   const pollIds = rows.filter((r) => !r.deleted_at && r.content?.kind === "poll").map((r) => r.id);
-  const [{ data: reactions }, signed, { data: votes }] = await Promise.all([
+  const prayerIds = rows.filter((r) => !r.deleted_at && r.content?.kind === "prayer").map((r) => r.id);
+  const [{ data: reactions }, signed, { data: votes }, prayers] = await Promise.all([
     supabase.from("d1_reactions").select("message_id, member_id, emoji").in("message_id", ids),
     live.length
       ? supabase.storage.from(MEDIA_BUCKET).createSignedUrls(
@@ -414,6 +478,7 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
     pollIds.length
       ? supabase.from("d1_poll_votes").select("message_id, member_id, option_id").in("message_id", pollIds)
       : Promise.resolve({ data: [] as { message_id: number; member_id: string; option_id: string }[] }),
+    prayerStates(prayerIds, callerId),
   ]);
 
   const urlFor = new Map((signed.data ?? []).map((s) => [s.path, s.signedUrl]));
@@ -446,7 +511,10 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
               url: urlFor.get(r.attachment.storage_path) ?? null,
             }
           : null,
-      content: !deleted && r.content ? livePollContent(openContent(r.content, r.group_id)!, r.id, callerId, votes ?? []) : null,
+      content:
+        !deleted && r.content
+          ? livePrayerContent(livePollContent(openContent(r.content, r.group_id)!, r.id, callerId, votes ?? [], { closesAt: r.poll_closes_at, closedAt: r.poll_closed_at }), prayers.get(r.id))
+          : null,
       reactions: deleted ? [] : [...byEmoji].map(([emoji, v]) => ({ emoji, ...v })),
       createdAt: r.created_at,
       editedAt: deleted ? null : r.edited_at,
@@ -493,6 +561,29 @@ export async function listMessages(
 }
 
 /**
+ * The group's prayer requests the caller can see (sent since they joined, not
+ * deleted, not from someone they've blocked), newest first. Open and answered.
+ */
+export async function listPrayerRequests(caller: Caller, groupId: string): Promise<D1Message[]> {
+  const [membership, blocked] = await Promise.all([requireGroupMembership(caller, groupId), blockedIds(caller.member.id)]);
+  const supabase = createServiceClient();
+  const { data: requests, error } = await supabase
+    .from("d1_prayer_requests")
+    .select("message_id")
+    .eq("group_id", groupId)
+    .gte("created_at", membership.joinedAt)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw fromDbError(error);
+  const ids = (requests ?? []).map((r) => r.message_id as number);
+  if (!ids.length) return [];
+  const { data, error: msgError } = await supabase.from("d1_messages").select(MESSAGE_SELECT).in("id", ids).is("deleted_at", null).order("id", { ascending: false });
+  if (msgError) throw fromDbError(msgError);
+  const rows = ((data ?? []) as unknown as MessageRow[]).filter((r) => !r.sender_id || !blocked.includes(r.sender_id));
+  return shape(rows, caller.member.id);
+}
+
+/**
  * The group's pinned messages the caller can see: sent since they joined, not
  * deleted, not from someone they've blocked. Newest pin first.
  */
@@ -520,6 +611,11 @@ export async function blockedIds(memberId: string): Promise<string[]> {
 }
 
 export async function getMessage(caller: Caller, messageId: number): Promise<D1Message> {
+  return getMessageFor(caller.member.id, messageId);
+}
+
+/** A message as `memberId` sees it (their own votes and reactions). Used by jobs, which have no request. */
+export async function getMessageFor(memberId: string, messageId: number): Promise<D1Message> {
   const { data, error } = await createServiceClient()
     .from("d1_messages")
     .select(MESSAGE_SELECT)
@@ -527,6 +623,6 @@ export async function getMessage(caller: Caller, messageId: number): Promise<D1M
     .maybeSingle();
   if (error) throw fromDbError(error);
   if (!data) throw new OneError("not_found", "That message doesn't exist.");
-  const [message] = await shape([data as unknown as MessageRow], caller.member.id);
+  const [message] = await shape([data as unknown as MessageRow], memberId);
   return message;
 }

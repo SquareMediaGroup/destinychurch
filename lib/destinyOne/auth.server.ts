@@ -218,6 +218,13 @@ async function loadReadReceipts(memberId: string): Promise<boolean> {
   return (data as { read_receipts: boolean }).read_receipts !== false;
 }
 
+/** Whether this member opted in to the daily "people prayed for you" summary (20261112_01). Read on its own, like read receipts; off until then. */
+async function loadPrayerSummary(memberId: string): Promise<boolean> {
+  const { data, error } = await createServiceClient().from("d1_members").select("prayer_summary").eq("id", memberId).maybeSingle();
+  if (error || !data) return false;
+  return (data as { prayer_summary: boolean }).prayer_summary === true;
+}
+
 /** The account's admin roles, if it has any (service-only table). Null for no row or no sign-in. */
 async function loadStaffRoles(authUserId: string | null) {
   if (!authUserId) return null;
@@ -231,13 +238,14 @@ async function loadStaffRoles(authUserId: string | null) {
 
 /** The D1Me payload for a member row (any status). */
 export async function toMe(member: MemberRow): Promise<D1Me> {
-  const [consents, settings, blocked, avatar, staff, readReceipts] = await Promise.all([
+  const [consents, settings, blocked, avatar, staff, readReceipts, prayerSummary] = await Promise.all([
     loadConsents(member.id),
     getSettings(),
     loadBlocked(member.id),
     avatarUrl(member.avatar_url),
     loadStaffRoles(member.auth_user_id),
     loadReadReceipts(member.id),
+    loadPrayerSummary(member.id),
   ]);
   const state = onboardingState(member, settings);
   const allowance = nameChangeAllowance(member.name_change_log);
@@ -251,6 +259,7 @@ export async function toMe(member: MemberRow): Promise<D1Me> {
     avatarUrl: avatar,
     blocked,
     readReceipts,
+    prayerSummary,
     status: member.status,
     roles: member.roles ?? [],
     isAdult: isAdult(member.adult_on),

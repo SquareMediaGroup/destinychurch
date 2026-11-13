@@ -33,7 +33,19 @@ export default function NotificationSettings() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { groupId } = useLocalSearchParams<{ groupId?: string }>();
-  const { communities } = useSession();
+  const { communities, me, setMe } = useSession();
+
+  /** Shown at once, put back if the server says no. */
+  async function setPrayerSummary(on: boolean) {
+    if (!me) return;
+    setMe({ ...me, prayerSummary: on });
+    try {
+      setMe(await api.updateSettings({ prayerSummary: on }));
+    } catch {
+      setMe({ ...me, prayerSummary: !on });
+      Alert.alert("Couldn't save that", "Check your connection and try again.");
+    }
+  }
   const focus = useGroupSummary(groupId);
   const [allowed, setAllowed] = useState<boolean | null>(null);
   // The choice belongs to the group it was made for, so it resets when groupId changes.
@@ -89,6 +101,16 @@ export default function NotificationSettings() {
           </Card>
           <Text style={{ paddingHorizontal: 16, fontSize: 13, lineHeight: 18, color: t.subtle }}>
             Message previews show the sender and first line. Announcements always notify unless muted.
+          </Text>
+        </View>
+
+        <View style={{ gap: 8 }}>
+          <Card style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, paddingHorizontal: 16 }}>
+            <Text style={{ flex: 1, fontSize: 17, color: t.text }}>Daily prayer summary</Text>
+            <Switch value={!!me?.prayerSummary} onValueChange={(on) => void setPrayerSummary(on)} trackColor={{ true: ORANGE, false: t.fill2 }} accessibilityLabel="Daily prayer summary" />
+          </Card>
+          <Text style={{ paddingHorizontal: 16, fontSize: 13, lineHeight: 18, color: t.subtle }}>
+            Once a day, how many people prayed for your prayer requests. No names, and nothing from the request itself.
           </Text>
         </View>
 

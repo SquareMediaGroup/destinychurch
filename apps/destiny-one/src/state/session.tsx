@@ -36,6 +36,7 @@ import { startHub, type Hub } from "@/lib/realtime";
 import { typing } from "@/state/typing";
 import { setReportingMember } from "@/lib/sentry";
 import { chatDrafts } from "@/state/drafts";
+import { forgetWelcome } from "@/state/welcomeChecklist";
 import { hasSeenSetup } from "@/state/setupSeen";
 
 type Href = "/welcome" | "/request" | "/waiting" | "/notices" | "/chats";
@@ -189,7 +190,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // Signed out from elsewhere (session revoked, account deleted): forget
       // this account here too. Our own sign-out and switching tidy up themselves.
       if (event === "SIGNED_OUT" && !busy.current) {
-        if (meRef.current) chatDrafts.forget(meRef.current.id);
+        if (meRef.current) {
+          chatDrafts.forget(meRef.current.id);
+          forgetWelcome(meRef.current.id);
+        }
         void clearCache().then(() => accounts.removeAccount(activeSlot, { signOut: false }));
       }
     });
@@ -360,7 +364,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // forgets the account whatever happens: chats, drafts and the saved session.
       await authSignOut().catch(() => undefined);
       await clearCache();
-      if (memberId) chatDrafts.forget(memberId);
+      if (memberId) {
+        chatDrafts.forget(memberId);
+        forgetWelcome(memberId);
+      }
       await accounts.removeAccount(slot, { signOut: false });
       const next = accounts.accounts()[0];
       if (next) await runSwitch(next.slot);
@@ -374,7 +381,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (slot === accounts.activeSlot()) return;
     const memberId = accounts.accounts().find((a) => a.slot === slot)?.memberId;
     await accounts.removeAccount(slot, { signOut: true });
-    if (memberId) chatDrafts.forget(memberId);
+    if (memberId) {
+      chatDrafts.forget(memberId);
+      forgetWelcome(memberId);
+    }
   }, []);
 
   // Ready once the cache is back from disk and we know who's signed in. With

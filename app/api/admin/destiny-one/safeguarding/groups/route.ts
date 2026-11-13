@@ -16,10 +16,16 @@ export async function GET() {
   const admin = await requireSafeguardingAdmin();
   if (admin instanceof NextResponse) return admin;
 
-  const [groups, { data: communities }] = await Promise.all([
+  const supabase = createServiceClient();
+  const [groups, { data: communities }, { data: flags }] = await Promise.all([
     listGroups(),
-    createServiceClient().from("d1_communities").select("id, name"),
+    supabase.from("d1_communities").select("id, name"),
+    // Read on its own so the list still loads before migration 20261112_02 is applied.
+    supabase.from("d1_groups").select("id, discoverable, u18_suitable"),
   ]);
   const names = new Map((communities ?? []).map((c) => [c.id, c.name as string]));
-  return NextResponse.json(groups.map((g) => ({ ...g, communityName: names.get(g.communityId) ?? "" })));
+  const discover = new Map((flags ?? []).map((f) => [f.id as string, { discoverable: f.discoverable === true, u18Suitable: f.u18_suitable === true }]));
+  return NextResponse.json(
+    groups.map((g) => ({ ...g, communityName: names.get(g.communityId) ?? "", discoverable: discover.get(g.id)?.discoverable ?? false, u18Suitable: discover.get(g.id)?.u18Suitable ?? false })),
+  );
 }

@@ -31,6 +31,9 @@ export const RELEASES: Release[] = [
       { icon: "poll", title: "Polls that close", body: "Give a poll a closing time. When it closes, DestinyAI posts the result in the chat." },
       { icon: "heart", title: "Prayer requests", body: "Tap + and choose Prayer request to ask your group to pray. Others can tap I prayed, and you can mark it answered." },
       { icon: "people", title: "Discover groups", body: "Find groups open to new people on the Search tab and ask to join. A leader will answer." },
+      { icon: "doc", title: "Verses in chat", body: "Type a reference like John 3:16 and the verse shows under your message, with Read in Bible App. Or tap + and choose Verse." },
+      { icon: "sparkle", title: "Verse of the day", body: "A new verse at the top of Chats every day. Tap it to read more or share it. You can hide it in Appearance." },
+      { icon: "docLines", title: "Sermon notes", body: "Take notes during a sermon from Profile, or tap Take notes on a sermon. Verses you type show under your note. Notes stay on your phone." },
     ],
   },
   {

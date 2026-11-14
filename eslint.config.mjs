@@ -37,6 +37,8 @@ const eslintConfig = defineConfig([
     "apps/status/**",
     // Campaign videos: a Remotion project with its own package.json and checks.
     "apps/campaign-videos/**",
+    // Claude Code plugins (plugins/real-motion: a Remotion kit copied into other projects, not built here).
+    "plugins/**",
     // Agent worktrees are full copies of the app, gitignored; linting them
     // would report every problem twice.
     ".claude/**",

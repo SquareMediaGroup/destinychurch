@@ -79,6 +79,9 @@ before/after pairs for sliders in `stills/before-after/`. See `stills/README.md`
   (gitignored, about 170 JPEGs) and the step list in `src/tutorials/shop-steps.json` (committed), so re-run the
   capture before rendering on a fresh checkout. Restart the mock before each run: a run changes the shop.
   Poster: `public/img/admin-help/shop-poster.webp`.
+- **Making or re-filming a tutorial**: follow `TUTORIALS.md` (this repo's /admin setup) with the Real Motion skill
+  (`.claude/skills/real-motion`), which also covers promo films. `scripts/contact-sheet.py` checks a tutorial's
+  frames before rendering.
 - **Making another role's tutorial**: write `capture/<id>-tutorial.cjs` with `film()` from
   `capture/tutorial-kit.cjs` (setup steps are at its top), add a seed for the pretend data if the pages need any,
   then a two-line `src/<Name>Tutorial.tsx` with `defineTutorial()` from `src/Tutorial.tsx`, and register it in

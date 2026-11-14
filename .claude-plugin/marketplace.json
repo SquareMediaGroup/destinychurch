@@ -1,0 +1,11 @@
+{
+  "name": "squaremedia-tools",
+  "owner": { "name": "Square Media Group" },
+  "plugins": [
+    {
+      "name": "real-motion",
+      "source": "./plugins/real-motion",
+      "description": "Real Motion: SaaS promo films, product demos and tutorial videos in Remotion, with aggressive ease-in-out motion and real captured product screens."
+    }
+  ]
+}

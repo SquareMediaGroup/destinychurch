@@ -478,7 +478,10 @@ destinychurch/
 │   └── workflows/                 # ci.yml (every PR), playwright.yml (manual e2e), AI content jobs, talent-buzzer-release.yml
 │
 ├── .claude/                       # Claude Code settings
-│   └── skills/                    # Project skills: vibe-security, remotion-* (Remotion video skills from remotion-dev/skills)
+│   └── skills/                    # Project skills: vibe-security, real-motion (symlink to plugins/real-motion), remotion-* (Remotion video skills from remotion-dev/skills)
+├── .claude-plugin/                # marketplace.json: lists plugins/ for `/plugin marketplace add`
+├── plugins/
+│   └── real-motion/               # Claude Code plugin: the Real Motion video skill (promo films, walkthroughs) and its kit
 ├── .vscode/                       # VS Code workspace settings
 ├── next.config.ts                 # Next.js configuration
 ├── playwright.config.ts           # E2E test configuration
@@ -8522,6 +8525,9 @@ A small **Next.js app deployed as its own Vercel project** (root directory `apps
 - No uptime history or alerting yet: that needs somewhere to store results that isn't Supabase.
 
 ### Campaign videos — `apps/campaign-videos/`
+
+Videos are made with the **Real Motion** skill (`plugins/real-motion/skills/real-motion`, linked into `.claude/skills/real-motion`): promo films and walkthroughs in the house motion style, with a portable kit. The same folder is a Claude Code plugin, listed in `.claude-plugin/marketplace.json`, so other repos can install it. The /admin tutorial setup is in `apps/campaign-videos/TUTORIALS.md`.
+
 A **Remotion** project (React, rendered to MP4) holding the launch films for the refreshed website and Destiny One. Two compositions share one timeline (`src/Campaign.tsx`) and differ only in the ending: `ComingIn2027` and `DownloadToday` (Apple's official App Store badge, unmodified; iOS only, see below). 1920x1080, 30 fps, 3:30. Both endings point to destinytees.uk/app.
 - **Structure**: "Introducing our new website", why it changed (four plain-language reasons, one per screen), before/after wipes from the old destinytees.uk pages, Lighthouse figures as old-vs-new bar charts, then the home page, Smart Search (typed out, desktop and phone), sermons, What's On, plan your visit, the shop's move from shop.destinytees.uk with on-page checkout, ministries and the little things (accessibility, NFC seats, help, training, governance, links). It ends on the logo, then "Oh, and one more thing" introduces Destiny One (communities, chat, DestinyAI, appearance, safeguarding). Light pages, no glows, one aggressive ease in-out for every move, punch-ins on details.
 - **Device frames** are Apple's iPhone 18 Pro and MacBook Pro 14" product bezels, fetched by `scripts/get-bezels.sh` into the gitignored `public/bezels/`: Apple's licence bans redistributing them and only covers mock-ups of Apple-only software, so the films show Destiny One for iOS only.

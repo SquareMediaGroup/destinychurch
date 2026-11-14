@@ -478,7 +478,7 @@ destinychurch/
 │   └── workflows/                 # ci.yml (every PR), playwright.yml (manual e2e), AI content jobs, talent-buzzer-release.yml
 │
 ├── .claude/                       # Claude Code settings
-│   └── skills/                    # Project skills: vibe-security, remotion-* (Remotion video skills from remotion-dev/skills)
+│   └── skills/                    # Project skills: vibe-security, admin-tutorial (making the admin help videos), remotion-* (Remotion video skills from remotion-dev/skills)
 ├── .vscode/                       # VS Code workspace settings
 ├── next.config.ts                 # Next.js configuration
 ├── playwright.config.ts           # E2E test configuration
@@ -8522,6 +8522,9 @@ A small **Next.js app deployed as its own Vercel project** (root directory `apps
 - No uptime history or alerting yet: that needs somewhere to store results that isn't Supabase.
 
 ### Campaign videos — `apps/campaign-videos/`
+
+To make or re-film an admin help tutorial, follow the project skill `.claude/skills/admin-tutorial/SKILL.md`: the whole recipe from mapping a role to the pretend data, filming, checking frames (`scripts/contact-sheet.py`), rendering, thumbnail, help entry and YouTube.
+
 A **Remotion** project (React, rendered to MP4) holding the launch films for the refreshed website and Destiny One. Two compositions share one timeline (`src/Campaign.tsx`) and differ only in the ending: `ComingIn2027` and `DownloadToday` (Apple's official App Store badge, unmodified; iOS only, see below). 1920x1080, 30 fps, 3:30. Both endings point to destinytees.uk/app.
 - **Structure**: "Introducing our new website", why it changed (four plain-language reasons, one per screen), before/after wipes from the old destinytees.uk pages, Lighthouse figures as old-vs-new bar charts, then the home page, Smart Search (typed out, desktop and phone), sermons, What's On, plan your visit, the shop's move from shop.destinytees.uk with on-page checkout, ministries and the little things (accessibility, NFC seats, help, training, governance, links). It ends on the logo, then "Oh, and one more thing" introduces Destiny One (communities, chat, DestinyAI, appearance, safeguarding). Light pages, no glows, one aggressive ease in-out for every move, punch-ins on details.
 - **Device frames** are Apple's iPhone 18 Pro and MacBook Pro 14" product bezels, fetched by `scripts/get-bezels.sh` into the gitignored `public/bezels/`: Apple's licence bans redistributing them and only covers mock-ups of Apple-only software, so the films show Destiny One for iOS only.

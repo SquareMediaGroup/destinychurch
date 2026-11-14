@@ -478,7 +478,7 @@ destinychurch/
 │   └── workflows/                 # ci.yml (every PR), playwright.yml (manual e2e), AI content jobs, talent-buzzer-release.yml
 │
 ├── .claude/                       # Claude Code settings
-│   └── skills/                    # Project skills: vibe-security, admin-tutorial (making the admin help videos), remotion-* (Remotion video skills from remotion-dev/skills)
+│   └── skills/                    # Project skills: vibe-security, tutorial-video (tutorial and demo videos of any app; references/destiny-admin.md for /admin), remotion-* (Remotion video skills from remotion-dev/skills)
 ├── .vscode/                       # VS Code workspace settings
 ├── next.config.ts                 # Next.js configuration
 ├── playwright.config.ts           # E2E test configuration
@@ -8523,7 +8523,7 @@ A small **Next.js app deployed as its own Vercel project** (root directory `apps
 
 ### Campaign videos — `apps/campaign-videos/`
 
-To make or re-film an admin help tutorial, follow the project skill `.claude/skills/admin-tutorial/SKILL.md`: the whole recipe from mapping a role to the pretend data, filming, checking frames (`scripts/contact-sheet.py`), rendering, thumbnail, help entry and YouTube.
+To make or re-film a tutorial or demo video of any app, follow the project skill `.claude/skills/tutorial-video/SKILL.md` (the general method: pretend data, filming the real interface, checking frames with `scripts/contact-sheet.py`, rendering, thumbnail and chapters). Its `references/destiny-admin.md` has the /admin setup used for the admin help series.
 
 A **Remotion** project (React, rendered to MP4) holding the launch films for the refreshed website and Destiny One. Two compositions share one timeline (`src/Campaign.tsx`) and differ only in the ending: `ComingIn2027` and `DownloadToday` (Apple's official App Store badge, unmodified; iOS only, see below). 1920x1080, 30 fps, 3:30. Both endings point to destinytees.uk/app.
 - **Structure**: "Introducing our new website", why it changed (four plain-language reasons, one per screen), before/after wipes from the old destinytees.uk pages, Lighthouse figures as old-vs-new bar charts, then the home page, Smart Search (typed out, desktop and phone), sermons, What's On, plan your visit, the shop's move from shop.destinytees.uk with on-page checkout, ministries and the little things (accessibility, NFC seats, help, training, governance, links). It ends on the logo, then "Oh, and one more thing" introduces Destiny One (communities, chat, DestinyAI, appearance, safeguarding). Light pages, no glows, one aggressive ease in-out for every move, punch-ins on details.

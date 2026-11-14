@@ -1,13 +1,8 @@
----
-name: admin-tutorial
-description: Make or re-film an admin help tutorial video for Destiny Admin (/admin) - filmed on the real admin against a pretend database, animated in Remotion, with a poster, YouTube thumbnail, chapters and a /admin/help entry. Use when asked to make a tutorial or help video for an admin role or section, to update one after a page changed, or to make its thumbnail.
----
+# Destiny Admin (/admin) tutorials
 
-# Admin help tutorials
-
-Every admin role has a tutorial: a real walkthrough of /admin, filmed by a script and animated
-with a cursor, clicks, camera zooms and captions. They live in `apps/campaign-videos` and play
-on /admin/help from YouTube. This is the whole recipe, from mapping a role to a finished video.
+The repo-specific setup for filming the admin, to use with the general method in `../SKILL.md`.
+Every admin role already has a tutorial (the help series on /admin/help, played from YouTube), so a
+new one is usually a new section or role, or a re-film after a page changed.
 
 The pieces, all in `apps/campaign-videos`:
 
@@ -26,23 +21,17 @@ The pieces, all in `apps/campaign-videos`:
 | `scripts/youtube-chapters.mjs` | Prints the chapter timestamps for the YouTube description. |
 | `lib/adminHelpVideos.ts` (repo root) | The list /admin/help shows. |
 
-## Rules that always hold
+## Repo-specific rules (on top of the general ones)
 
-- **Invented people only.** Every name, email and message in a seed is made up (`@example.com`).
-  Public church content is fine: real shop photos, public events, the public podcast feed.
-- **Nothing reaches a real service or the live database.** The filming site points Supabase at the
-  mock. Leave Stripe, Buzzsprout, Playbook, YouTube and OpenAI keys unset; email goes to the mock.
-  A step that needs an outside service is answered in the browser (`t.ctx.route`) or explained in
-  the caption without pressing it. Never film Destiny One messages from the real database.
-- **Captions must be true.** Check each one against the code before filming: what the button
-  really does, what it doesn't (for example "Mark refunded" changes the status; no money moves).
-  Use the page's real labels. UK spelling, plain words, no emojis on screen.
-- **Video files never go in git.** Frames (`public/tutorial/`) and renders (`out/`) are
-  gitignored. Commit the scripts, seeds, step list (`src/tutorials/<id>-steps.json`), composition,
-  poster, thumbnail source frame and help entry. Send the finished MP4 to the user for YouTube.
-- **The music credit** goes on /admin/help (already there) and in every YouTube description:
-  "Inspired" by Kevin MacLeod (incompetech.com), licensed under Creative Commons: By Attribution 4.0.
-- Branch from `origin/main`, open a PR, merge only when the user says so (see CLAUDE.md).
+- Public church content is fine on screen: real shop photos, public events, the public podcast feed.
+- Leave Stripe, Buzzsprout, Playbook, YouTube and OpenAI keys unset on the filming site; email
+  goes to the mock (`RESEND_BASE_URL`). Never film Destiny One messages from the real database.
+- UK spelling, no emojis on screen (CLAUDE.md).
+- Frames (`public/tutorial/`) and renders (`out/`) are gitignored. Commit scripts, seeds, the step
+  list (`src/tutorials/<id>-steps.json`), composition, poster, thumbnail source frame and help entry.
+- Music: "Inspired" by Kevin MacLeod (incompetech.com), licensed under Creative Commons: By
+  Attribution 4.0. The credit is on /admin/help and goes in every YouTube description.
+- Branch from `origin/main`, open a PR, merge only when the user says so.
 
 ## 1. Map the role
 

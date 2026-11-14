@@ -79,8 +79,9 @@ before/after pairs for sliders in `stills/before-after/`. See `stills/README.md`
   (gitignored, about 170 JPEGs) and the step list in `src/tutorials/shop-steps.json` (committed), so re-run the
   capture before rendering on a fresh checkout. Restart the mock before each run: a run changes the shop.
   Poster: `public/img/admin-help/shop-poster.webp`.
-- **The step-by-step recipe** for making or re-filming a tutorial is the project skill
-  `.claude/skills/admin-tutorial/SKILL.md` (ask Claude to "make a tutorial for …"). `scripts/contact-sheet.py`
+- **The step-by-step recipe** for making or re-filming a tutorial video of any app is the project skill
+  `.claude/skills/tutorial-video/SKILL.md` (ask Claude to "make a tutorial for …"); its
+  `references/destiny-admin.md` covers the /admin setup. `scripts/contact-sheet.py`
   checks a tutorial's frames before rendering.
 - **Making another role's tutorial**: write `capture/<id>-tutorial.cjs` with `film()` from
   `capture/tutorial-kit.cjs` (setup steps are at its top), add a seed for the pretend data if the pages need any,

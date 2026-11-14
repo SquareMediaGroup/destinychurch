@@ -114,3 +114,29 @@ async function send(recipients: { token: string; memberId: string }[], groupId: 
     console.log(`🧹 Removed ${dead.length} unregistered push token(s)`);
   }
 }
+
+/**
+ * A notice to one person that isn't a chat message ("Your scheduled message
+ * wasn't sent"). Goes to every phone they have, with no message text in it:
+ * only what went wrong. Best-effort, like every push.
+ */
+export async function pushNotice(memberId: string, title: string, body: string, data: Record<string, unknown> = {}): Promise<void> {
+  try {
+    const { data: tokens } = await createServiceClient().from("d1_push_tokens").select("token").eq("member_id", memberId);
+    const to = (tokens ?? []).map((t) => t.token as string);
+    if (to.length === 0) return;
+    const res = await fetch(EXPO_PUSH_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(process.env.EXPO_ACCESS_TOKEN ? { Authorization: `Bearer ${process.env.EXPO_ACCESS_TOKEN}` } : {}),
+      },
+      body: JSON.stringify(to.map((token) => ({ to: token, title, body, sound: "default", channelId: "messages", data: { type: "notice", memberId, ...data } }))),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) console.error(`⚠️ Expo push (notice) returned ${res.status}`);
+  } catch (err) {
+    console.error("⚠️ Destiny One notice push failed:", err);
+  }
+}

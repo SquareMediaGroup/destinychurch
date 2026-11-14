@@ -24,6 +24,16 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: "0.14",
+    features: [
+      { icon: "check", title: "Getting started", body: "New to Destiny One? A short checklist at the top of Chats helps you set up: a profile picture, notifications, your first group. It ticks itself as you go." },
+      { icon: "clock", title: "Schedule messages", body: "Leaders: hold Send and choose Schedule to send a message, photo, event or poll later. Change or cancel it any time before it goes." },
+      { icon: "poll", title: "Polls that close", body: "Give a poll a closing time. When it closes, DestinyAI posts the result in the chat." },
+      { icon: "heart", title: "Prayer requests", body: "Tap + and choose Prayer request to ask your group to pray. Others can tap I prayed, and you can mark it answered." },
+      { icon: "people", title: "Discover groups", body: "Find groups open to new people on the Search tab and ask to join. A leader will answer." },
+    ],
+  },
+  {
     version: "0.13",
     features: [
       { icon: "play", title: "Send videos", body: "Tap the + button, then Video. Videos are shrunk on your phone before they send, so they upload quickly and use less data. Up to 3 minutes." },

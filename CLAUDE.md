@@ -18,6 +18,13 @@ Expo and the Next dev server serve whatever is on disk in the checkout they were
 - When the user says a change is missing on the simulator, check first: which checkout/branch is Expo serving (`lsof -a -p <expo pid> -d cwd`), is it behind `origin/main`, and is the PR actually merged. Only then look at the code.
 - Say clearly if a feature lives in an unmerged PR or needs an unapplied Supabase migration, so it is not mistaken for a stale build.
 
+## Destiny One versions
+
+- **Every PR that changes the Destiny One app (`apps/destiny-one`) bumps its version** in `apps/destiny-one/app.json`: the patch number by default (0.14.0 → 0.14.1). Bump X.X (0.14 → 0.15) only when the user asks for a new release number.
+- A stacked PR bumps from its base PR's version, not from `main`'s.
+- Add a "What's new" entry at the top of `apps/destiny-one/src/lib/releases.ts` for anything members would notice. A patch entry shows the release splash only with `splash: true` (see the policy at the top of that file): set it for new features, leave it off for small fixes.
+- Say the new version in the PR title and description.
+
 ## Documentation
 
 - **Keep REPOSITORY_DOCUMENTATION.md in sync** — This is the single source of truth for the codebase

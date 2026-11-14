@@ -95,6 +95,8 @@ export interface D1Me {
   blocked: { id: string; displayName: string }[];
   /** Shares read receipts, and so sees other people's (Profile → Privacy and safety). On by default. */
   readReceipts: boolean;
+  /** Opted in to one notification a day saying how many people prayed for their requests. Off by default. */
+  prayerSummary: boolean;
   status: D1MemberStatus;
   roles: D1LeaderRole[];
   isAdult: boolean;
@@ -181,6 +183,46 @@ export interface D1GroupMember {
   isAdult?: boolean;
 }
 
+/** A group offered in Discover groups, with the asking member's own request (if any). */
+export interface D1DiscoverGroup {
+  groupId: string;
+  communityId: string;
+  communityName: string;
+  name: string;
+  /** The leaders' one-line description. */
+  blurb: string | null;
+  /** 1 = Monday ... 7 = Sunday; null when it varies. */
+  meetingDay: number | null;
+  meetingArea: string | null;
+  /** A safeguarding admin has marked it suitable for under-18s. */
+  u18Suitable: boolean;
+  memberCount: number;
+  /** This member's waiting request, if they've asked. */
+  requestId: number | null;
+  /** When a declined member can ask again, if they were declined in the last 30 days. */
+  declinedUntil: string | null;
+}
+
+/** A request to join a group, as its leaders see it. */
+export interface D1JoinRequest {
+  id: number;
+  groupId: string;
+  member: { id: string; displayName: string };
+  /** The note they wrote, if any. */
+  note: string | null;
+  createdAt: string;
+}
+
+/** How a group is set up in Discover (leaders only). */
+export interface D1DiscoverSettings {
+  on: boolean;
+  blurb: string | null;
+  meetingDay: number | null;
+  meetingArea: string | null;
+  /** Set by a safeguarding admin, never by leaders. */
+  u18Suitable: boolean;
+}
+
 export interface D1GroupDetail extends D1GroupSummary {
   description: string | null;
   members: D1GroupMember[];
@@ -188,6 +230,10 @@ export interface D1GroupDetail extends D1GroupSummary {
   canPost: boolean;
   /** Pinned messages, newest pin first (at most 3). Only ones the caller can see. */
   pinned: D1Message[];
+  /** How it appears in Discover groups; leaders only. */
+  discover?: D1DiscoverSettings;
+  /** Requests to join waiting for a leader; leaders only. */
+  pendingJoinRequests?: number;
   /** Current counts against the rules, for leaders. */
   rules?: { members: number; adults: number; minMembers: number; minAdults: number };
 }
@@ -263,6 +309,10 @@ export interface D1PollContent {
     votes: D1PollTally[];
     /** This member's current choice(s). Empty if they haven't voted. */
     myOptionIds: string[];
+    /** When voting stops, if the poll has a deadline. Filled in by the server from the message row. */
+    closesAt?: string | null;
+    /** When voting actually stopped (at the deadline, or closed by hand). Voting is refused from then on. */
+    closedAt?: string | null;
   };
 }
 
@@ -290,13 +340,55 @@ export interface D1CardContent {
   cards: ChurchCardSet;
 }
 
-export type D1MessageContent = D1EventContent | D1PollContent | D1SermonContent | D1CardContent;
+/**
+ * A prayer request (1.2). A message like any other (sealed, reportable, kept a
+ * year); others tap "I prayed", and the person who asked can mark it answered.
+ */
+export interface D1PrayerContent {
+  kind: "prayer";
+  prayer: {
+    text: string;
+    /** How many people have tapped "I prayed". Names are fetched on request (api.prayedBy). */
+    prayedCount: number;
+    /** Whether this member has. */
+    iPrayed: boolean;
+    /** When its author marked it answered; null while it is open. */
+    answeredAt: string | null;
+    /** The author's short update when they marked it answered, if they wrote one. */
+    answerUpdate: string | null;
+  };
+}
+
+export type D1MessageContent = D1EventContent | D1PollContent | D1SermonContent | D1CardContent | D1PrayerContent;
 
 /** What the app sends to create a poll — the server mints option ids and tallies. */
 export interface D1PollDraft {
   question: string;
   options: string[];
   allowMultiple: boolean;
+  /** ISO time voting stops. Omitted for no deadline. */
+  closesAt?: string | null;
+  /** Pin DestinyAI's result message when the poll closes (group admins only). */
+  pinResult?: boolean;
+}
+
+/**
+ * A message a leader has scheduled and that hasn't gone out yet. The text is
+ * opened for the leaders and admins of the group, who can edit, send now or
+ * delete it; members never see this.
+ */
+export interface D1ScheduledMessage {
+  id: number;
+  groupId: string;
+  /** When it will be sent (ISO). */
+  runAt: string;
+  createdBy: { id: string; displayName: string } | null;
+  body: string | null;
+  attachmentId: string | null;
+  poll: D1PollDraft | null;
+  event: D1EventRef | null;
+  /** Always "pending" in a list; "running" only for a moment at send time. */
+  status: "pending" | "running";
 }
 
 /** What the app sends to attach an event — the server re-fetches and snapshots it. */
@@ -388,6 +480,14 @@ export type D1RealtimeEvent =
   | { event: "message_edited"; payload: { id: number; groupId: string; body: string; editedAt: string; mentions: string[] } }
   | { event: "reaction"; payload: { messageId: number; groupId: string; memberId: string; emoji: string; added: boolean } }
   | { event: "poll_vote"; payload: { messageId: number; groupId: string; votes: D1PollTally[]; totalVoters: number } }
+  /** Someone asked to join a group (or a request was answered or withdrawn): leaders re-fetch the list. */
+  | { event: "join_requests_changed"; payload: { groupId: string } }
+  /** Someone tapped (or untapped) "I prayed": the new count. Never who. */
+  | { event: "prayer_tap"; payload: { messageId: number; groupId: string; count: number } }
+  /** A prayer request was marked answered by the person who asked. */
+  | { event: "prayer_answered"; payload: { messageId: number; groupId: string; answeredAt: string; update: string | null } }
+  /** A poll stopped taking votes (its deadline passed, or it was closed by hand). */
+  | { event: "poll_closed"; payload: { messageId: number; groupId: string; closedAt: string } }
   | { event: "members_changed"; payload: { groupId: string } }
   /** A message's link preview is ready (or was removed by an edit). */
   | { event: "link_preview"; payload: { id: number; groupId: string; preview: D1LinkPreview | null } }

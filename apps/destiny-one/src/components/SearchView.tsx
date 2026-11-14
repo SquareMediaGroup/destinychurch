@@ -172,6 +172,19 @@ export function SearchView({ mode, groupId }: { mode: "tab" | "modal"; groupId?:
         </View>
       ) : null}
 
+      {isTab && !q ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Discover groups"
+          onPress={() => router.push("/discover")}
+          style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, marginHorizontal: 16, marginTop: 14, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: pressed ? t.fill2 : t.fill })}
+        >
+          <Icon name="people" size={20} color={t.tint} strokeWidth={2} />
+          <Text style={{ flex: 1, fontSize: 16, fontWeight: "600", color: t.text }}>Discover groups</Text>
+          <Icon name="chevronRight" size={13} color={t.subtle} strokeWidth={2.4} />
+        </Pressable>
+      ) : null}
+
       <SectionList
         sections={sections}
         keyExtractor={(item) => (item.kind === "group" ? `g${item.hit.g.id}` : `m${item.hit.id}`)}

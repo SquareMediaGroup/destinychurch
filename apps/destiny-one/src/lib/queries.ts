@@ -36,6 +36,8 @@ export const keys = {
   group: (id: string) => ["group", id] as const,
   messages: (groupId: string) => ["messages", groupId] as const,
   media: (groupId: string) => ["media", groupId] as const,
+  scheduled: (groupId: string) => ["scheduled", groupId] as const,
+  prayers: (groupId: string) => ["prayers", groupId] as const,
   appConfig: ["appConfig"] as const,
   events: ["events"] as const,
 };
@@ -225,6 +227,31 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
         list.map((m) => {
           if (m.id !== messageId || m.content?.kind !== "poll") return m;
           return { ...m, content: { kind: "poll", poll: { ...m.content.poll, votes, totalVoters } } };
+        }),
+      );
+      return;
+    }
+    case "prayer_tap": {
+      const { messageId, groupId, count } = e.payload;
+      updateMessages(groupId, (list) =>
+        list.map((m) => (m.id === messageId && m.content?.kind === "prayer" ? { ...m, content: { kind: "prayer", prayer: { ...m.content.prayer, prayedCount: count } } } : m)),
+      );
+      return;
+    }
+    case "prayer_answered": {
+      const { messageId, groupId, answeredAt, update } = e.payload;
+      updateMessages(groupId, (list) =>
+        list.map((m) => (m.id === messageId && m.content?.kind === "prayer" ? { ...m, content: { kind: "prayer", prayer: { ...m.content.prayer, answeredAt, answerUpdate: update } } } : m)),
+      );
+      void queryClient.invalidateQueries({ queryKey: keys.prayers(groupId) });
+      return;
+    }
+    case "poll_closed": {
+      const { messageId, groupId, closedAt } = e.payload;
+      updateMessages(groupId, (list) =>
+        list.map((m) => {
+          if (m.id !== messageId || m.content?.kind !== "poll") return m;
+          return { ...m, content: { kind: "poll", poll: { ...m.content.poll, closedAt } } };
         }),
       );
       return;

@@ -1,5 +1,6 @@
 // Choose a ChurchSuite event to share into the chat. Picking one hands its
-// ref back to the group screen (state/eventPick.ts), which sends it.
+// ref back to the group screen (state/eventPick.ts), which sends it, or, opened
+// from the Schedule screen (?for=schedule), back to that screen instead.
 
 import { useEffect, useMemo, useState } from "react";
 import { FlatList, View } from "react-native";
@@ -11,13 +12,14 @@ import { Icon } from "@/components/Icon";
 import { EmptyState, ErrorState, Field, ModalHeader, SkeletonRows } from "@/components/ui";
 import { api } from "@/lib/api";
 import { eventPick } from "@/state/eventPick";
+import { scheduleEventTarget } from "./schedule";
 import { errorMessage } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
 
 export default function EventPicker() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, for: target } = useLocalSearchParams<{ id: string; for?: string }>();
   const [query, setQuery] = useState("");
   const [events, setEvents] = useState<D1EventSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export default function EventPicker() {
   }, [events, query]);
 
   function choose(e: D1EventSummary) {
-    eventPick.set(id, e);
+    eventPick.set(target === "schedule" ? scheduleEventTarget(id) : id, e);
     router.back();
   }
 

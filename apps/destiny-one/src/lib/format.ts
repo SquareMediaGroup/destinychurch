@@ -99,3 +99,8 @@ export function messageSummary(m: Pick<D1Message, "body" | "content" | "attachme
   if (mime.startsWith("video/")) return "Video";
   return "Attachment";
 }
+
+/** "Sat 14 Nov, 09:00", in UK time whatever time zone the phone is in. Used for when a message sends or a poll closes. */
+export function formatUkTime(when: Date | string): string {
+  return new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(when));
+}

@@ -106,6 +106,8 @@ export function openReason(reason: string | null | undefined, groupId: string): 
 }
 
 function mapPollText(content: D1MessageContent, groupId: string, fn: (text: string, groupId: string) => string): D1MessageContent {
+  // A prayer request's text is sealed the same way (its answered update lives in d1_prayer_requests, sealed as a body).
+  if (content.kind === "prayer") return { ...content, prayer: { ...content.prayer, text: fn(content.prayer.text, groupId) } };
   if (content.kind !== "poll") return content;
   return {
     ...content,

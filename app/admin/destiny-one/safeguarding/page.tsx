@@ -52,7 +52,7 @@ interface Report {
   } | null;
 }
 
-type GroupRow = AdminGroup & { communityName: string };
+type GroupRow = AdminGroup & { communityName: string; discoverable?: boolean; u18Suitable?: boolean };
 
 const EVENT_LABEL: Record<SafeguardingEvent["kind"], string> = {
   frozen: "Paused automatically",
@@ -153,6 +153,21 @@ export default function SafeguardingPage() {
       const res = await adminSend("POST", `/safeguarding/groups/${group.id}/freeze`, { frozen: false, reason: "" });
       if (!res.ok) setError(res.error);
     }
+    reload();
+  }
+
+  async function markU18(group: GroupRow) {
+    const suitable = !group.u18Suitable;
+    const ok = await confirm({
+      title: suitable ? `Mark ${group.name} suitable for under-18s?` : `Remove the under-18s mark from ${group.name}?`,
+      message: suitable
+        ? "Under-18s in this community will be able to see the group in Discover groups, ask to join and be approved. Only mark it once you are satisfied the group is safe for them."
+        : "Under-18s will no longer see it in Discover groups, and any of their requests waiting to join are withdrawn. Under-18s already in the group stay in it.",
+      confirmLabel: suitable ? "Mark suitable" : "Remove mark",
+    });
+    if (!ok) return;
+    const res = await adminSend("POST", `/safeguarding/groups/${group.id}/u18`, { suitable });
+    if (!res.ok) setError(res.error);
     reload();
   }
 
@@ -257,6 +272,12 @@ export default function SafeguardingPage() {
                 <p className="text-sm text-destiny-grey/55 dark:text-white/55">{g.communityName} · {g.memberCount} people, {g.adultCount} adults</p>
               </div>
               {g.state !== "active" && <Badge tone={g.state === "archived" ? "grey" : "red"}>{g.state === "archived" ? "Archived" : "Paused"}</Badge>}
+              {g.u18Suitable && <Badge tone="green">Suitable for under-18s</Badge>}
+              {g.kind === "group" && g.state !== "archived" && (
+                <button className={ghostBtn} onClick={() => markU18(g)} title="Under-18s can only find and join Discover groups that have this mark">
+                  {g.u18Suitable ? "Remove under-18s mark" : "Mark suitable for under-18s"}
+                </button>
+              )}
               <button className={ghostBtn} onClick={() => setReviewing({ id: g.id, name: g.name })}>Review</button>
               {g.state !== "archived" && (
                 <button className={g.state === "frozen" && g.freezeKind === "manual" ? ghostBtn : dangerBtn} onClick={() => freeze(g)}>
@@ -395,6 +416,7 @@ function TranscriptModal({ group, onClose }: { group: { id: string; name: string
 function contentText(content: D1MessageContent): string {
   if (content.kind === "poll") return `Poll: ${content.poll.question} (${content.poll.options.map((o) => o.label).join(" / ")})`;
   if (content.kind === "sermon") return `Sermon: ${content.sermon.title}`;
+  if (content.kind === "prayer") return `Prayer request: ${content.prayer.text}${content.prayer.answeredAt ? ` (answered${content.prayer.answerUpdate ? `: ${content.prayer.answerUpdate}` : ""})` : ""}`;
   if (content.kind === "card") return `Card: ${content.cards.people?.[0]?.name ?? content.cards.info?.[0]?.title ?? "church info"}`;
   return `Event: ${content.event.name}`;
 }

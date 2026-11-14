@@ -25,6 +25,9 @@ import type {
   D1MessageHit,
   D1MessagePage,
   D1PollDraft,
+  D1ScheduledMessage,
+  D1DiscoverGroup,
+  D1JoinRequest,
   D1ReadReceipts,
   D1UploadTicket,
 } from "./types";
@@ -161,7 +164,7 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
       call<{ tokenHash: string; type: "magiclink" }>("POST", "/auth/churchsuite/exchange", { code, verifier }),
     me: () => call<D1Me>("GET", "/me"),
     /** Account settings. `readReceipts: false` stops sharing (and seeing) read receipts. */
-    updateSettings: (input: { readReceipts?: boolean }) => call<D1Me>("PATCH", "/me/settings", input),
+    updateSettings: (input: { readReceipts?: boolean; prayerSummary?: boolean }) => call<D1Me>("PATCH", "/me/settings", input),
     /** Change my own name. */
     updateName: (firstName: string, lastName: string) => call<D1Me>("PATCH", "/me", { firstName, lastName }),
     /** For `onboarding: "request_needed"` — ask the church team for access. */
@@ -235,7 +238,7 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     groupMedia: (groupId: string, opts: { before?: number; limit?: number } = {}) =>
       call<D1MessagePage>("GET", `/groups/${groupId}/media${q(opts)}`),
     /** `mentions`: ids of the group members "@named" in `body` (findMentions). */
-    send: (groupId: string, input: { body?: string; replyTo?: number; attachmentId?: string; poll?: D1PollDraft; event?: D1EventRef; mentions?: string[] }) =>
+    send: (groupId: string, input: { body?: string; replyTo?: number; attachmentId?: string; poll?: D1PollDraft; event?: D1EventRef; prayer?: { text: string }; mentions?: string[] }) =>
       call<D1Message>("POST", `/groups/${groupId}/messages`, input),
     deleteMessage: (messageId: number) => call<{ ok: true }>("DELETE", `/messages/${messageId}`),
     /** Send a copy of a message to up to 5 other chats I can post in (not polls). */
@@ -256,6 +259,41 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     /** Cast (or clear, with an empty array) this member's vote(s) on a poll message. */
     vote: (messageId: number, optionIds: string[]) =>
       call<{ ok: true }>("POST", `/messages/${messageId}/vote`, { optionIds }),
+    /** Groups open to join in my communities (and that I'm not in): for under-18s, only ones marked suitable. */
+    discoverGroups: () => call<D1DiscoverGroup[]>("GET", "/discover"),
+    /** Ask to join a group in Discover, with an optional note. */
+    requestJoin: (groupId: string, note?: string | null) => call<{ id: number }>("POST", `/groups/${groupId}/join-request`, { note: note ?? null }),
+    /** Take back my waiting request. */
+    withdrawJoin: (groupId: string) => call<{ ok: true }>("DELETE", `/groups/${groupId}/join-request`),
+    /** Leaders: the requests waiting for this group. */
+    joinRequests: (groupId: string) => call<D1JoinRequest[]>("GET", `/groups/${groupId}/join-requests`),
+    /** Leaders: approve (adds them) or decline a request. */
+    decideJoin: (requestId: number, approve: boolean) => call<{ ok: true }>("POST", `/join-requests/${requestId}`, { approve }),
+    /** Leaders: show or hide the group in Discover, with its one-line description, meeting day and area. */
+    setDiscover: (groupId: string, input: { on: boolean; blurb?: string | null; meetingDay?: number | null; meetingArea?: string | null }) =>
+      call<{ ok: true }>("PATCH", `/groups/${groupId}/discover`, input),
+    /** "I prayed" on a prayer request (not my own), or take it back. Returns the new count. */
+    pray: (messageId: number) => call<{ count: number }>("POST", `/messages/${messageId}/pray`),
+    unpray: (messageId: number) => call<{ count: number }>("DELETE", `/messages/${messageId}/pray`),
+    /** Who tapped "I prayed" (current members of the group can ask). */
+    prayedBy: (messageId: number) => call<{ people: { id: string; displayName: string }[] }>("GET", `/messages/${messageId}/pray`),
+    /** Mark my own prayer request answered, with an optional short update. The group is told. */
+    answerPrayer: (messageId: number, update?: string | null) => call<{ ok: true }>("POST", `/messages/${messageId}/answer`, { update: update ?? null }),
+    /** A group's prayer requests, open and answered, newest first. */
+    prayerRequests: (groupId: string) => call<D1Message[]>("GET", `/groups/${groupId}/prayers`),
+    /** Close a poll now: its author, or a leader or admin. DestinyAI replies under it with the result. */
+    closePoll: (messageId: number) => call<{ ok: true }>("POST", `/messages/${messageId}/close-poll`),
+    /** Leaders and admins: the messages waiting to go out in this group (an empty list for anyone else). */
+    scheduledMessages: (groupId: string) => call<D1ScheduledMessage[]>("GET", `/groups/${groupId}/scheduled`),
+    /** Schedule a message (text, a photo, a poll or an event card) for a minute to 30 days ahead. `runAt` is an ISO time. */
+    scheduleMessage: (groupId: string, input: { runAt: string; body?: string | null; attachmentId?: string | null; poll?: D1PollDraft | null; event?: D1EventRef | null; mentions?: string[] | null }) =>
+      call<D1ScheduledMessage>("POST", `/groups/${groupId}/scheduled`, input),
+    /** Change a scheduled message that hasn't gone out: its time, text or poll. */
+    updateScheduledMessage: (groupId: string, jobId: number, input: { runAt?: string; body?: string | null; poll?: D1PollDraft | null; mentions?: string[] | null }) =>
+      call<D1ScheduledMessage>("PATCH", `/groups/${groupId}/scheduled/${jobId}`, input),
+    deleteScheduledMessage: (groupId: string, jobId: number) => call<{ ok: true }>("DELETE", `/groups/${groupId}/scheduled/${jobId}`),
+    /** Send a scheduled message now rather than at its time. */
+    sendScheduledNow: (groupId: string, jobId: number) => call<{ ok: true }>("POST", `/groups/${groupId}/scheduled/${jobId}/send`),
     /** Fresh links for cached attachments whose signed URLs have expired (links last an hour). */
     attachmentUrls: (groupId: string, attachmentIds: string[]) =>
       call<{ urls: { id: string; url: string | null }[] }>("GET", `/groups/${groupId}/attachments${q({ ids: attachmentIds.join(",") })}`),

@@ -8,7 +8,6 @@ import { useBannerBars } from "@/lib/useBannerBars";
 import { useHydrated } from "@/lib/useHydrated";
 import CartButton from "@/components/shop/CartButton";
 import Button from "@/components/ui/Button";
-import { isLinksPagePath, isSongRequestsPath, isTalentShowPath } from "@/lib/linkPages/paths";
 
 const aboutDropdown = [
   { href: "/about", label: "Our Mission" },
@@ -80,7 +79,15 @@ function Dropdown({
 
 const MORPH_DISTANCE = 180;
 
-export default function ChurchHeader() {
+export type ChurchHeaderProps = {
+  initialAlphaActive: boolean;
+  initialYoutubeQuotaExceeded: boolean;
+};
+
+export default function ChurchHeader({
+  initialAlphaActive,
+  initialYoutubeQuotaExceeded,
+}: ChurchHeaderProps) {
   const pathname = usePathname();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -93,13 +100,13 @@ export default function ChurchHeader() {
     setPrevSubmenu(mobileSubmenu);
     if (mobileSubmenu) setLastSubmenu(mobileSubmenu);
   }
-  const [, setScrolled] = useState(false);
   // Drives the header's slide-in on first paint.
   const mounted = useHydrated();
-  const [progress, setProgress] = useState(0);
-  const [alphaActive, setAlphaActive] = useState(false);
-  const [youtubeQuotaExceeded, setYoutubeQuotaExceeded] = useState(false);
+  const alphaActive = initialAlphaActive;
+  const youtubeQuotaExceeded = initialYoutubeQuotaExceeded;
   const headerRef = useRef<HTMLElement>(null);
+  const morphShellRef = useRef<HTMLDivElement>(null);
+  const morphPillRef = useRef<HTMLDivElement>(null);
   const mobileToggleRef = useRef<HTMLButtonElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const lastScrollY = useRef(0);
@@ -170,11 +177,26 @@ export default function ChurchHeader() {
       const y = window.scrollY;
       setMobileOpen(false);
       setMobileSubmenu(null);
-      setScrolled(y > 50);
-      setProgress(Math.min(1, Math.max(0, y / MORPH_DISTANCE)));
+      const progress = Math.min(1, Math.max(0, y / MORPH_DISTANCE));
+      const shell = morphShellRef.current;
+      const pill = morphPillRef.current;
+      if (shell) {
+        shell.style.maxWidth = `min(100%, calc(100% + (80rem - 100%) * ${progress}))`;
+        const pad = `${progress}rem`;
+        shell.style.paddingTop = pad;
+        shell.style.paddingBottom = pad;
+        shell.style.paddingLeft = pad;
+        shell.style.paddingRight = pad;
+      }
+      if (pill) {
+        pill.style.borderRadius = `${48 * progress}px`;
+        const isHome = pathname === "/";
+        const alpha = isHome ? 0.6 + 0.18 * progress : 1 - 0.2 * progress;
+        pill.style.backgroundColor = `rgba(54, 63, 72, ${alpha})`;
+      }
       lastScrollY.current = y;
     });
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     handleScroll();
@@ -185,36 +207,6 @@ export default function ChurchHeader() {
       if (rafId.current != null) cancelAnimationFrame(rafId.current);
     };
   }, [handleScroll]);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/alpha-events")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        if (cancelled) return;
-        const hasActive = Array.isArray(data)
-          && data.some((e: { type?: string; active?: boolean }) => e.type === "alpha" && e.active);
-        setAlphaActive(hasActive);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/youtube/status")
-      .then((res) => (res.ok ? res.json() : { quotaExceeded: false }))
-      .then((data: { quotaExceeded?: boolean }) => {
-        if (cancelled) return;
-        setYoutubeQuotaExceeded(data.quotaExceeded === true);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const whatsOnDropdown = useMemo(
     () =>
@@ -243,23 +235,7 @@ export default function ChurchHeader() {
   );
 
 
-  // Hooks must run before any early return (Rules of Hooks).
   const bannerBars = useBannerBars();
-
-  // /nfc is the in-service NFC landing page: standalone, no site nav.
-  // /links and /links/<slug> are the Linktree-style pages: the same idea.
-  // /portal is the staff self-service area: its own minimal shell, no site nav.
-  // /login is the staff/admin sign-in page: standalone, no site nav.
-  if (
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/nfc") ||
-    isLinksPagePath(pathname) || isSongRequestsPath(pathname) || isTalentShowPath(pathname) ||
-    pathname.startsWith("/portal") ||
-    pathname.startsWith("/login")
-  )
-    return null;
-
-  const isAdmin = pathname.startsWith("/admin");
   const isHome = pathname === "/";
 
   return (
@@ -275,13 +251,14 @@ export default function ChurchHeader() {
         }}
       >
         <div
+          ref={morphShellRef}
           className="mx-auto"
           style={{
-            maxWidth: `min(100%, calc(100% + (80rem - 100%) * ${progress}))`,
-            paddingTop: `${progress}rem`,
-            paddingBottom: `${progress}rem`,
-            paddingLeft: `${progress}rem`,
-            paddingRight: `${progress}rem`,
+            maxWidth: "min(100%, calc(100% + (80rem - 100%) * 0))",
+            paddingTop: "0rem",
+            paddingBottom: "0rem",
+            paddingLeft: "0rem",
+            paddingRight: "0rem",
           }}
         >
           {/* Pill + mobile menu wrapper — relative so the menu can hang off it
@@ -292,13 +269,11 @@ export default function ChurchHeader() {
           <div className="relative">
           {/* Pill */}
           <div
+            ref={morphPillRef}
             className="glass glass-no-bloom flex items-center justify-between px-4 py-2 md:px-6"
             style={{
-              borderRadius: `${48 * progress}px`,
-              // Frosted blur only (no SVG refraction, which was Chromium-only and
-              // costly to redraw every scroll frame). The scrolled pill settles
-              // at ~0.8 so the white nav stays legible over bright imagery.
-              backgroundColor: `rgba(54, 63, 72, ${isHome ? 0.6 + 0.18 * progress : 1 - 0.2 * progress})`,
+              borderRadius: "0px",
+              backgroundColor: `rgba(54, 63, 72, ${isHome ? 0.6 : 1})`,
               transition: "box-shadow 0.3s, border-color 0.3s",
             }}
           >
@@ -324,8 +299,7 @@ export default function ChurchHeader() {
               aria-label="Main"
               className="hidden items-center gap-1 md:flex"
             >
-              {!isAdmin &&
-                navItems.map((item) => {
+              {navItems.map((item) => {
                   if (item.dropdown) {
                     const isOpen = openDropdown === item.label;
                     return (
@@ -372,58 +346,16 @@ export default function ChurchHeader() {
                     </Link>
                   );
                 })}
-
-              {isAdmin && (
-                <>
-                  <span className="mx-1 h-4 w-px bg-white/20" />
-                  <span className="rounded-full bg-destiny-orange/15 px-3 py-1 text-xs font-bold uppercase tracking-widest text-destiny-orange">
-                    Admin
-                  </span>
-                  {[
-                    { href: "/admin/redirects", label: "Redirects" },
-                    { href: "/admin/banner", label: "Banner" },
-                  ].map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                        pathname.startsWith(item.href)
-                          ? "text-destiny-orange"
-                          : "text-white/90 hover:text-destiny-orange"
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                  <form action="/api/admin/logout" method="POST">
-                    <button
-                      type="submit"
-                      className="rounded-full px-4 py-2 text-sm font-medium text-on-dark-subtle transition hover:text-white/90"
-                    >
-                      Sign out
-                    </button>
-                  </form>
-                </>
-              )}
             </nav>
 
             {/* Right: CTA + mobile toggle */}
             <div className="flex items-center gap-2">
-              {!isAdmin && <CartButton />}
-              {isAdmin ? (
-                <Link
-                  href="/"
-                  className="rounded-full border border-white/20 px-5 py-2.5 text-sm font-bold text-white/80 transition hover:border-white/40 hover:text-white"
-                >
-                  ← View Site
-                </Link>
-              ) : (
-                <span className="hidden md:inline-flex">
-                  <Button href="/new-here" size="sm" className="whitespace-nowrap">
-                    New Here?
-                  </Button>
-                </span>
-              )}
+              <CartButton />
+              <span className="hidden md:inline-flex">
+                <Button href="/new-here" size="sm" className="whitespace-nowrap">
+                  New Here?
+                </Button>
+              </span>
 
               <button
                 ref={mobileToggleRef}

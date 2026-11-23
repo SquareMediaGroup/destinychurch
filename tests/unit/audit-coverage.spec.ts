@@ -99,7 +99,10 @@ test("every recorded section and action is one the page knows about", () => {
  * before in codebases that audited everything else, so they are pinned here.
  */
 test("signing in and out is recorded", () => {
-  const loginActions = readFileSync(join(process.cwd(), "app", "login", "actions.ts"), "utf8");
+  const loginActions = readFileSync(
+    join(process.cwd(), "app", "(standalone)", "login", "actions.ts"),
+    "utf8",
+  );
   expect(loginActions).toContain("recordAudit(");
   expect(loginActions).toContain('action: "login"');
   expect(loginActions).toContain('action: "logout"');

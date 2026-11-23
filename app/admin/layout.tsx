@@ -1,6 +1,9 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import "@/app/styles/admin.css";
+import Providers from "@/components/Providers";
+import SkipToMainLink from "@/components/layout/SkipToMainLink";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminHeader from "@/components/admin/AdminHeader";
 import AdminTabBar from "@/components/admin/AdminTabBar";
@@ -22,7 +25,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     pathname === "/admin/reset-password";
 
   if (isFullViewport) {
-    return <>{children}</>;
+    return (
+      <Providers>
+        <SkipToMainLink />
+        <main id="main" tabIndex={-1} className="min-h-screen focus:outline-none">
+          {children}
+        </main>
+      </Providers>
+    );
   }
 
   // AdminCommandProvider owns ⌘K, the "g"-prefixed jumps and the recents log,
@@ -32,23 +42,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // sits above the whole shell, and a super admin previewing another access
   // level needs the navigation itself to narrow.
   return (
-    <AdminCommandProvider>
-      <OnboardingProvider>
-        <div
-          className={`flex min-h-screen flex-col bg-[#f5f7fa] dark:bg-destiny-grey-900 md:flex-row ${themeClass}`}
-        >
-          <AdminSidebar />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <AdminHeader />
-            {/* pb-24: the mobile tab bar is fixed to the bottom of the viewport,
-                so without this the last row of a long page sits underneath it. */}
-            <main className="flex-1 overflow-auto pb-24 md:pb-0">{children}</main>
-          </div>
+    <Providers>
+      <AdminCommandProvider>
+        <OnboardingProvider>
+          <SkipToMainLink />
+          <div
+            className={`flex min-h-screen flex-col bg-[#f5f7fa] dark:bg-destiny-grey-900 md:flex-row ${themeClass}`}
+          >
+            <AdminSidebar />
+            <div className="flex min-w-0 flex-1 flex-col">
+              <AdminHeader />
+              {/* pb-24: the mobile tab bar is fixed to the bottom of the viewport,
+                  so without this the last row of a long page sits underneath it. */}
+              <main
+                id="main"
+                tabIndex={-1}
+                className="flex-1 overflow-auto pb-24 focus:outline-none md:pb-0"
+              >
+                {children}
+              </main>
+            </div>
           {/* Inside OnboardingProvider so a super admin previewing another
               access level gets the tabs narrowed too, exactly as the sidebar is. */}
-          <AdminTabBar />
-        </div>
-      </OnboardingProvider>
-    </AdminCommandProvider>
+            <AdminTabBar />
+          </div>
+        </OnboardingProvider>
+      </AdminCommandProvider>
+    </Providers>
   );
 }

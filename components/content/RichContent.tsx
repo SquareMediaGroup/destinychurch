@@ -1,3 +1,4 @@
+import "@/app/styles/rte-content.css";
 import type { ReactNode } from "react";
 import { BLOCKS } from "@/components/blocks/registry";
 import { BLOCK_RE, decodeProps, unescapeAttr } from "@/components/blocks/serialize";

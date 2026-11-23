@@ -1,3 +1,4 @@
+import "@/app/styles/shop.css";
 import ShopDiagnostics from "@/components/shop/ShopDiagnostics";
 
 // Section layout for the storefront. Currently exists only to mount the

@@ -9,9 +9,9 @@
 // mobile tab bar's active pill (AdminTabBar.tsx), named in the same way, slides
 // across the bar in the same frame.
 //
-// Everything about how it animates lives in app/globals.css next to the rest of
-// the admin chrome, including the reduced-motion opt-out — browsers without the
-// API simply navigate as before.
+// Everything about how it animates lives in app/styles/admin.css (imported by
+// the admin layout), including the reduced-motion opt-out — browsers without
+// the API simply navigate as before.
 
 import { ViewTransition } from "react";
 

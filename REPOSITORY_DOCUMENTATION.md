@@ -4889,6 +4889,17 @@ and filters/reveals it entirely client-side, no further network calls.
 // not stop the other three refreshing. maxDuration = 300.
 ```
 
+#### Cron ops alerting (`lib/cronOpsLog.ts`, `lib/cronOpsAlert.server.ts`)
+```typescript
+// Non–Destiny One scheduled jobs call reportCronOpsFailure(job, problem, details?)
+// on a hard failure or a partial one worth waking someone for. That writes one
+// JSON log line (kind: "cron_failure") and emails CRON_OPS_ALERT_RECIPIENT,
+// falling back to D1_OPS_ALERT_RECIPIENT then SMART_SEARCH_ALERT_RECIPIENT.
+// Destiny One crons keep sendOpsAlert (lib/destinyOne/opsAlertEmail.server.ts),
+// which logs the same JSON shape with scope: "destiny-one" and uses Destiny One
+// wording in the email.
+```
+
 #### `GET /api/cron/design-deliverables-purge`
 ```typescript
 // Daily at 04:00 (vercel.json). Bearer CRON_SECRET — fails closed with 503 if
@@ -7845,6 +7856,9 @@ VERCEL_ANALYTICS_TEAM_ID=
 #   D1_MESSAGE_RETENTION_DAYS              — default 365 (placeholder pending safeguarding sign-off)
 #   EXPO_ACCESS_TOKEN                      — optional; only if Expo push security is enabled
 #   D1_APP_STORE_URL / D1_PLAY_STORE_URL   — optional; store links in the invite email once published
+#   CRON_OPS_ALERT_RECIPIENT               — optional; who is emailed when a non–Destiny One cron fails
+#                                            (lib/cronOpsAlert.server.ts). Falls back to D1_OPS_ALERT_RECIPIENT
+#                                            then SMART_SEARCH_ALERT_RECIPIENT
 #   D1_OPS_ALERT_RECIPIENT                 — optional; who is emailed when the nightly purge or sync fails
 #                                            (lib/destinyOne/opsAlertEmail.server.ts). Falls back to
 #                                            SMART_SEARCH_ALERT_RECIPIENT
@@ -7863,6 +7877,7 @@ D1_SEARCH_KEY=
 EXPO_ACCESS_TOKEN=
 D1_APP_STORE_URL=
 D1_PLAY_STORE_URL=
+CRON_OPS_ALERT_RECIPIENT=
 D1_OPS_ALERT_RECIPIENT=
 
 # Feature flags (also toggleable via the `service_status` DB table, e.g. 'smart_search')

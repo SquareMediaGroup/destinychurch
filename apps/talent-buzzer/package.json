@@ -5,7 +5,7 @@
   "description": "Talent show judge buzzers: Android tablets -> Avolites Titan cues + LED screen X and audio",
   "license": "UNLICENSED",
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "scripts": {
     "start": "node app.js",

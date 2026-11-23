@@ -8,6 +8,7 @@
 // maintenance don't trigger it.
 
 import { NextResponse } from "next/server";
+import { reportCronOpsFailure } from "@/lib/cronOpsAlert.server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { sendEmailCard } from "@/lib/emailCard";
 import { STATUS_COMPONENTS } from "@/lib/statusComponents";
@@ -40,14 +41,26 @@ export async function GET(request: Request) {
     .is("resolved_at", null)
     .is("long_outage_alerted_at", null)
     .lte("started_at", cutoff);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    await reportCronOpsFailure("status outage alerts", error.message, {
+      route: "status-outage-alerts",
+      stage: "query_outages",
+    });
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
   if (!outages || outages.length === 0) return NextResponse.json({ alerted: 0 });
 
   const { data: admins, error: adminError } = await supabase
     .from("admin_roles")
     .select("email")
     .eq("site_admin", true);
-  if (adminError) return NextResponse.json({ error: adminError.message }, { status: 500 });
+  if (adminError) {
+    await reportCronOpsFailure("status outage alerts", adminError.message, {
+      route: "status-outage-alerts",
+      stage: "query_admins",
+    });
+    return NextResponse.json({ error: adminError.message }, { status: 500 });
+  }
   const to = [...new Set((admins ?? []).map((r) => (r.email as string | null)?.trim()).filter((e): e is string => !!e))];
   if (to.length === 0) {
     console.warn("⚠️ A status outage has passed an hour but nobody has the Site Admin role to email.");
@@ -55,27 +68,51 @@ export async function GET(request: Request) {
   }
 
   let alerted = 0;
+  const emailFailures: string[] = [];
   for (const outage of outages) {
     const minutes = Math.round((Date.now() - new Date(outage.started_at).getTime()) / 60_000);
-    await sendEmailCard({
-      to,
-      subject: `Outage still open after ${Math.floor(minutes / 60)}h: ${outage.title}`,
-      badge: "Status page",
-      heading: "An outage has been open for over an hour",
-      intro: `“${outage.title}” is still marked as an outage on the status page. Post an update so members know how the fix is going, or resolve it if it's over.`,
-      rows: [
-        ["Affected", componentNames(outage.components ?? [])],
-        ["Started", new Date(outage.started_at).toLocaleString("en-GB", { timeZone: "Europe/London" })],
-        ["Open for", `${Math.floor(minutes / 60)}h ${minutes % 60}m`],
-      ],
-      ctaHref: `${SITE}/admin/status`,
-      ctaLabel: "Open the status admin",
-    });
-    await supabase
+    try {
+      await sendEmailCard({
+        to,
+        subject: `Outage still open after ${Math.floor(minutes / 60)}h: ${outage.title}`,
+        badge: "Status page",
+        heading: "An outage has been open for over an hour",
+        intro: `“${outage.title}” is still marked as an outage on the status page. Post an update so members know how the fix is going, or resolve it if it's over.`,
+        rows: [
+          ["Affected", componentNames(outage.components ?? [])],
+          ["Started", new Date(outage.started_at).toLocaleString("en-GB", { timeZone: "Europe/London" })],
+          ["Open for", `${Math.floor(minutes / 60)}h ${minutes % 60}m`],
+        ],
+        ctaHref: `${SITE}/admin/status`,
+        ctaLabel: "Open the status admin",
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      emailFailures.push(`${outage.id}: ${message}`);
+      continue;
+    }
+    const { error: stampError } = await supabase
       .from("status_incidents")
       .update({ long_outage_alerted_at: new Date().toISOString() })
       .eq("id", outage.id);
+    if (stampError) {
+      emailFailures.push(`${outage.id}: stamp failed (${stampError.message})`);
+      continue;
+    }
     alerted++;
+  }
+
+  if (emailFailures.length) {
+    await reportCronOpsFailure(
+      "status outage alerts",
+      `${emailFailures.length} long-outage alert(s) did not complete: ${emailFailures.join("; ").slice(0, 400)}`,
+      {
+        route: "status-outage-alerts",
+        pending: outages.length,
+        alerted,
+        failed: emailFailures.length,
+      },
+    );
   }
 
   console.log(`📨 Status outage alerts sent for ${alerted} outage(s) to ${to.length} site admin(s)`);

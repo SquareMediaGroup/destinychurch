@@ -29,7 +29,7 @@ export async function GET(request: Request) {
   const { data, error } = await supabase.rpc("d1_expire_videos");
   if (error) {
     console.error("⚠️ Destiny One video expiry failed:", error.message);
-    await sendOpsAlert("video expiry", error.message);
+    await sendOpsAlert("video expiry", error.message, { route: "destiny-one-video-expiry" });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
@@ -44,7 +44,11 @@ export async function GET(request: Request) {
     }
   }
   if (removeFailures) {
-    await sendOpsAlert("video expiry", `${removeFailures} batch(es) of expired videos couldn't be deleted from storage.`);
+    await sendOpsAlert(
+      "video expiry",
+      `${removeFailures} batch(es) of expired videos couldn't be deleted from storage.`,
+      { route: "destiny-one-video-expiry", removeFailures },
+    );
   }
 
   console.log("🧹 Destiny One video expiry:", { filesDeleted: paths.length, removeFailures });

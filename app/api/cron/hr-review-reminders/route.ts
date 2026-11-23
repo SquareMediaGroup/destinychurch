@@ -6,6 +6,7 @@
 // authorises with CRON_SECRET instead, like the other crons.
 
 import { NextResponse } from "next/server";
+import { reportCronOpsFailure } from "@/lib/cronOpsAlert.server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { fullName, REVIEW_TYPE_LABELS, type ReviewType } from "@/lib/hr";
 import { sendReviewReminderDigest } from "@/lib/hrEmail";
@@ -54,7 +55,10 @@ export async function GET(request: Request) {
     .lte("next_review_date", windowEnd.toISOString().slice(0, 10));
 
   if (error) {
-    console.error("⚠️ HR review reminder query failed:", error.message);
+    await reportCronOpsFailure("HR review reminders", error.message, {
+      route: "hr-review-reminders",
+      stage: "query",
+    });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
@@ -64,14 +68,24 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: true, sent: 0 });
   }
 
-  await sendReviewReminderDigest(
-    due.map((r) => ({
-      staffName: r.hr_staff ? fullName(r.hr_staff) : "Unknown",
-      type: REVIEW_TYPE_LABELS[r.type as ReviewType] ?? r.type,
-      reviewer: r.reviewer,
-      nextReviewDate: r.next_review_date!,
-    })),
-  );
+  try {
+    await sendReviewReminderDigest(
+      due.map((r) => ({
+        staffName: r.hr_staff ? fullName(r.hr_staff) : "Unknown",
+        type: REVIEW_TYPE_LABELS[r.type as ReviewType] ?? r.type,
+        reviewer: r.reviewer,
+        nextReviewDate: r.next_review_date!,
+      })),
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await reportCronOpsFailure("HR review reminders", `Digest email failed: ${message}`, {
+      route: "hr-review-reminders",
+      stage: "email",
+      count: due.length,
+    });
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 
   const { error: updateError } = await supabase
     .from("hr_reviews")
@@ -79,7 +93,11 @@ export async function GET(request: Request) {
     .in("id", due.map((r) => r.id));
 
   if (updateError) {
-    console.error("⚠️ HR review reminder mark-sent failed:", updateError.message);
+    await reportCronOpsFailure(
+      "HR review reminders",
+      `Digest sent but reminder_sent_at could not be updated: ${updateError.message}`,
+      { route: "hr-review-reminders", stage: "mark_sent", count: due.length },
+    );
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 

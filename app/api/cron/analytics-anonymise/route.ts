@@ -17,6 +17,7 @@
 // closed if it's unset, one RPC call, console summary.
 
 import { NextResponse } from "next/server";
+import { reportCronOpsFailure } from "@/lib/cronOpsAlert.server";
 import { createServiceClient } from "@/utils/supabase/service";
 
 export const dynamic = "force-dynamic";
@@ -44,7 +45,9 @@ export async function GET(request: Request) {
   });
 
   if (error) {
-    console.error("⚠️ click log anonymise failed:", error.message);
+    await reportCronOpsFailure("click log anonymise", error.message, {
+      route: "analytics-anonymise",
+    });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

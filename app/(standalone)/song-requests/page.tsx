@@ -12,8 +12,8 @@ export const dynamic = "force-dynamic";
 
 export default function SongRequestsPage() {
   return (
-    <main className="song-bg relative min-h-screen overflow-hidden px-4 pb-24 pt-10 text-[#1a0b2e] sm:pt-14">
+    <div className="song-bg relative min-h-full overflow-hidden px-4 pb-24 pt-10 text-[#1a0b2e] sm:pt-14">
       <SongRequestsClient />
-    </main>
+    </div>
   );
 }

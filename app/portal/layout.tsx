@@ -10,6 +10,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Providers from "@/components/Providers";
+import SkipToMainLink from "@/components/layout/SkipToMainLink";
 import { PORTAL_OPEN, PORTAL_REOPENS } from "@/lib/portalStatus";
 
 const NAV = [
@@ -58,10 +60,21 @@ function PortalClosed() {
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  if (!PORTAL_OPEN) return <PortalClosed />;
+  if (!PORTAL_OPEN) {
+    return (
+      <Providers>
+        <SkipToMainLink />
+        <main id="main" tabIndex={-1} className="focus:outline-none">
+          <PortalClosed />
+        </main>
+      </Providers>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#f5f7fa]">
+    <Providers>
+      <SkipToMainLink />
+      <div className="min-h-screen bg-[#f5f7fa]">
       <header className="border-b border-black/5 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-4">
           <div className="flex items-center gap-6">
@@ -108,7 +121,14 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           ))}
         </nav>
       </header>
-      <main className="mx-auto max-w-5xl px-5 py-8">{children}</main>
-    </div>
+        <main
+          id="main"
+          tabIndex={-1}
+          className="mx-auto max-w-5xl px-5 py-8 focus:outline-none"
+        >
+          {children}
+        </main>
+      </div>
+    </Providers>
   );
 }

@@ -12,8 +12,8 @@ export const dynamic = "force-dynamic";
 
 export default function TalentShowVotePage() {
   return (
-    <main className="min-h-screen bg-destiny-grey-900 px-4 pb-20 pt-10 sm:pt-14">
+    <div className="min-h-full bg-destiny-grey-900 px-4 pb-20 pt-10 sm:pt-14">
       <TalentVoteClient />
-    </main>
+    </div>
   );
 }

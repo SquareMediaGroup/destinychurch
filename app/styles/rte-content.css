@@ -1,0 +1,299 @@
+/* ── Rich-text job descriptions (TipTap editor + public render) ─────────── */
+/*
+  These rules MUST stay inside `@layer components`.
+
+  `@import "tailwindcss"` (line 1) establishes `@layer theme, base, components,
+  utilities`. Unlayered CSS beats *all* layered CSS regardless of specificity, so
+  when these rules sat outside a layer they silently outranked every Tailwind
+  utility — `.rte-content h2 { font-size: 1.5rem }` beat `class="text-3xl"`, and
+  the orange ::before bullets leaked into every list. That made the content
+  blocks (see [data-dc-block] below) impossible to style. Inside `components`,
+  Tailwind utilities win, which is what block components rely on.
+
+  Deliberately not re-indented: the wrapper was added to ~110 existing lines and
+  keeping their indentation makes the diff readable.
+*/
+@layer components {
+.rte-content {
+  line-height: 1.75;
+}
+/* A Full-width block on a Posts page (components/blocks/size.ts): edge to edge
+   from inside the centred reading column. The page clips horizontal overflow
+   so the scrollbar's width can't add a sideways scroll. */
+.dc-bleed {
+  margin-inline: calc(50% - 50vw);
+}
+.rte-content h2 {
+  font-family: var(--font-roboto), system-ui, sans-serif;
+  font-weight: 900;
+  font-size: 1.5rem;
+  color: var(--color-destiny-grey);
+  margin: 1.75rem 0 0.75rem;
+}
+.rte-content h3 {
+  font-family: var(--font-roboto), system-ui, sans-serif;
+  font-weight: 900;
+  font-size: 1.125rem;
+  color: var(--color-destiny-grey);
+  margin: 1.5rem 0 0.5rem;
+}
+.rte-content p {
+  margin: 0 0 1rem;
+}
+.rte-content > :first-child {
+  margin-top: 0;
+}
+.rte-content ul,
+.rte-content ol {
+  margin: 0 0 1rem;
+  padding-left: 0;
+  list-style: none;
+}
+.rte-content li {
+  position: relative;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+.rte-content ul li::before {
+  content: "";
+  position: absolute;
+  left: 0.25rem;
+  top: 0.7em;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 9999px;
+  background: var(--color-destiny-orange);
+}
+.rte-content ol {
+  counter-reset: rte-counter;
+}
+.rte-content ol li {
+  counter-increment: rte-counter;
+}
+.rte-content ol li::before {
+  content: counter(rte-counter) ".";
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-weight: 700;
+  color: var(--color-destiny-orange);
+}
+.rte-content a {
+  color: var(--color-destiny-orange);
+  text-decoration: underline;
+}
+.rte-content strong {
+  font-weight: 700;
+  color: var(--color-destiny-grey);
+}
+/* Inline formatting from the advanced editor */
+.rte-content u {
+  text-decoration: underline;
+}
+.rte-content s {
+  text-decoration: line-through;
+}
+.rte-content mark {
+  background: rgba(245, 128, 33, 0.18);
+  border-radius: 0.25rem;
+  padding: 0 0.15em;
+  color: inherit;
+}
+.rte-content blockquote {
+  border-left: 3px solid var(--color-destiny-orange);
+  padding-left: 1rem;
+  margin: 0 0 1rem;
+  font-style: italic;
+  color: rgba(54, 63, 72, 0.6);
+}
+/* Placeholder shown in the empty editor */
+.rte-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: rgba(54, 63, 72, 0.3);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+/* Embedded YouTube videos (TipTap youtube node) — responsive 16:9 */
+.rte-content div[data-youtube-video] {
+  margin: 1.5rem 0;
+}
+.rte-content div[data-youtube-video] iframe,
+.rte-content iframe {
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  border: 0;
+  border-radius: 1rem;
+  display: block;
+}
+
+/* ── Content blocks ──────────────────────────────────────────────────────
+   Admin-authored blocks (FAQ, callout, cards…) stored in the same HTML
+   string as the prose above. See components/blocks/ and
+   components/content/RichContent.tsx. */
+
+/* RichContent splits the stored HTML into prose segments and block segments.
+   Prose segments are wrapped in .dc-html purely so React has an element to
+   hang dangerouslySetInnerHTML on — `display: contents` makes that wrapper
+   layout-transparent so margins collapse exactly as they did before. */
+.dc-html {
+  display: contents;
+}
+/* `display: contents` removes the box but NOT the selector match, so
+   `.rte-content > :first-child { margin-top: 0 }` above now targets the
+   invisible wrapper instead of the first real element. Restore it. */
+.rte-content > .dc-html:first-child > :first-child {
+  margin-top: 0;
+}
+
+/* Blocks own their internal typography completely. Neutralise the prose
+   rules inside them so the Tailwind utilities in the block components
+   actually apply. Specificity (0,2,1) beats the (0,1,1) prose rules, and
+   both live in this same layer. */
+.rte-content [data-dc-block] {
+  margin-block: 2rem;
+  /* Blocks render in four different reading columns (posts 768px, plus the
+     training, jobs and shop pages) so they size themselves against their own
+     width, never the viewport. This is what makes the `cqi` units and
+     `@container` queries in components/blocks/ resolve. */
+  container-type: inline-size;
+}
+.rte-content [data-dc-block] :is(h1, h2, h3, h4) {
+  font: inherit;
+  color: inherit;
+  margin: 0;
+}
+.rte-content [data-dc-block] p {
+  margin: 0;
+}
+.rte-content [data-dc-block] :is(ul, ol) {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+.rte-content [data-dc-block] li {
+  margin: 0;
+  padding: 0;
+}
+.rte-content [data-dc-block] :is(ul, ol) li::before {
+  content: none;
+}
+.rte-content [data-dc-block] a {
+  color: inherit;
+  text-decoration: none;
+}
+.rte-content [data-dc-block] strong {
+  color: inherit;
+}
+.rte-content [data-dc-block] blockquote {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  font-style: normal;
+  color: inherit;
+}
+.rte-content [data-dc-block] iframe {
+  aspect-ratio: auto;
+  border-radius: 0;
+}
+
+/* ── FAQ block ───────────────────────────────────────────────────────────
+   The FAQ block uses native <details>/<summary> so it ships zero JS and gets
+   UA-managed aria-expanded, keyboard support and find-in-page expansion.
+   The cost is that we can't animate with the grid-rows-[0fr]→[1fr] trick
+   used by components/help/HelpAccordion.tsx, so we use ::details-content —
+   progressively enhanced, snapping open where unsupported. */
+.dc-faq {
+  /* Scoped deliberately. On :root this would change `height: auto`
+     transition behaviour site-wide. */
+  interpolate-size: allow-keywords;
+}
+.dc-faq summary::-webkit-details-marker {
+  display: none;
+}
+.dc-faq summary::marker {
+  content: "";
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dc-faq details::details-content {
+    block-size: 0;
+    overflow: hidden;
+    transition:
+      block-size 0.22s ease,
+      content-visibility 0.22s allow-discrete;
+  }
+  .dc-faq details[open]::details-content {
+    block-size: auto;
+  }
+}
+
+/* ── Block chrome, editor only ───────────────────────────────────────────
+   Everything else in the chrome is plain Tailwind; these are the bits that
+   need to reach into ProseMirror's own classes. */
+.ProseMirror .dc-block-shell {
+  position: relative;
+}
+/* We draw our own selection ring in BlockNodeView. */
+.ProseMirror .dc-block-shell.ProseMirror-selectednode {
+  outline: none;
+}
+.ProseMirror [data-drag-handle] {
+  cursor: grab;
+}
+.ProseMirror [data-drag-handle]:active {
+  cursor: grabbing;
+}
+
+/* VideoPlayer scrubber: a thin track that fills orange up to --progress
+   (set inline by the component), with a thumb that grows on hover/focus. */
+.video-scrubber::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--color-destiny-orange) var(--progress, 0%),
+    rgb(255 255 255 / 0.3) var(--progress, 0%)
+  );
+}
+.video-scrubber::-moz-range-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.3);
+}
+.video-scrubber::-moz-range-progress {
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--color-destiny-orange);
+}
+.video-scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 14px;
+  width: 14px;
+  margin-top: -5px;
+  border-radius: 9999px;
+  background: var(--color-destiny-orange);
+  border: 0;
+  transition: transform 150ms;
+}
+.video-scrubber::-moz-range-thumb {
+  height: 14px;
+  width: 14px;
+  border-radius: 9999px;
+  background: var(--color-destiny-orange);
+  border: 0;
+}
+.video-scrubber:hover::-webkit-slider-thumb,
+.video-scrubber:focus-visible::-webkit-slider-thumb {
+  transform: scale(1.25);
+}
+.video-scrubber:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+  border-radius: 9999px;
+}
+}
+/* ── end @layer components ─────────────────────────────────────────────── */

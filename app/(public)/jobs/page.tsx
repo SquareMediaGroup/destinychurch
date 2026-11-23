@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
-import FaqAccordion from "@/app/hire/FaqAccordion";
+import FaqAccordion from "../hire/FaqAccordion";
 import Button, { buttonClasses } from "@/components/ui/Button";
 import { getPublishedJobs } from "@/lib/jobs.server";
 import {

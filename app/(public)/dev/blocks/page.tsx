@@ -39,7 +39,7 @@ export default function DevBlocksPage() {
   }).join("");
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-16">
+    <div className="mx-auto max-w-3xl px-4 py-16">
       <h1 className="text-2xl font-black text-destiny-grey">Block gallery</h1>
       <p className="mt-1 text-sm text-subtle">
         Development only. {BLOCK_LIST.length} block
@@ -51,7 +51,7 @@ export default function DevBlocksPage() {
         html={html}
         className="rte-content mt-8 text-[0.97rem] text-destiny-grey/80"
       />
-    </main>
+    </div>
   );
 }
 

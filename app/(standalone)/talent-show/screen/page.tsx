@@ -10,8 +10,8 @@ export const dynamic = "force-dynamic";
 
 export default function TalentShowScreenPage() {
   return (
-    <main className="min-h-screen bg-destiny-grey-900">
+    <div className="min-h-full bg-destiny-grey-900">
       <TalentScreenClient />
-    </main>
+    </div>
   );
 }

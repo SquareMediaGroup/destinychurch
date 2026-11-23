@@ -24,6 +24,7 @@
 // safe once the week containing them has been summarised and sent.
 
 import { NextResponse } from "next/server";
+import { reportCronOpsFailure } from "@/lib/cronOpsAlert.server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { getOpenAI, SMART_SEARCH_MODEL } from "@/lib/openaiClient";
 import { sendAuditReportEmail, type AuditReportStat } from "@/lib/auditEmail";
@@ -174,7 +175,10 @@ export async function GET(request: Request) {
     .limit(MAX_ENTRIES);
 
   if (error) {
-    console.error("⚠️ Weekly audit report query failed:", error.message);
+    await reportCronOpsFailure("weekly audit report", error.message, {
+      route: "audit-weekly-report",
+      stage: "query",
+    });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
@@ -244,7 +248,11 @@ export async function GET(request: Request) {
     { onConflict: "period_start,period_end" },
   );
   if (saveError) {
-    console.error("⚠️ Weekly audit report save failed:", saveError.message);
+    await reportCronOpsFailure(
+      "weekly audit report",
+      `Could not store the report for ${periodLabel}: ${saveError.message}`,
+      { route: "audit-weekly-report", stage: "save", entryCount: entries.length },
+    );
   }
 
   const statTiles: AuditReportStat[] = [
@@ -265,7 +273,12 @@ export async function GET(request: Request) {
         .map(([email, count]) => `${email} — ${count} change${count === 1 ? "" : "s"}`),
     });
   } catch (err) {
-    console.error("⚠️ Weekly audit report email failed:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    await reportCronOpsFailure(
+      "weekly audit report",
+      `Report saved but email to Super Admins failed: ${message}`,
+      { route: "audit-weekly-report", stage: "email", recipients: to.length },
+    );
   }
 
   // Retention purge — see the note at the top of this file for why it lives here.
@@ -276,12 +289,19 @@ export async function GET(request: Request) {
     .delete()
     .lt("created_at", cutoff.toISOString());
   if (purgeError) {
-    console.error("⚠️ Audit log purge failed:", purgeError.message);
+    await reportCronOpsFailure("weekly audit report", `Audit log retention purge failed: ${purgeError.message}`, {
+      route: "audit-weekly-report",
+      stage: "audit_log_purge",
+    });
   }
 
   const { error: notificationPurgeError } = await supabase.rpc("purge_old_notifications");
   if (notificationPurgeError) {
-    console.error("⚠️ Notification purge failed:", notificationPurgeError.message);
+    await reportCronOpsFailure(
+      "weekly audit report",
+      `Notification retention purge failed: ${notificationPurgeError.message}`,
+      { route: "audit-weekly-report", stage: "notification_purge" },
+    );
   }
 
   console.log(

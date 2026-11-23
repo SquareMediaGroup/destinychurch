@@ -39,7 +39,7 @@ export async function GET(request: Request) {
   const { data, error } = await supabase.rpc("d1_purge_expired", { p_retain_days: retainDays });
   if (error) {
     console.error("⚠️ Destiny One purge failed:", error.message);
-    await sendOpsAlert("retention purge", error.message);
+    await sendOpsAlert("retention purge", error.message, { route: "destiny-one-purge" });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
@@ -59,7 +59,11 @@ export async function GET(request: Request) {
     }
   }
   if (removeFailures) {
-    await sendOpsAlert("retention purge", `${removeFailures} batch(es) of expired files couldn't be deleted from storage.`);
+    await sendOpsAlert(
+      "retention purge",
+      `${removeFailures} batch(es) of expired files couldn't be deleted from storage.`,
+      { route: "destiny-one-purge", removeFailures },
+    );
   }
 
   console.log("🧹 Destiny One purge:", { retainDays, ...result, attachment_paths: paths.length });

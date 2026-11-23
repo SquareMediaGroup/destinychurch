@@ -11,11 +11,17 @@
 
 import "server-only";
 import { sendEmailCard } from "@/lib/emailCard";
+import { logCronFailure, type CronFailureDetails } from "@/lib/cronOpsLog";
 
 const RECIPIENT =
   process.env.D1_OPS_ALERT_RECIPIENT || process.env.SMART_SEARCH_ALERT_RECIPIENT || "malachi@squaremediagroup.org";
 
-export async function sendOpsAlert(job: string, problem: string): Promise<void> {
+export async function sendOpsAlert(
+  job: string,
+  problem: string,
+  details?: CronFailureDetails,
+): Promise<void> {
+  logCronFailure(job, problem, { scope: "destiny-one", ...details });
   if (!process.env.RESEND_API_KEY) {
     console.warn(`⚠️ RESEND_API_KEY not set — skipping the Destiny One alert for ${job}`);
     return;

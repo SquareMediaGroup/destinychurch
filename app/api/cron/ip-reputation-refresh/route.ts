@@ -24,6 +24,7 @@
 
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
+import { reportCronOpsFailure } from "@/lib/cronOpsAlert.server";
 import { createServiceClient } from "@/utils/supabase/service";
 
 export const dynamic = "force-dynamic";
@@ -137,6 +138,27 @@ export async function GET(request: Request) {
     }
   }
 
+  const failedSources = Object.entries(results)
+    .filter(([, row]) => row.error)
+    .map(([source, row]) => `${source}: ${row.error}`);
+
+  if (failedSources.length) {
+    await reportCronOpsFailure(
+      "IP reputation refresh",
+      failedSources.join("; ").slice(0, 480),
+      {
+        route: "ip-reputation-refresh",
+        failedSources: failedSources.length,
+        totalSources: SOURCES.length,
+      },
+    );
+  }
+
   console.log("🧭 ip-reputation-refresh:", results);
-  return NextResponse.json({ ok: true, batchId, results });
+  return NextResponse.json({
+    ok: failedSources.length === 0,
+    batchId,
+    results,
+    partial: failedSources.length > 0 && failedSources.length < SOURCES.length,
+  });
 }

@@ -8,6 +8,7 @@
 // authorises with CRON_SECRET instead, the way a scheduled caller has to.
 
 import { NextResponse } from "next/server";
+import { reportCronOpsFailure } from "@/lib/cronOpsAlert.server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { deleteDeliverableStorage } from "@/lib/designTickets.server";
 
@@ -33,11 +34,19 @@ export async function GET(request: Request) {
   const supabase = createServiceClient();
   const cutoff = new Date(Date.now() - CONFIRMED_RETENTION_HOURS * 60 * 60 * 1000).toISOString();
 
-  const { data: due } = await supabase
+  const { data: due, error: queryError } = await supabase
     .from("design_ticket_deliverables")
     .select("id, ticket_id, file_name, storage_kind, playbook_asset_token, file_path")
     .not("confirmed_at", "is", null)
     .lte("confirmed_at", cutoff);
+
+  if (queryError) {
+    await reportCronOpsFailure("design deliverables purge", queryError.message, {
+      route: "design-deliverables-purge",
+      stage: "query",
+    });
+    return NextResponse.json({ error: queryError.message }, { status: 500 });
+  }
 
   let deleted = 0;
   const failures: string[] = [];
@@ -59,5 +68,17 @@ export async function GET(request: Request) {
 
   console.log(`🧹 design deliverables purge: ${deleted} deleted, ${failures.length} failed`);
 
-  return NextResponse.json({ ok: true, deleted, failed: failures.length });
+  if (failures.length) {
+    await reportCronOpsFailure(
+      "design deliverables purge",
+      `${failures.length} confirmed deliverable(s) could not be removed.`,
+      { route: "design-deliverables-purge", failedIds: failures.length, deleted },
+    );
+  }
+
+  return NextResponse.json({
+    ok: failures.length === 0,
+    deleted,
+    failed: failures.length,
+  });
 }

@@ -47,7 +47,9 @@ export async function GET(request: Request) {
         .range(from, from + PAGE - 1);
       if (error) {
         console.error("⚠️ Destiny One sync read failed:", error.message);
-        await sendOpsAlert("nightly sync", `Couldn't read members: ${error.message}`);
+        await sendOpsAlert("nightly sync", `Couldn't read members: ${error.message}`, {
+          route: "destiny-one-sync",
+        });
         break;
       }
       for (const member of (data ?? []) as MemberRow[]) {
@@ -62,7 +64,9 @@ export async function GET(request: Request) {
   const { data: groups, error: reconcileError } = await supabase.rpc("d1_reconcile_all");
   if (reconcileError) {
     console.error("⚠️ Destiny One reconcile failed:", reconcileError.message);
-    await sendOpsAlert("nightly rule re-check", reconcileError.message);
+    await sendOpsAlert("nightly rule re-check", reconcileError.message, {
+      route: "destiny-one-sync",
+    });
     return NextResponse.json({ error: reconcileError.message, members: tally }, { status: 500 });
   }
   const states = ((groups ?? []) as { state: string }[]).reduce<Record<string, number>>((acc, g) => {

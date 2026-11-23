@@ -112,9 +112,9 @@ Responses: JSON, Server-Side HTML, Redirects, Cached Assets
 | **Analytics** | Vercel Analytics + SpeedInsights | Performance and visitor tracking |
 | **Deployment** | Vercel | Edge functions, serverless, CDN |
 | **Testing** | Playwright | E2E browser testing |
-| **Media Processing** | Sharp | Uploaded images (posts, shop products, shop hero) resized/converted to WebP server-side; `ffmpeg-static` bundled but unused |
-| **Search** | fuse.js + rbush | Client-side fuzzy search and spatial indexing |
-| **Icons** | Phosphor + Material Symbols | Icon sets |
+| **Media Processing** | Sharp | Uploaded images (posts, shop products, shop hero) resized/converted to WebP server-side |
+| **Search** | fuse.js | Client-side fuzzy search (e.g. admin command palette) |
+| **Icons** | Material Symbols | Icon sets (synced via `scripts/sync-icon-names.mjs`) |
 | **Rich Text** | TipTap (Prosemirror) | Sermon markdown, content editing |
 | **State** | Zustand | Global client state (minimal usage) |
 | **Motion** | Motion | Animation library |
@@ -217,7 +217,7 @@ destinychurch/
 │   │   ├── cron/                  # Vercel Cron — hr-review-reminders/, design-deliverables-purge/, … (Bearer CRON_SECRET)
 │   │   ├── chat/                  # POST /api/chat — Smart Search tool-calling chat
 │   │   ├── youtube/                # videos/, thumbnail/[id]/, status/, live/
-│   │   ├── alpha-ask/, alpha-events/ # Public Alpha info endpoints
+│   │   ├── alpha-events/             # Public Alpha listing (nav / Alpha page)
 │   │   ├── store/                 # checkout/, checkout/bypass/ (public storefront)
 │   │   ├── training/               # unlock/, posts/[id]/timer/
 │   │   ├── health/                 # route.ts (public: database + Smart Search state for the status page), smart-search/ health check
@@ -7446,11 +7446,6 @@ const nextConfig: NextConfig = {
     serverActions: { bodySizeLimit: "4.5mb" },
   },
 
-  // Include ffmpeg binary for serverless functions (if needed)
-  outputFileTracingIncludes: {
-    "*": ["node_modules/ffmpeg-static/ffmpeg"],
-  },
-  
   // Permanent redirects (handled at edge)
   async redirects() {
     return [

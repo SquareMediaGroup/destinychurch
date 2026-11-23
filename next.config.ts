@@ -12,9 +12,6 @@ const nextConfig: NextConfig = {
     // Vercel's 4.5MB function request limit.
     serverActions: { bodySizeLimit: "4.5mb" },
   },
-  outputFileTracingIncludes: {
-    "*": ["node_modules/ffmpeg-static/ffmpeg"],
-  },
   // Serve the store at the legacy subdomain too: shop.destinytees.uk/* maps to
   // the canonical /shop/* pages. destinytees.uk/shop remains the default.
   // (The subdomain must also be added to the Vercel project's domains.)

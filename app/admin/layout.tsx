@@ -14,10 +14,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // document.documentElement — so it can never outlive this component or leak
   // onto the public site via a stray class left on <html>. See lib/adminTheme.ts.
   const { themeClass } = useAdminTheme();
-  // Studio editor and the standalone auth pages take over the
-  // full viewport — no sidebar
+  // Standalone auth pages take over the full viewport — no sidebar
   const isFullViewport =
-    (pathname.startsWith("/admin/studio/") && pathname !== "/admin/studio") ||
     pathname === "/admin/forgot-password" ||
     pathname === "/admin/reset-password";
 

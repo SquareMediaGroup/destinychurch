@@ -93,7 +93,6 @@ export default function ChurchHeader() {
     setPrevSubmenu(mobileSubmenu);
     if (mobileSubmenu) setLastSubmenu(mobileSubmenu);
   }
-  const [, setScrolled] = useState(false);
   // Drives the header's slide-in on first paint.
   const mounted = useHydrated();
   const [progress, setProgress] = useState(0);
@@ -170,7 +169,6 @@ export default function ChurchHeader() {
       const y = window.scrollY;
       setMobileOpen(false);
       setMobileSubmenu(null);
-      setScrolled(y > 50);
       setProgress(Math.min(1, Math.max(0, y / MORPH_DISTANCE)));
       lastScrollY.current = y;
     });
@@ -259,7 +257,6 @@ export default function ChurchHeader() {
   )
     return null;
 
-  const isAdmin = pathname.startsWith("/admin");
   const isHome = pathname === "/";
 
   return (
@@ -324,8 +321,7 @@ export default function ChurchHeader() {
               aria-label="Main"
               className="hidden items-center gap-1 md:flex"
             >
-              {!isAdmin &&
-                navItems.map((item) => {
+              {navItems.map((item) => {
                   if (item.dropdown) {
                     const isOpen = openDropdown === item.label;
                     return (
@@ -372,58 +368,16 @@ export default function ChurchHeader() {
                     </Link>
                   );
                 })}
-
-              {isAdmin && (
-                <>
-                  <span className="mx-1 h-4 w-px bg-white/20" />
-                  <span className="rounded-full bg-destiny-orange/15 px-3 py-1 text-xs font-bold uppercase tracking-widest text-destiny-orange">
-                    Admin
-                  </span>
-                  {[
-                    { href: "/admin/redirects", label: "Redirects" },
-                    { href: "/admin/banner", label: "Banner" },
-                  ].map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                        pathname.startsWith(item.href)
-                          ? "text-destiny-orange"
-                          : "text-white/90 hover:text-destiny-orange"
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                  <form action="/api/admin/logout" method="POST">
-                    <button
-                      type="submit"
-                      className="rounded-full px-4 py-2 text-sm font-medium text-on-dark-subtle transition hover:text-white/90"
-                    >
-                      Sign out
-                    </button>
-                  </form>
-                </>
-              )}
             </nav>
 
             {/* Right: CTA + mobile toggle */}
             <div className="flex items-center gap-2">
-              {!isAdmin && <CartButton />}
-              {isAdmin ? (
-                <Link
-                  href="/"
-                  className="rounded-full border border-white/20 px-5 py-2.5 text-sm font-bold text-white/80 transition hover:border-white/40 hover:text-white"
-                >
-                  ← View Site
-                </Link>
-              ) : (
-                <span className="hidden md:inline-flex">
-                  <Button href="/new-here" size="sm" className="whitespace-nowrap">
-                    New Here?
-                  </Button>
-                </span>
-              )}
+              <CartButton />
+              <span className="hidden md:inline-flex">
+                <Button href="/new-here" size="sm" className="whitespace-nowrap">
+                  New Here?
+                </Button>
+              </span>
 
               <button
                 ref={mobileToggleRef}
